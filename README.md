@@ -1,0 +1,2 @@
+# AliNe
+Nextflow Alignment Pipeline
