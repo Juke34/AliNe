@@ -1,0 +1,10 @@
+.DS_Store
+*.nextflow.log*
+# default output
+alignment_results
+# default nextflow working directory
+work
+# default nextflow tmp directory
+.nextflow/
+# default generated report
+pipeline_report/
