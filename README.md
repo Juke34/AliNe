@@ -4,6 +4,8 @@
 
 AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome using the tools of your choice.
 
+Genome + Reads => FastQC -> Alignment -> Sort -> MultiQC
+
 ## Table of Contents
 
    * [Foreword](#foreword)
@@ -53,7 +55,7 @@ The prerequisites to run the pipeline are:
 git clone https://github.com/Juke34/AliNe.git
 
 # Move in it
-cd baargin
+cd AliNe
 ```
 
 ### Nextflow 
