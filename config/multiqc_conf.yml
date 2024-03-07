@@ -1,0 +1,27 @@
+title: "Nextflow Alignment pipeline"
+
+run_modules:
+    - bowtie2
+    - bwa 
+    - bwa-mem
+    - hisat2
+    - kallisto
+    - minimap2
+    - mummer4
+    - rsem
+    - salmon
+    - star
+    - tophat2 
+    
+module_order:
+    - bowtie2
+    - bwa 
+    - bwa-mem
+    - hisat2
+    - kallisto
+    - minimap2
+    - mummer4
+    - rsem
+    - salmon
+    - star
+    - tophat2 
