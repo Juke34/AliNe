@@ -1,4 +1,4 @@
-# AliNe (Alignment in Nextflow)
+AliNe (Alignment in Nextflow) 
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
@@ -144,4 +144,13 @@ On success you should get a message looking like this:
     Success      : true
     Exit Status  : 0
     Error report : -
+```
+
+## Parameters
+
+## Uninstall
+
+You can simply remove the `AliNe` directory from your computer, and remove the nextflow conda environment:
+```
+conda remove -n nextflow
 ```
