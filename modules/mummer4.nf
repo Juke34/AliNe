@@ -7,11 +7,12 @@
 process nucmer {
     label 'mummer4'
     tag "$sample"
-    publishDir "${params.outdir}/nucmer_alignments", pattern: "*nucmer.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path genome
+        val outpath
 
     output:
         tuple val(sample), path ("*nucmer.sam"), emit: tuple_sample_sam

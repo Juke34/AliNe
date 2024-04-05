@@ -1,10 +1,11 @@
 process bwa_index {
     label 'bwa'
     tag "$genome_fasta"
-    publishDir "${params.outdir}/bwa_indicies", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         path(genome_fasta)
+        val outpath
 
     output:
         path("*")
@@ -22,12 +23,13 @@ process bwa_index {
 process bwaaln {
     label 'bwa'
     tag "$sample"
-    publishDir "${params.outdir}/bwa_alignments", pattern: "*bwa.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path genome
         path bwa_index_files
+        val outpath
 
     output:
         tuple val(sample), path ("*bwaaln.sam"), emit: tuple_sample_sam
@@ -44,7 +46,7 @@ process bwaaln {
         """
             bwa aln ${params.bwa_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} > ${reads[0].baseName}_bwaaln_r1.sai 2> ${reads[0].baseName}_bwaaln_r1_sai.log 
             bwa aln ${params.bwa_options} -t ${task.cpus} ${genome.baseName} ${reads[1]} > ${reads[1].baseName}_bwaaln_r2.sai 2> ${reads[1].baseName}_bwaaln_r2_sai.log
-            bwa sampe ${genome.baseName}  ${reads[0].baseName}_bwaaln_r1.sai ${reads[1].baseName}_bwaaln_r1.sai ${reads[0]} ${reads[1]} > ${fileName}_bwaaln.sam 2> ${fileName}_bwaaln_sam.log 
+            bwa sampe ${genome.baseName}  ${reads[0].baseName}_bwaaln_r1.sai ${reads[1].baseName}_bwaaln_r2.sai ${reads[0]} ${reads[1]} > ${fileName}_bwaaln.sam 2> ${fileName}_bwaaln_sam.log 
    
         """
         }
@@ -57,12 +59,13 @@ process bwaaln {
 process bwamem {
     label 'bwa'
     tag "$sample"
-    publishDir "${params.outdir}/bwa_alignments", pattern: "*bwa.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path genome
         path bwa_index_files
+        val outpath
 
     output:
         tuple val(sample), path ("*bwamem.sam"), emit: tuple_sample_sam
@@ -88,12 +91,13 @@ process bwamem {
 process bwasw {
     label 'bwa'
     tag "$sample"
-    publishDir "${params.outdir}/bwa_alignments", pattern: "*bwa.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path genome
         path bwa_index_files
+        val outpath
 
     output:
         tuple val(sample), path ("*bwasw.sam"), emit: tuple_sample_sam

@@ -14,7 +14,8 @@ run_modules:
     - tophat2 
     
 module_order:
-    - bowtie2
+    - bowtie2:
+        name: "bowtie2"
     - bwa 
     - bwa-mem
     - hisat2

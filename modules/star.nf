@@ -23,6 +23,7 @@ process prepare_star_index_options {
             } 
             else {
                 file=reads[0] // In paired-end case we take the first file
+                log.info """Expected read length parameter not provided (--read_length), using the first file ${reads} from sample ${sample} as reference to deduce this value..."""
 
                 // Some bash commands as head or grep -q can interrupt another one, which return an error 141. To avoid the problem we unset pipefail
                 """
@@ -38,7 +39,6 @@ process prepare_star_index_options {
                 a=0;b=0; RESULT=\$(\$command ${file} | head -n 40000 | awk '{if(NR%4==2){ b++; a+=length(\$1)}}END{print int(a/b)}')
                 echo -n --sjdbGTFfile ${annotation} --sjdbOverhang \$((\${RESULT} - 1 ))
                 """
-
             }  
         } 
         else {
@@ -47,18 +47,18 @@ process prepare_star_index_options {
             echo -n "${star_index_options}"
             """
         }
-
 }
             
 
 process star_index {
     label 'star'
     tag "$genome_fasta"
-    publishDir "${params.outdir}/star_indicies", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         path (genome_fasta)
         val star_index_options
+        val outpath
 
     output:
         path ('*star_indicies')
@@ -78,21 +78,28 @@ process star_index {
 process star {
     label 'star'
     tag "$sample"
-    publishDir "${params.outdir}/star_alignments", pattern: "*.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path star_index
+        val outpath
 
     output:
         tuple val(sample), path ("*.bam"), emit: tuple_sample_sam
         path "*.out",  emit: star_summary
+        path "*SJ.out.tab", emit: splice_junctions
 
     script:
         if (params.single_end){
+           
         """
+            # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
+            mkfifo pipedRead
+            zcat < ${reads} > pipedRead &
+
             STAR ${params.star_options} --genomeDir ${star_index} \\
-                --readFilesIn ${reads}  \\
+                --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
                 --outFileNamePrefix ${reads.baseName}  \\
@@ -101,8 +108,84 @@ process star {
         """
         } else {
         """
+            mkfifo pipedRead1
+            zcat < ${reads[0]} > pipedRead1 &
+            mkfifo pipedRead2
+            zcat < ${reads[1]} > pipedRead2 &
 
+            STAR ${params.star_options} --genomeDir ${star_index} \\
+                --readFilesIn pipedRead1 pipedRead2 \\
+                --runThreadN ${task.cpus} \\
+                --runMode alignReads \\
+                --outFileNamePrefix ${reads[0].baseName}  \\
+                --outSAMunmapped Within \\
+                --outSAMtype BAM SortedByCoordinate
         """
         }
+}
 
+/* 
+your goal is to robustly and accurately identify novel splice junctions for differential splicing analysis and variant discovery, it is highly recommended to use the STAR in 2-pass mode.
+In the two-pass mode, the genome indices are re-generated from splice junctions obtained from a 1-pass mode with the usual parameters and then run the mapping step (2-pass mapping). 
+Optionally, you can also bypass genome indices re-generation and directly provide a 1-pass splice junction file during the 2-pass mapping step.
+For a study with multiple samples, it is recommended to collect 1st pass junctions from all samples.
+*/
+process star2pass{
+    label 'star'
+    tag "$sample"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
+
+    input:
+        tuple val(sample), path(reads)
+        path star_index
+        path splice_junctions
+        val outpath
+
+    output:
+        tuple val(sample), path ("*.bam"), emit: tuple_sample_sam
+        path "*.out",  emit: star_summary
+
+    script:
+        if (params.single_end){
+           
+             """
+                # Select cat or zcat according to suffif
+                suffix=\$(echo ${reads[0]} | awk -F . '{print \$NF}')
+                command=cat
+                if [[ \${suffix} == "gz" ]];then
+                    command=zcat
+                fi
+                
+                # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
+                mkfifo pipedRead
+                command < ${reads} > pipedRead &
+
+                # run STAR
+                STAR ${params.star_options} --genomeDir ${star_index} \\
+                    --readFilesIn pipedRead  \\
+                    --runThreadN ${task.cpus} \\
+                    --runMode alignReads \\
+                    --outFileNamePrefix ${reads[0].baseName}_2pass  \\
+                    --outSAMunmapped Within \\
+                    --outSAMtype BAM SortedByCoordinate \\
+                    --sjdbFileChrStartEnd *SJ.out.tab
+            """
+        } else {
+        """
+            mkfifo pipedRead1
+            zcat < ${reads[0]} > pipedRead1 &
+            mkfifo pipedRead2
+            zcat < ${reads[1]} > pipedRead2 &
+
+            # run STAR
+            STAR ${params.star_options} --genomeDir ${star_index} \\
+                --readFilesIn pipedRead1 pipedRead2  \\
+                --runThreadN ${task.cpus} \\
+                --runMode alignReads \\
+                --outFileNamePrefix ${reads.baseName}_2pass  \\
+                --outSAMunmapped Within \\
+                --outSAMtype BAM SortedByCoordinate \\
+                --sjdbFileChrStartEnd *SJ.out.tab
+        """
+        }
 }

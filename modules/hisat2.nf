@@ -1,29 +1,31 @@
 process hisat2_index {
     label 'hisat2'
     tag "$genome_fasta"
-    publishDir "${params.outdir}/Hisat2_indicies", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-    path(genome_fasta)
+        path(genome_fasta)
+        val outpath
 
     output:
-    path('*.ht2')
+        path('*.ht2')
 
     script:
-    """
-    hisat2-build -p ${task.cpus} $genome_fasta ${genome_fasta.baseName}.hisat2_index
-    """
+        """
+        hisat2-build -p ${task.cpus} $genome_fasta ${genome_fasta.baseName}.hisat2_index
+        """
 }
 
 process hisat2 {
     label 'hisat2'
     tag "$sample"
-    publishDir "${params.outdir}/Hisat2_alignments", pattern: "*splicesite.txt", mode: 'copy'
-    publishDir "${params.outdir}/Hisat2_alignments", pattern: "*hisat2-summary.txt", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*splicesite.txt", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*hisat2-summary.txt", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path hisat2_index_files
+        val outpath
 
     output:
         tuple val(sample), path ("${sample}.sam"), emit: tuple_sample_sam

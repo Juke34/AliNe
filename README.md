@@ -28,15 +28,16 @@ Here is the list of implemented aligners:
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
-| bowtie2 | x | | | |
-| bwaaln | x | | | |
-| bwamem | x | | | |
-| bwasw | x | | | |
-| graphmap2 | x | | | |
-| hisat2 | x | | | |
-| minimap2 | x | | | |
-| nucmer | x | | | |
-| star | x | | | |
+| bowtie2 | x | x | | |
+| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | | |
+| bwamem | x | x | | |
+| bwasw | x | x | | |
+| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | | |
+| hisat2 | x | x | | |
+| minimap2 | x | x | | |
+| nucmer | x | x R1 and R2 are concatenated then aligned | | |
+| star | x | x | | |
+| star 2pass mode | x | x | | |
 
 This work is ongoing... adaptation to run with different type of reads is ongoing.
 

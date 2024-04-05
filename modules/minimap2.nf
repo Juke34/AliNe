@@ -1,15 +1,16 @@
-// ------------ GRAPHMAP2 -----------
+// ------------ MINIMAP2 -----------
 // https://github.com/lh3/minimap2
 
 
 process minimap2_index {
     label 'minimap2'
     tag "$genome_fasta"
-    publishDir "${params.outdir}/minimap_indicies", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         path(genome_fasta)
-
+        val outpath
+        
     output:
         path("*")
 
@@ -26,12 +27,13 @@ process minimap2_index {
 process minimap2 {
     label 'minimap2'
     tag "$sample"
-    publishDir "${params.outdir}/minimap2_alignments", pattern: "*bwa.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
         tuple val(sample), path(reads)
         path genome
         path minimap_index_files
+        val outpath
 
     output:
         tuple val(sample), path ("*minimap2.sam"), emit: tuple_sample_sam, optional:true
@@ -50,7 +52,7 @@ process minimap2 {
             """
         } else {
             """
-            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
+            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads[0]} ${reads[1]} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
             """
         }
 }
