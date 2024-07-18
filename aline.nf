@@ -41,6 +41,7 @@ params.hisat2_options = ''
 params.minimap2_options = '-a' // -a to get sam output
 params.minimap2_index_options = '' //  -k, -w, -H and -I 
 params.nucmer_options = ''
+params.tophat2_options = ''
 params.star_options = ''
 params.star_2pass = false
 
@@ -52,21 +53,8 @@ params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 // STEP 1 - LOG INFO
 //*************************************************
 
+log.info header()
 log.info """
-IRD
-.-./`) .-------.     ______
-\\ .-.')|  _ _   \\   |    _ `''.
-/ `-' \\| ( ' )  |   | _ | ) _  \\
- `-'`\"`|(_ o _) /   |( ''_'  ) |
- .---. | (_,_).' __ | . (_) `. |
- |   | |  |\\ \\  |  ||(_    ._) '
- |   | |  | \\ `'   /|  (_.\\.' /
- |   | |  |  \\    / |       .'
- '---' ''-'   `'-'  '-----'`
-
-
-AliNe - Alignment in Nextflow
-===================================================
 
 General Parameters
      genome                     : ${params.genome}
@@ -110,7 +98,7 @@ include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {gaas_fastq_guessMyFormat} from "$baseDir/modules/gaas.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_ali} from "$baseDir/modules/fastqc.nf"
+include {fastqc as fastqc_raw; fastqc as fastqc_ali_bowtie2; fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star} from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
@@ -153,34 +141,43 @@ else { exit 1, "No executer selected: -profile docker/singularity"}
 def list_files = []
 def pattern_reads
 def fromFilePairs_input
-if (params.single_end) {
-    pattern_reads = "${params.reads_extension}"
-    fromFilePairs_input = "${params.reads}*${params.reads_extension}"
-} else {
-    pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
-    fromFilePairs_input = "${params.reads}*${params.paired_reads_pattern}${params.reads_extension}"
-}
-File input_reads = new File(params.reads)
+def path_reads = params.reads 
+
+// in case of folder provided, add a trailing slash if missing
+File input_reads = new File(path_reads)
 if(input_reads.exists()){
     if ( input_reads.isDirectory()) {
-       log.info "The input ${params.reads} is a folder!\n"
-        //if (! input_reads.name.endsWith("/")) {
-        //    params.reads = "${params.reads}/"
-        //}
+        if (! input_reads.name.endsWith("/")) {
+            path_reads = "${path_reads}" + "/"
+        }
+    }
+}
+
+if (params.single_end) {
+    pattern_reads = "${params.reads_extension}"
+    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
+} else {
+    pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
+    fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
+}
+
+if(input_reads.exists()){
+    if ( input_reads.isDirectory()) {
+        log.info "The input ${path_reads} is a folder!\n"
         input_reads.eachFileRecurse(FILES){
             if (it.name =~ ~/${pattern_reads}/){
                 list_files.add(it)
             }
         }
         samples_number = list_files.size()
-        log.info "${samples_number} files in ${params.reads} with pattern ${pattern_reads}"
+        log.info "${samples_number} files in ${path_reads} with pattern ${pattern_reads}"
     }
     else {
-        log.info "The input ${params.reads} is a file!\n"
-        pattern_reads = "${params.reads}"
+        log.info "The input ${path_reads} is a file!\n"
+        pattern_reads = "${path_reads}"
     }
 } else {
-    exit 1, "The input ${params.reads} does not exists!\n"
+    exit 1, "The input ${path_reads} does not exists!\n"
 }
 
 //*************************************************
@@ -191,7 +188,7 @@ workflow {
 
     main:
         reads = Channel.fromFilePairs(fromFilePairs_input, size: params.single_end ? 1 : 2, checkIfExists: true)
-            .ifEmpty { exit 1, "Cannot find reads matching ${params.reads}!\n" }
+            .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
       
         genome = Channel.fromPath(params.genome, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find genome matching ${params.genome}!\n" }
@@ -221,8 +218,8 @@ workflow align {
         //}
         // ------------------- QC -----------------
         if(params.fastqc){
-            fastqc(reads)
-            logs.mix(fastqc.out)
+            fastqc_raw(reads, "fastqc/raw")
+            logs.mix(fastqc_raw.out )
         }
         
         // ------------------- BOWTIE2 -----------------
@@ -236,8 +233,8 @@ workflow align {
             samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, "alignment/bowtie2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort_bowtie2.out.tuple_sample_sortedbam, "ali_bowtie2")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_bowtie2(samtools_sort_bowtie2.out.tuple_sample_sortedbam, "fastqc/bowtie")
+                logs.concat(fastqc_ali_bowtie2.out).set{logs} // save log
             }
         }
 
@@ -253,8 +250,8 @@ workflow align {
                 samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, "alignment/bwa/bwaaln")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali(samtools_sort_bwaaln.out.tuple_sample_sortedbam, "ali_bwaaln")
-                    logs.concat(fastqc_ali.out).set{logs} // save log
+                    fastqc_ali_bwaaln(samtools_sort_bwaaln.out.tuple_sample_sortedbam, "fastqc/bwaaln")
+                    logs.concat(fastqc_ali_bwaaln.out).set{logs} // save log
                 }
             }
             if ("bwamem" in aligner_list){
@@ -266,8 +263,8 @@ workflow align {
                 samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, "alignment/bwa/bwamem")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali(samtools_sort_bwamem.out.tuple_sample_sortedbam, "ali_bwamem")
-                    logs.concat(fastqc_ali.out).set{logs} // save log
+                    fastqc_ali_bwamem(samtools_sort_bwamem.out.tuple_sample_sortedbam, "fastqc/bwamem")
+                    logs.concat(fastqc_ali_bwamem.out).set{logs} // save log
                 }
             }
             if ("bwasw" in aligner_list){
@@ -279,8 +276,8 @@ workflow align {
                 samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, "alignment/bwa/bwasw")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali(samtools_sort_bwasw.out.tuple_sample_sortedbam, "ali_bwasw")
-                    logs.concat(fastqc_ali.out).set{logs} // save log
+                    fastqc_ali_bwasw(samtools_sort_bwasw.out.tuple_sample_sortedbam, "fastqc/bwasw")
+                    logs.concat(fastqc_ali_bwasw.out).set{logs} // save log
                 }
             }
         }
@@ -296,8 +293,8 @@ workflow align {
             samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, "alignment/graphmap2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort_graphmap2.out.tuple_sample_sortedbam, "ali_graphmap2")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_graphmap2(samtools_sort_graphmap2.out.tuple_sample_sortedbam, "fastqc/graphmap2")
+                logs.concat(fastqc_ali_graphmap2.out).set{logs} // save log
             }
         }
 
@@ -312,8 +309,8 @@ workflow align {
             samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, "alignment/hisat2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort_hisat2.out.tuple_sample_sortedbam, "ali_hisat2")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_hisat2(samtools_sort_hisat2.out.tuple_sample_sortedbam, "fastqc/hisat2")
+                logs.concat(fastqc_ali_hisat2.out).set{logs} // save log
             }
         }
 
@@ -328,8 +325,8 @@ workflow align {
             samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, "alignment/minimap2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort_minimap2.out.tuple_sample_sortedbam, "ali_minimap2")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_minimap2(samtools_sort_minimap2.out.tuple_sample_sortedbam, "fastqc/minimap2")
+                logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
         }
         // ------------------- nucmer (mummer4) -----------------
@@ -342,8 +339,8 @@ workflow align {
             samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, "alignment/nucmer")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort_nucmer.out.tuple_sample_sortedbam, "ali_nucmer")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_nucmer(samtools_sort_nucmer.out.tuple_sample_sortedbam, "fastqc/nucmer")
+                logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
             }
         }
 
@@ -361,12 +358,15 @@ workflow align {
             if(params.star_2pass){
                 star2pass(reads, star_index.out.collect(), splice_junctions, "alignment/star") // align out is bam and sorted
                 logs.concat(star2pass.out.star_summary).set{logs} // save log
+                star2pass.out.tuple_sample_bam.set{star_result}
+            } else {
+                star.out.tuple_sample_bam.set{star_result}
             }
 
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali(samtools_sort.out.tuple_sample_sortedbam, "ali_star")
-                logs.concat(fastqc_ali.out).set{logs} // save log
+                fastqc_ali_star(star_result, "fastqc/star")
+                logs.concat(fastqc_ali_star.out).set{logs} // save log
             }
         }
 
@@ -374,6 +374,35 @@ workflow align {
 }
 
 
+//*************************************************
+def header(){
+    // Log colors ANSI codes
+    c_reset = params.monochrome_logs ? '' : "\033[0m";
+    c_dim = params.monochrome_logs ? '' : "\033[2m";
+    c_black = params.monochrome_logs ? '' : "\033[0;30m";
+    c_green = params.monochrome_logs ? '' : "\033[0;32m";
+    c_yellow = params.monochrome_logs ? '' : "\033[0;33m";
+    c_blue = params.monochrome_logs ? '' : "\033[0;34m";
+    c_purple = params.monochrome_logs ? '' : "\033[0;35m";
+    c_cyan = params.monochrome_logs ? '' : "\033[0;36m";
+    c_white = params.monochrome_logs ? '' : "\033[0;37m";
+    c_red = params.monochrome_logs ? '' : "\033[0;31m";
+
+    return """
+    -${c_dim}--------------------------------------------------${c_reset}-
+    ${c_blue}.-./`) ${c_white}.-------.    ${c_red} ______${c_reset}
+    ${c_blue}\\ .-.')${c_white}|  _ _   \\  ${c_red} |    _ `''.${c_reset}     French National   
+    ${c_blue}/ `-' \\${c_white}| ( ' )  |  ${c_red} | _ | ) _  \\${c_reset}    
+    ${c_blue} `-'`\"`${c_white}|(_ o _) /  ${c_red} |( ''_'  ) |${c_reset}    Research Institute for    
+    ${c_blue} .---. ${c_white}| (_,_).' __ ${c_red}| . (_) `. |${c_reset}
+    ${c_blue} |   | ${c_white}|  |\\ \\  |  |${c_red}|(_    ._) '${c_reset}    Sustainable Development
+    ${c_blue} |   | ${c_white}|  | \\ `'   /${c_red}|  (_.\\.' /${c_reset}
+    ${c_blue} |   | ${c_white}|  |  \\    / ${c_red}|       .'${c_reset}
+    ${c_blue} '---' ${c_white}''-'   `'-'  ${c_red}'-----'`${c_reset}
+    ${c_purple} AliNe - Alignment in Nextflow - v${workflow.manifest.version}${c_reset}
+    -${c_dim}--------------------------------------------------${c_reset}-
+    """.stripIndent()
+}
 
 /**************         onComplete         ***************/
 

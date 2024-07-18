@@ -1,10 +1,11 @@
 process fastqc {
     label 'fastqc'
     tag "$sample_id"
-    publishDir "${params.outdir}/FastQC", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
     tuple val(sample_id), path(reads)
+    val outpath
 
     output:
     path ("fastqc_${sample_id}_logs")
@@ -12,7 +13,7 @@ process fastqc {
     script:
     """
     mkdir fastqc_${sample_id}_logs
-    fastqc -t ${task.cpus} -o fastqc_${sample_id}_logs -f fastq -q ${reads}
+    fastqc -t ${task.cpus} -o fastqc_${sample_id}_logs -q ${reads}
     """
 
 }

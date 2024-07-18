@@ -86,7 +86,7 @@ process star {
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_sam
+        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
         path "*.out",  emit: star_summary
         path "*SJ.out.tab", emit: splice_junctions
 
@@ -142,7 +142,7 @@ process star2pass{
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_sam
+        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
         path "*.out",  emit: star_summary
 
     script:
