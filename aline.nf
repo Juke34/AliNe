@@ -20,25 +20,27 @@ params.genome = "/path/to/genome.fa"
 params.outdir = "alignment_results"
 params.reads_extension = ".fastq.gz" // Extension used to detect reads in folder
 params.paired_reads_pattern = "{1,2}"
-
+params.long_reads = false
 
 // Read feature params
 params.single_end = false
 params.phred_score = "Phred+33"
 params.stranded = false
-params.strand_type = ""
+params.strand_type = "" // xxx Not used yet
 params.read_length = ""
 params.annotation = ""
 
 // Aligner params
-align_tools = [ 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'nucmer', 'star' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'nucmer', 'star' ]
 params.aligner = ''
+params.bbmap_options = ''
 params.bowtie2_options = ''
-params.bwa_options = ''
-params.bwa_mem_options = ''
+params.bwaaln_options = ''
+params.bwamem_options = ''
+params.bwasw_options = ''
 params.graphmap2_options = '' // owler option is possible
 params.hisat2_options = ''
-params.minimap2_options = '-a' // -a to get sam output
+params.minimap2_options = '' 
 params.minimap2_index_options = '' //  -k, -w, -H and -I 
 params.nucmer_options = ''
 params.tophat2_options = ''
@@ -53,22 +55,43 @@ params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 // STEP 1 - LOG INFO
 //*************************************************
 
+def bbmap_tool = params.long_reads ? "mapPacBio.sh" : "bbmap.sh"
+// Function to check and set maxlen in params.bbmap_options when long_reads is set
+// params is supposed to be a immutable. Using params.replace method might not be supported in the future 
+if ( (params.long_reads) && !params.bbmap_options.contains("maxlen") ){
+    params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
+}
+if ( !params.minimap2_options.contains("-a ") ){
+    params.replace("minimap2_options", "${params.minimap2_options} -a")
+}
+
 log.info header()
+if (params.help) { exit 0, helpMSG() }
+
 log.info """
 
 General Parameters
      genome                     : ${params.genome}
      reads                      : ${params.reads}
      single_end                 : ${params.single_end}
+     phred_score                : ${params.phred_score}
+     paired_reads_pattern       : ${params.paired_reads_pattern}
+     reads_extension            : ${params.reads_extension}
+     long_reads                 : ${params.long_reads}
      outdir                     : ${params.outdir}
   
 Alignment Parameters
+bbmap parameters
+     bbmap_tool                 : ${bbmap_tool}
+     bbmap_options              : ${params.bbmap_options}
  bowtie2 parameters
      bowtie2_options            : ${params.bowtie2_options}
- bwa parameters
-     bwa_options                : ${params.bwa_options}
- bwa-mem parameters
-     bwa-mem_options            : ${params.bwa_mem_options}
+ bwaaln parameters
+     bwa_options                : ${params.bwaaln_options}
+ bwamem parameters
+     bwamem_options             : ${params.bwamem_options}
+ bwasw parameters
+     bwasw_options              : ${params.bwasw_options}
  graphmap2 parameters
      graphmap2_options          : ${params.graphmap2_options}
  hisat2 parameters
@@ -76,10 +99,10 @@ Alignment Parameters
  minimap2  parameters
      minimap2_options           : ${params.minimap2_options}
  nucmer parameters
-     nucmer_options              : ${params.nucmer_options}
+     nucmer_options             : ${params.nucmer_options}
  star parameters
-     star_options                : ${params.star_options}
-     star_2pass                  : ${params.star_2pass}
+     star_options               : ${params.star_options}
+     star_2pass                 : ${params.star_2pass}
  tophat2 parameters
      tophat2_options            : ${params.tophat2_options}
 
@@ -92,19 +115,19 @@ Report Parameters
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
-
+include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {gaas_fastq_guessMyFormat} from "$baseDir/modules/gaas.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_ali_bowtie2; fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star} from "$baseDir/modules/fastqc.nf"
+include {fastqc as fastqc_raw; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star} from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2} from "$baseDir/modules/samtools.nf"
-include {samtools_sort as samtools_sort_bowtie2;  samtools_sort as samtools_sort_bwaaln; samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_nucmer } from "$baseDir/modules/samtools.nf"
+include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2;  samtools_sort as samtools_sort_bwaaln; samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_nucmer } from "$baseDir/modules/samtools.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
 //*************************************************
@@ -141,6 +164,7 @@ else { exit 1, "No executer selected: -profile docker/singularity"}
 def list_files = []
 def pattern_reads
 def fromFilePairs_input
+def per_pair // read the reads per pair
 def path_reads = params.reads 
 
 // in case of folder provided, add a trailing slash if missing
@@ -152,11 +176,17 @@ if(input_reads.exists()){
         }
     }
 }
-
-if (params.single_end) {
+if (params.long_reads) {
+    per_pair = false
+    pattern_reads = "${params.reads_extension}"
+    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
+}
+else if (params.single_end) {
+    per_pair = false
     pattern_reads = "${params.reads_extension}"
     fromFilePairs_input = "${path_reads}*${params.reads_extension}"
 } else {
+    per_pair = true
     pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
     fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
 }
@@ -187,7 +217,8 @@ if(input_reads.exists()){
 workflow {
 
     main:
-        reads = Channel.fromFilePairs(fromFilePairs_input, size: params.single_end ? 1 : 2, checkIfExists: true)
+        def reads
+        reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
       
         genome = Channel.fromPath(params.genome, checkIfExists: true)
@@ -222,6 +253,20 @@ workflow align {
             logs.mix(fastqc_raw.out )
         }
         
+        // ------------------- BBMAP -----------------
+        if ("bbmap" in aligner_list ){
+            bbmap_index(genome.collect(), "alignment/bbmap/indicies") // index
+            bbmap(reads, genome.collect(), bbmap_index.out.collect(), "alignment/bbmap") // align
+            logs.concat(bbmap.out.bbmap_summary).set{logs} // save log
+            // sort
+            samtools_sort_bbmap(bbmap.out.tuple_sample_bam, "alignment/bbmap")
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_bbmap(samtools_sort_bbmap.out.tuple_sample_sortedbam, "fastqc/bowtie")
+                logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
+            }
+        }
+
         // ------------------- BOWTIE2 -----------------
         if ("bowtie2" in aligner_list ){
             bowtie2_index(genome.collect(), "alignment/bowtie2/indicies") // index
@@ -402,6 +447,48 @@ def header(){
     ${c_purple} AliNe - Alignment in Nextflow - v${workflow.manifest.version}${c_reset}
     -${c_dim}--------------------------------------------------${c_reset}-
     """.stripIndent()
+}
+
+// Help Message
+def helpMSG() {
+    log.info """
+
+        Usage example:
+        nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --genome /path/to/genome.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc true
+
+        --help                      prints the help section
+
+        --reads                     path to the reads file or folder
+        --reads_extension           extension of the reads files (default: .fastq.gz)
+        --genome                    path to the genome file
+        --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
+        --outdir                    path to the output directory (default: alignment_results)
+
+        --long_reads                set to true if reads are long reads (default: false)
+        --single_end                set to true if reads are single end (default: false)
+        --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
+        --stranded                  set to true if reads are stranded (default: false)
+        --phred_score               phred score of the reads (default: Phred+33)
+        --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
+
+
+        --bbmap_options             additional options for bbmap
+        --bowtie2_options           additional options for bowtie2
+        --bwaaln_options            additional options for bwaaln
+        --bwamem_options            additional options for bwamem
+        --bwasw_options             additional options for bwasw
+        --graphmap2_options         additional options for graphmap2
+        --hisat2_options            additional options for hisat2
+        --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
+        --minimap2_index_options    additional options for minimap2 index
+        --nucmer_options            additional options for nucmer
+        --star_options              additional options for star
+        --star_2pass                  set to true to run STAR in 2pass mode (default: false)
+        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
+        --annotation                [Optional][used by STAR] path to the annotation file (gtf or gff3)
+
+    """
 }
 
 /**************         onComplete         ***************/

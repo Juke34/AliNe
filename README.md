@@ -28,6 +28,7 @@ Here is the list of implemented aligners:
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
+| bbmap | x | x | x | x |
 | bowtie2 | x | x | | |
 | bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | | |
 | bwamem | x | x | | |
