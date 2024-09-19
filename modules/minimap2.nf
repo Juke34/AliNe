@@ -41,11 +41,13 @@ process minimap2 {
         path "*minimap2.log",  emit: minimap2_summary
 
     script:
-        fileName = reads[0].baseName
+
+        fileName = reads[0].baseName.replace('.fastq','')
         output_format = "paf"
         if ( params.minimap2_options.contains("-a") ){
             output_format = "sam"
         }
+    
         if (params.single_end){
             """
             minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 

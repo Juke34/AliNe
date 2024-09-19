@@ -17,6 +17,7 @@ process graphmap2_index {
         path("*")
 
     script:
+
         """
         graphmap2 align -t ${task.cpus} -I -r ${genome_fasta}
         """
@@ -42,26 +43,20 @@ process graphmap2 {
         path "*graphmap2.log",  emit: graphmap2_summary
 
     script:
-        fileName = reads[0].baseName
+        fileName = reads[0].baseName.replace('.fastq','')
         read_file=reads[0]
         
-        // Define CPU
-        cpu=1
-        if ( task.cpus ){
-            cpu=task.cpus 
-        }
-
         if ( params.graphmap2_options.contains("owler") ){
             if ( params.single_end ){
                 """
-                graphmap2 ${params.graphmap2_options} -t ${cpu} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
+                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
                 """
             }
             else{
                 // For paired-end we concat output 
                 """
-                graphmap2 ${params.graphmap2_options} -t ${cpu} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
-                graphmap2 ${params.graphmap2_options} -t ${cpu} -r ${reads[1]} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.mhap 2> ${reads[1].baseName}_graphmap2.log
+                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
+                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${reads[1]} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.mhap 2> ${reads[1].baseName}_graphmap2.log
                 cat ${fileName}_graphmap2.mhap > ${fileName}_graphmap2_concatR1R2.mhap
                 rm ${fileName}_graphmap2.mhap
                 cat ${reads[1].baseName}_graphmap2.mhap >> ${fileName}_graphmap2_concatR1R2.mhap
@@ -78,15 +73,15 @@ process graphmap2 {
 
             if ( params.single_end ){
                 """
-                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${cpu} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
                 """
             }
             // For paired-end we concat output 
             else{
                 
                 """
-                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${cpu} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
-                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${cpu} -r ${genome} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.sam 2> ${reads[1].baseName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.sam 2> ${reads[1].baseName}_graphmap2.log
                 
                 # Merge sam
                 cat ${fileName}_graphmap2.sam > ${fileName}_graphmap2_concatR1R2.sam

@@ -64,7 +64,7 @@ process star_index {
         path ('*star_indicies')
 
     script:
-        //log.info """ star_index_options: ${star_index_options} """
+        
         """
         mkdir -p ${genome_fasta.baseName}_star_indicies
         STAR --runMode genomeGenerate \\
@@ -91,6 +91,7 @@ process star {
         path "*SJ.out.tab", emit: splice_junctions
 
     script:
+
         if (params.single_end){
            
         """
@@ -102,7 +103,7 @@ process star {
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName}  \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}  \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -117,7 +118,7 @@ process star {
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName}  \\
+                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}  \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -146,6 +147,7 @@ process star2pass{
         path "*.out",  emit: star_summary
 
     script:
+
         if (params.single_end){
            
              """
@@ -165,7 +167,7 @@ process star2pass{
                     --readFilesIn pipedRead  \\
                     --runThreadN ${task.cpus} \\
                     --runMode alignReads \\
-                    --outFileNamePrefix ${reads[0].baseName}_2pass  \\
+                    --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_2pass  \\
                     --outSAMunmapped Within \\
                     --outSAMtype BAM SortedByCoordinate \\
                     --sjdbFileChrStartEnd *SJ.out.tab
@@ -182,7 +184,7 @@ process star2pass{
                 --readFilesIn pipedRead1 pipedRead2  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName}_2pass  \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_2pass  \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab

@@ -18,9 +18,8 @@ process nucmer {
         tuple val(sample), path ("*nucmer.sam"), emit: tuple_sample_sam
 
     script:
-
-
-        fileName = reads[0].baseName
+        
+        fileName = reads[0].baseName.replace('.fastq','')
         int paired=0
         if (reads[1]){ paired = 1}
         """
@@ -48,7 +47,7 @@ process nucmer {
             fi
         fi
 
-        nucmer ${params.nucmer_options} -t ${task.cpus} \$genomeReady \$readsReady  --sam-long ${fileName}nucmer.sam
+        nucmer ${params.nucmer_options} -t ${task.cpus} \$genomeReady \$readsReady  --sam-long ${fileName}_nucmer.sam
         """
         
 

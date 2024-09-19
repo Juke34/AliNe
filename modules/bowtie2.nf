@@ -11,6 +11,7 @@ process bowtie2_index {
         path('*.bt2')
 
     script:
+
         """
         bowtie2-build --threads ${task.cpus} $genome_fasta ${genome_fasta.baseName}
         """
@@ -32,13 +33,13 @@ process bowtie2 {
         path "*bowtie2.log",  emit: bowtie2_summary
 
     script:
-
+    
     if (params.single_end){
     """
         bowtie2 ${params.bowtie2_options} \\
                 -p ${task.cpus} \\
                 -x ${genome.baseName} \\
-                -S ${reads.baseName}_bowtie2.sam \\
+                -S ${reads.baseName.replace('.fastq','')}_bowtie2.sam \\
                 -U ${reads} 2> ${reads.baseName}_bowtie2.log
     """
     } else {
@@ -46,8 +47,8 @@ process bowtie2 {
         bowtie2 ${params.bowtie2_options} \\
             -p ${task.cpus} \\
             -x ${genome.baseName} \\
-            -S ${reads[0].baseName}_bowtie2.sam \\
-            -1 ${reads[0]} -2 ${reads[1]}  2> ${reads[0].baseName}_bowtie2.log
+            -S ${reads[0].baseName.replace('.fastq','')}_bowtie2.sam \\
+            -1 ${reads[0]} -2 ${reads[1]}  2> ${reads[0].baseName.replace('.fastq','')}_bowtie2.log
     """
     }
 

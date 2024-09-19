@@ -36,7 +36,8 @@ process bwaaln {
         path "*bwaaln_sam.log",  emit: bwaaln_summary
 
     script:
-        fileName = reads[0].baseName
+        fileName = reads[0].baseName.replace('.fastq','')
+
         if (params.single_end){
         """
             bwa aln ${params.bwaaln_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwaaln.sai 2> ${fileName}_bwaaln_sai.log 
@@ -72,7 +73,8 @@ process bwamem {
         path "*bwamem.log",  emit: bwamem_summary
 
     script:
-        fileName = reads[0].baseName
+        fileName = reads[0].baseName.replace('.fastq','')
+      
         if (params.single_end){
             """
             bwa mem ${params.bwamem_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem.sam 2> ${fileName}_bwamem.log 
@@ -104,7 +106,9 @@ process bwasw {
         path "*bwasw.log",  emit: bwasw_summary
 
     script:
-        fileName = reads[0].baseName
+
+        fileName = reads[0].baseName.replace('.fastq','')
+           
         if (params.single_end){
             """
             bwa bwasw ${params.bwasw_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwasw.sam 2> ${fileName}_bwasw.log 

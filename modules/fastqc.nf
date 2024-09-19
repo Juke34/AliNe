@@ -6,14 +6,19 @@ process fastqc {
     input:
     tuple val(sample_id), path(reads)
     val outpath
+    val suffix
 
     output:
-    path ("fastqc_${sample_id}_logs")
+    path ("*logs")
 
     script:
+
+    // Suffix to separate different runs
+    def add_suffix = suffix ? "_${suffix}_" : '_'
+
     """
-    mkdir fastqc_${sample_id}_logs
-    fastqc -t ${task.cpus} -o fastqc_${sample_id}_logs -q ${reads}
+    mkdir fastqc_${sample_id}${add_suffix}logs
+    fastqc -t ${task.cpus} -o fastqc_${sample_id}${add_suffix}logs -q ${reads}
     """
 
 }
