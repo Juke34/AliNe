@@ -2,7 +2,7 @@ AliNe (Alignment in Nextflow)
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
-AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome using the tools of your choice.
+AliNe is a pipeline written in nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.
 
 Genome + Reads => FastQC -> Alignment -> Sort -> MultiQC
 
@@ -22,6 +22,10 @@ Genome + Reads => FastQC -> Alignment -> Sort -> MultiQC
 ## Foreword
 
 AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome.
+
+A QC with FastQC is made at each step if option activated.
+A trimming is feasible before alignment if option activated.
+The pipeline deals with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+'). All fastq will be standardised in Phred+33 for downstream alignments by seqkit. 
 You can choose to run one or several aligner in parallel.
 
 Here is the list of implemented aligners:
@@ -39,8 +43,9 @@ Here is the list of implemented aligners:
 | nucmer | x | x R1 and R2 are concatenated then aligned | | |
 | star | x | x | | |
 | star 2pass mode | x | x | | |
+| subread | x | x | | |
 
-This work is ongoing... adaptation to run with different type of reads is ongoing.
+
 
 ## Installation
 
