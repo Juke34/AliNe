@@ -24,14 +24,16 @@ params.long_reads = false
 
 // Read feature params
 params.single_end = false
-params.phred_score = "Phred+33"
 params.stranded = false
 params.strand_type = "" // xxx Not used yet
 params.read_length = ""
 params.annotation = ""
 
+// Trimming params
+params.trimming_fastp = false
+
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'nucmer', 'star' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'nucmer', 'star', 'subread' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -46,6 +48,7 @@ params.nucmer_options = ''
 params.tophat2_options = ''
 params.star_options = ''
 params.star_2pass = false
+params.subread_options = '-t 0'// -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data.
 
 // Report params
 params.fastqc = false
@@ -74,7 +77,6 @@ General Parameters
      genome                     : ${params.genome}
      reads                      : ${params.reads}
      single_end                 : ${params.single_end}
-     phred_score                : ${params.phred_score}
      paired_reads_pattern       : ${params.paired_reads_pattern}
      reads_extension            : ${params.reads_extension}
      long_reads                 : ${params.long_reads}
@@ -103,8 +105,8 @@ bbmap parameters
  star parameters
      star_options               : ${params.star_options}
      star_2pass                 : ${params.star_2pass}
- tophat2 parameters
-     tophat2_options            : ${params.tophat2_options}
+ subread parameters
+     subread_options            : ${params.subread_options}
 
 Report Parameters
  MultiQC parameters
@@ -118,16 +120,22 @@ Report Parameters
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
-include {gaas_fastq_guessMyFormat} from "$baseDir/modules/gaas.nf"
+include {seqkit_convert} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star} from "$baseDir/modules/fastqc.nf"
+include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; 
+         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; 
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star;
+         fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2} from "$baseDir/modules/samtools.nf"
-include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2;  samtools_sort as samtools_sort_bwaaln; samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_nucmer } from "$baseDir/modules/samtools.nf"
+include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
+         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
+         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
+include {subread_index; subread} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
 //*************************************************
@@ -235,7 +243,7 @@ workflow {
 workflow align {
 
     take:
-        reads
+        raw_reads
         genome
         aligner_list
 
@@ -243,16 +251,40 @@ workflow align {
 
         Channel.empty().set{logs}
         
-        // ------------------- Phred Score ----------------
-        //if(! params.phred_score){
-        //    gaas_fastq_guessMyFormat(reads)
-        //}
+        // ------------------------------------------------------------------------------------------------
+        //                                          PREPROCESSING 
+        // ------------------------------------------------------------------------------------------------
+
         // ------------------- QC -----------------
         if(params.fastqc){
-            fastqc_raw(reads, "fastqc/raw")
-            logs.mix(fastqc_raw.out )
+            fastqc_raw(raw_reads, "fastqc/raw", "raw")
+            logs.mix(fastqc_raw.out)
         }
-        
+
+        // ------------------- Standardize Score to Be Phred+33 ----------------
+        seqkit_convert(raw_reads, "seqkit_score")
+        seqkit_convert.out.trimmed.set{raw_reads_standardized}
+        // ------------------------------------------------------------------------------------------------
+        //                                          TRIMMING 
+        // ------------------------------------------------------------------------------------------------        
+
+        // ------------------- FASTP -----------------
+        if (params.trimming_fastp){
+            fastp(raw_reads_standardized, "fastp")
+            fastp.out.trimmed.set{reads}
+            logs.concat(fastp.out.report).set{logs} // save log
+            if(params.fastqc){
+                fastqc_fastp(reads, "fastqc/trimming_fastp", "trimmed")
+                logs.concat(fastqc_fastp.out).set{logs} // save log
+            }
+        } else {
+            reads = raw_reads_standardized
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        //                                          ALIGNEMENT 
+        // ------------------------------------------------------------------------------------------------
+
         // ------------------- BBMAP -----------------
         if ("bbmap" in aligner_list ){
             bbmap_index(genome.collect(), "alignment/bbmap/indicies") // index
@@ -262,7 +294,7 @@ workflow align {
             samtools_sort_bbmap(bbmap.out.tuple_sample_bam, "alignment/bbmap")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_bbmap(samtools_sort_bbmap.out.tuple_sample_sortedbam, "fastqc/bowtie")
+                fastqc_ali_bbmap(samtools_sort_bbmap.out.tuple_sample_sortedbam, "fastqc/bbmap", "bbmap")
                 logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
             }
         }
@@ -278,7 +310,7 @@ workflow align {
             samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, "alignment/bowtie2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_bowtie2(samtools_sort_bowtie2.out.tuple_sample_sortedbam, "fastqc/bowtie")
+                fastqc_ali_bowtie2(samtools_sort_bowtie2.out.tuple_sample_sortedbam, "fastqc/bowtie2", "bowtie2")
                 logs.concat(fastqc_ali_bowtie2.out).set{logs} // save log
             }
         }
@@ -295,7 +327,7 @@ workflow align {
                 samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, "alignment/bwa/bwaaln")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali_bwaaln(samtools_sort_bwaaln.out.tuple_sample_sortedbam, "fastqc/bwaaln")
+                    fastqc_ali_bwaaln(samtools_sort_bwaaln.out.tuple_sample_sortedbam, "fastqc/bwaaln", "bwaaln")
                     logs.concat(fastqc_ali_bwaaln.out).set{logs} // save log
                 }
             }
@@ -308,7 +340,7 @@ workflow align {
                 samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, "alignment/bwa/bwamem")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali_bwamem(samtools_sort_bwamem.out.tuple_sample_sortedbam, "fastqc/bwamem")
+                    fastqc_ali_bwamem(samtools_sort_bwamem.out.tuple_sample_sortedbam, "fastqc/bwamem", "bwamem")
                     logs.concat(fastqc_ali_bwamem.out).set{logs} // save log
                 }
             }
@@ -321,7 +353,7 @@ workflow align {
                 samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, "alignment/bwa/bwasw")
                 // stat on aligned reads
                 if(params.fastqc){
-                    fastqc_ali_bwasw(samtools_sort_bwasw.out.tuple_sample_sortedbam, "fastqc/bwasw")
+                    fastqc_ali_bwasw(samtools_sort_bwasw.out.tuple_sample_sortedbam, "fastqc/bwasw", "bwasw")
                     logs.concat(fastqc_ali_bwasw.out).set{logs} // save log
                 }
             }
@@ -338,7 +370,7 @@ workflow align {
             samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, "alignment/graphmap2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_graphmap2(samtools_sort_graphmap2.out.tuple_sample_sortedbam, "fastqc/graphmap2")
+                fastqc_ali_graphmap2(samtools_sort_graphmap2.out.tuple_sample_sortedbam, "fastqc/graphmap2", "graphmap2")
                 logs.concat(fastqc_ali_graphmap2.out).set{logs} // save log
             }
         }
@@ -354,7 +386,7 @@ workflow align {
             samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, "alignment/hisat2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_hisat2(samtools_sort_hisat2.out.tuple_sample_sortedbam, "fastqc/hisat2")
+                fastqc_ali_hisat2(samtools_sort_hisat2.out.tuple_sample_sortedbam, "fastqc/hisat2", "hisat2")
                 logs.concat(fastqc_ali_hisat2.out).set{logs} // save log
             }
         }
@@ -370,10 +402,12 @@ workflow align {
             samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, "alignment/minimap2")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_minimap2(samtools_sort_minimap2.out.tuple_sample_sortedbam, "fastqc/minimap2")
+                fastqc_ali_minimap2(samtools_sort_minimap2.out.tuple_sample_sortedbam, "fastqc/minimap2", "minimap2")
                 logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
         }
+        // ------------------- novoalign  -----------------
+
         // ------------------- nucmer (mummer4) -----------------
         if ("nucmer" in aligner_list ){
             nucmer(reads, genome.collect(), "alignment/nucmer") // align
@@ -384,7 +418,7 @@ workflow align {
             samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, "alignment/nucmer")
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_nucmer(samtools_sort_nucmer.out.tuple_sample_sortedbam, "fastqc/nucmer")
+                fastqc_ali_nucmer(samtools_sort_nucmer.out.tuple_sample_sortedbam, "fastqc/nucmer", "nucmer")
                 logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
             }
         }
@@ -410,11 +444,23 @@ workflow align {
 
             // stat on aligned reads
             if(params.fastqc){
-                fastqc_ali_star(star_result, "fastqc/star")
+                fastqc_ali_star(star_result, "fastqc/star", "star")
                 logs.concat(fastqc_ali_star.out).set{logs} // save log
             }
         }
 
+        // ---------------- subread -----------------
+        if ("subread" in aligner_list ){
+            subread_index(genome.collect(), "alignment/subread/indicies")
+            subread(reads, genome.collect(), subread_index.out.collect(), "alignment/subread") // align
+            // stat on sorted aligned reads
+            if(params.fastqc){
+                fastqc_ali_subread(subread.out.tuple_sample_bam, "fastqc/subread", "subread")
+                logs.concat(fastqc_ali_subread.out).set{logs} // save log
+            }
+        }
+
+        // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
 }
 
@@ -452,27 +498,37 @@ def header(){
 // Help Message
 def helpMSG() {
     log.info """
+    AliNe - Alignment in Nextflow - v${workflow.manifest.version}
+
+        Workflow: The input fastq files are standardized to Phred+33 via seqkit, trimmed if the step is activated,  
+        aligned to a reference genome using one or more aligners, the ouput is converted in bam in needed, and finaly 
+        sorted. If the fastqc option is activated, fastqc is run on raw and aligned reads. A multiqc report is generated containing
+        fastqc output and supported aligner output.
 
         Usage example:
         nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --genome /path/to/genome.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc true
 
         --help                      prints the help section
 
+    General Parameters
         --reads                     path to the reads file or folder
         --reads_extension           extension of the reads files (default: .fastq.gz)
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
 
+    Type of input reads
         --long_reads                set to true if reads are long reads (default: false)
         --single_end                set to true if reads are single end (default: false)
         --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
         --stranded                  set to true if reads are stranded (default: false)
-        --phred_score               phred score of the reads (default: Phred+33)
+
+    Extra steps 
+        --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false)
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
-
+    Aligner specific options
         --bbmap_options             additional options for bbmap
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
@@ -485,8 +541,9 @@ def helpMSG() {
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)
-        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
-        --annotation                [Optional][used by STAR] path to the annotation file (gtf or gff3)
+            --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
+            --annotation                [Optional][used by STAR] path to the annotation file (gtf or gff3)
+        --subread_options           additional options for subread
 
     """
 }
