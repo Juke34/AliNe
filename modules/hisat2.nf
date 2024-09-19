@@ -47,7 +47,7 @@ process hisat2 {
         """
         hisat2 ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
             --new-summary --summary-file ${sample}.hisat2-summary.txt \\
-            -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${reads.baseName.replace('.fastq','')}.sam
+            -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${reads[0].baseName.replace('.fastq','')}.sam
         """
     }
 
