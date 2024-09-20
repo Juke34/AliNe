@@ -69,7 +69,6 @@ log.info header()
 if (params.help) { exit 0, helpMSG() }
 
 log.info """
-
 General Parameters
      genome                     : ${params.genome}
      reads                      : ${params.reads}
@@ -80,36 +79,14 @@ General Parameters
      stranded                   : ${params.stranded}
      outdir                     : ${params.outdir}
 
+Report Parameters
+ MultiQC parameters
+     fastqc                     : ${params.fastqc}
+     multiqc_config             : ${params.multiqc_config}
+
 Alignment Parameters before check
-bbmap parameters
-     bbmap_options              : ${params.bbmap_options}
- bowtie2 parameters
-     bowtie2_options            : ${params.bowtie2_options}
- bwaaln parameters
-     bwa_options                : ${params.bwaaln_options}
- bwamem parameters
-     bwamem_options             : ${params.bwamem_options}
- bwasw parameters
-     bwasw_options              : ${params.bwasw_options}
- graphmap2 parameters
-     graphmap2_options          : ${params.graphmap2_options}
- hisat2 parameters
-     hisat2_options             : ${params.hisat2_options}
- minimap2 parameters
-     minimap2_options           : ${params.minimap2_options}
-ngmlr parameters
-     ngmlr_options              : ${params.ngmlr_options}
- novalign parameters
-     novalign_options           : ${params.novoalign_options}
-     novoalign_license          : ${params.novoalign_license}
- nucmer parameters
-     nucmer_options             : ${params.nucmer_options}
- star parameters
-     star_options               : ${params.star_options}
-     star_2pass                 : ${params.star_2pass}
- subread parameters
-     subread_options            : ${params.subread_options}
 """
+log.info printAlignerOptions()
 
 //*************************************************
 // STEP 1 - PARAMS CHECK
@@ -243,42 +220,8 @@ if(stop_pipeline){
 // STEP 1 - LOG INFO
 //*************************************************
 
-log.info """
-
-Alignment Parameters after check
-bbmap parameters
-     bbmap_tool                 : ${bbmap_tool}
-     bbmap_options              : ${params.bbmap_options}
- bowtie2 parameters
-     bowtie2_options            : ${params.bowtie2_options}
- bwaaln parameters
-     bwa_options                : ${params.bwaaln_options}
- bwamem parameters
-     bwamem_options             : ${params.bwamem_options}
- bwasw parameters
-     bwasw_options              : ${params.bwasw_options}
- graphmap2 parameters
-     graphmap2_options          : ${params.graphmap2_options}
- hisat2 parameters
-     hisat2_options             : ${params.hisat2_options}
- minimap2 parameters
-     minimap2_options           : ${params.minimap2_options}
- novalign parameters
-     novalign_options           : ${params.novoalign_options}
-     novoalign_license          : ${params.novoalign_license}
- nucmer parameters
-     nucmer_options             : ${params.nucmer_options}
- star parameters
-     star_options               : ${params.star_options}
-     star_2pass                 : ${params.star_2pass}
- subread parameters
-     subread_options            : ${params.subread_options}
-
-Report Parameters
- MultiQC parameters
-     multiqc_config             : ${params.multiqc_config}
-
- """
+log.info """\nAlignment Parameters after check"""
+log.info printAlignerOptions()
 
 //*************************************************
 // STEP 2 - Include needed modules
@@ -713,6 +656,7 @@ def helpMSG() {
         --hisat2_options            additional options for hisat2
         --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
         --minimap2_index_options    additional options for minimap2 index
+        --ngmlr_options             additional options for ngmlr
         --novoalign_options         additional options for novoalign
         --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
@@ -724,6 +668,41 @@ def helpMSG() {
 
     """
 }
+
+def printAlignerOptions() {
+    return """
+    bbmap parameters
+        bbmap_options              : ${params.bbmap_options}
+    bowtie2 parameters
+        bowtie2_options            : ${params.bowtie2_options}
+    bwaaln parameters
+        bwa_options                : ${params.bwaaln_options}
+    bwamem parameters
+        bwamem_options             : ${params.bwamem_options}
+    bwasw parameters
+        bwasw_options              : ${params.bwasw_options}
+    graphmap2 parameters
+        graphmap2_options          : ${params.graphmap2_options}
+    hisat2 parameters
+        hisat2_options             : ${params.hisat2_options}
+    minimap2 parameters
+        minimap2_options           : ${params.minimap2_options}
+    ngmlr parameters
+        ngmlr_options              : ${params.ngmlr_options}
+    novalign parameters
+        novalign_options           : ${params.novoalign_options}
+        novoalign_license          : ${params.novoalign_license}
+    nucmer parameters
+        nucmer_options             : ${params.nucmer_options}
+    star parameters
+        star_options               : ${params.star_options}
+        star_2pass                 : ${params.star_2pass}
+    subread parameters
+        subread_options            : ${params.subread_options}
+
+    """
+}
+
 
 /**************         onComplete         ***************/
 
