@@ -34,21 +34,21 @@ process bowtie2 {
 
     script:
     
-    if (params.single_end){
-    """
-        bowtie2 ${params.bowtie2_options} \\
-                -p ${task.cpus} \\
-                -x ${genome.baseName} \\
-                -S ${reads.baseName.replace('.fastq','')}_bowtie2.sam \\
-                -U ${reads} 2> ${reads.baseName}_bowtie2.log
-    """
-    } else {
+    if (params.read_type == "short_paired"){
     """
         bowtie2 ${params.bowtie2_options} \\
             -p ${task.cpus} \\
             -x ${genome.baseName} \\
             -S ${reads[0].baseName.replace('.fastq','')}_bowtie2.sam \\
             -1 ${reads[0]} -2 ${reads[1]}  2> ${reads[0].baseName.replace('.fastq','')}_bowtie2.log
+    """
+    } else {
+    """
+        bowtie2 ${params.bowtie2_options} \\
+                -p ${task.cpus} \\
+                -x ${genome.baseName} \\
+                -S ${reads.baseName.replace('.fastq','')}_bowtie2.sam \\
+                -U ${reads} 2> ${reads.baseName}_bowtie2.log
     """
     }
 

@@ -37,18 +37,18 @@ process hisat2 {
 
         index_basename = hisat2_index_files[0].toString() - ~/.\d.ht2l?/
         
-        if (params.single_end){
-        """
-        hisat2 ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-            --new-summary --summary-file ${sample}.hisat2-summary.txt \\
-            -p ${task.cpus} -x $index_basename -U $reads > ${reads.baseName.replace('.fastq','')}.sam
-        """
-        } else {
-        """
-        hisat2 ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-            --new-summary --summary-file ${sample}.hisat2-summary.txt \\
-            -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${reads[0].baseName.replace('.fastq','')}.sam
-        """
-    }
+        if (params.read_type == "short_paired"){
+            """
+            hisat2 ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
+                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
+                -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${reads[0].baseName.replace('.fastq','')}.sam
+            """
+            } else {
+            """
+            hisat2 ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
+                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
+                -p ${task.cpus} -x $index_basename -U $reads > ${reads.baseName.replace('.fastq','')}.sam
+            """
+        }
 
 }

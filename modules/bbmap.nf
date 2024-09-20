@@ -24,7 +24,7 @@ process bbmap_index {
         def avail_mem = task.memory ? task.memory.toGiga() : 4    
     
         """
-        bbmap.sh ref=${genome_fasta} threads=2 -Xmx${avail_mem}g
+        bbmap.sh ref=${genome_fasta} threads=${task.cpus} -Xmx${avail_mem}g
         """
 }
 
@@ -49,11 +49,16 @@ process bbmap {
     def avail_mem = task.memory ? task.memory.toGiga() : 4 
     
     // set tool according to read length
-    def tool = params.long_reads ? "mapPacBio.sh" : "bbmap.sh"
+    def tool = "bbmap.sh"
+    if (params.read_type == "pacbio" || params.read_type == "nanopore"){
+        tool = "mapPacBio.sh"
+    }
 
-    // set input according to single_end parameter
-    def input = params.single_end ? "in=${fastq}" : "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
-    input = params.long_reads ?  "in=${fastq}" : input // else set as expected for long reads samples
+    // set input according to read_type parameter
+    def input =  "in=${fastq[0]}"
+    if (params.read_type == "short_paired"){
+        input =  "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
+    }
 
     // set fileName
     def fileName = fastq[0].baseName.replace('.fastq','')

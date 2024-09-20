@@ -92,22 +92,7 @@ process star {
 
     script:
 
-        if (params.single_end){
-           
-        """
-            # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
-            mkfifo pipedRead
-            zcat < ${reads} > pipedRead &
-
-            STAR ${params.star_options} --genomeDir ${star_index} \\
-                --readFilesIn pipedRead  \\
-                --runThreadN ${task.cpus} \\
-                --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}  \\
-                --outSAMunmapped Within \\
-                --outSAMtype BAM SortedByCoordinate
-        """
-        } else {
+        if (params.read_type == "short_paired"){
         """
             mkfifo pipedRead1
             zcat < ${reads[0]} > pipedRead1 &
@@ -119,6 +104,20 @@ process star {
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
                 --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}  \\
+                --outSAMunmapped Within \\
+                --outSAMtype BAM SortedByCoordinate
+        """
+        } else {
+        """
+            # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
+            mkfifo pipedRead
+            zcat < ${reads} > pipedRead &
+
+            STAR ${params.star_options} --genomeDir ${star_index} \\
+                --readFilesIn pipedRead  \\
+                --runThreadN ${task.cpus} \\
+                --runMode alignReads \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}  \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -148,31 +147,7 @@ process star2pass{
 
     script:
 
-        if (params.single_end){
-           
-             """
-                # Select cat or zcat according to suffif
-                suffix=\$(echo ${reads[0]} | awk -F . '{print \$NF}')
-                command=cat
-                if [[ \${suffix} == "gz" ]];then
-                    command=zcat
-                fi
-                
-                # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
-                mkfifo pipedRead
-                command < ${reads} > pipedRead &
-
-                # run STAR
-                STAR ${params.star_options} --genomeDir ${star_index} \\
-                    --readFilesIn pipedRead  \\
-                    --runThreadN ${task.cpus} \\
-                    --runMode alignReads \\
-                    --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_2pass  \\
-                    --outSAMunmapped Within \\
-                    --outSAMtype BAM SortedByCoordinate \\
-                    --sjdbFileChrStartEnd *SJ.out.tab
-            """
-        } else {
+        if (params.read_type == "short_paired"){
         """
             mkfifo pipedRead1
             zcat < ${reads[0]} > pipedRead1 &
@@ -185,6 +160,29 @@ process star2pass{
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
                 --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_2pass  \\
+                --outSAMunmapped Within \\
+                --outSAMtype BAM SortedByCoordinate \\
+                --sjdbFileChrStartEnd *SJ.out.tab
+        """
+        } else {
+        """
+            # Select cat or zcat according to suffif
+            suffix=\$(echo ${reads[0]} | awk -F . '{print \$NF}')
+            command=cat
+            if [[ \${suffix} == "gz" ]];then
+                command=zcat
+            fi
+            
+            # the fifo setup (or any other "transient" files) will not work with the 2-pass mode, as STAR need to read the files twice
+            mkfifo pipedRead
+            command < ${reads} > pipedRead &
+
+            # run STAR
+            STAR ${params.star_options} --genomeDir ${star_index} \\
+                --readFilesIn pipedRead  \\
+                --runThreadN ${task.cpus} \\
+                --runMode alignReads \\
+                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_2pass  \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab

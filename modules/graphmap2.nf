@@ -47,12 +47,8 @@ process graphmap2 {
         read_file=reads[0]
         
         if ( params.graphmap2_options.contains("owler") ){
-            if ( params.single_end ){
-                """
-                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
-                """
-            }
-            else{
+
+            if (params.read_type == "short_paired"){
                 // For paired-end we concat output 
                 """
                 graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
@@ -61,6 +57,10 @@ process graphmap2 {
                 rm ${fileName}_graphmap2.mhap
                 cat ${reads[1].baseName}_graphmap2.mhap >> ${fileName}_graphmap2_concatR1R2.mhap
                 rm ${reads[1].baseName}_graphmap2.mhap
+                """
+            } else {
+                """
+                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${read_file} -d ${read_file}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
                 """
             }
         }
@@ -71,13 +71,8 @@ process graphmap2 {
                 graphmap2_options = "align ${params.graphmap2_options}"
             }
 
-            if ( params.single_end ){
-                """
-                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
-                """
-            }
             // For paired-end we concat output 
-            else{
+            if (params.read_type == "short_paired"){
                 
                 """
                 graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
@@ -88,6 +83,10 @@ process graphmap2 {
                 rm ${fileName}_graphmap2.sam
                 grep -v ^@ ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
                 rm ${reads[1].baseName}_graphmap2.sam
+                """
+            } else {
+                """
+                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
                 """
             }
         }

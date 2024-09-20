@@ -20,11 +20,11 @@ params.genome = "/path/to/genome.fa"
 params.outdir = "alignment_results"
 params.reads_extension = ".fastq.gz" // Extension used to detect reads in folder
 params.paired_reads_pattern = "{1,2}"
-params.long_reads = false
+read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'nanopore' ]
+params.read_type = "short_paired"
 
 // Read feature params
-params.single_end = false
-params.stranded = false
+params.stranded = false 
 params.strand_type = "" // xxx Not used yet
 params.read_length = ""
 params.annotation = ""
@@ -33,7 +33,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'nucmer', 'star', 'subread' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'star', 'subread' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -45,6 +45,8 @@ params.hisat2_options = ''
 params.minimap2_options = '' 
 params.minimap2_index_options = '' //  -k, -w, -H and -I 
 params.nucmer_options = ''
+params.novoalign_options = ''
+params.novoalign_license = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
 params.tophat2_options = ''
 params.star_options = ''
 params.star_2pass = false
@@ -54,32 +56,89 @@ params.subread_options = '-t 0'// -t specifes the type of input sequencing data.
 params.fastqc = false
 params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 
-//*************************************************
-// STEP 1 - LOG INFO
-//*************************************************
+// other
+params.help = null
 
-def bbmap_tool = params.long_reads ? "mapPacBio.sh" : "bbmap.sh"
-// Function to check and set maxlen in params.bbmap_options when long_reads is set
-// params is supposed to be a immutable. Using params.replace method might not be supported in the future 
-if ( (params.long_reads) && !params.bbmap_options.contains("maxlen") ){
-    params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
-}
-if ( !params.minimap2_options.contains("-a ") ){
-    params.replace("minimap2_options", "${params.minimap2_options} -a")
-}
+//*************************************************
+// STEP 1 - HELP
+//*************************************************
 
 log.info header()
 if (params.help) { exit 0, helpMSG() }
+
+//*************************************************
+// STEP 1 - PARAMS CHECK
+//*************************************************
+
+// bbmap tool
+def bbmap_tool = "bbmap.sh"
+if (params.read_type == "pacbio" || params.read_type == "nanopore"){
+    bbmap_tool = "mapPacBio.sh"
+    // Function to check and set maxlen in params.bbmap_options when long_reads is set
+    // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
+    if ( !params.bbmap_options.contains("maxlen") ){
+        params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
+    }
+}
+// minimap2 tool
+if ( ! params.minimap2_options.contains("-a ") ){
+    params.replace("minimap2_options", "${params.minimap2_options} -a")
+}
+
+// novoalign tool - load license into the container
+def novoalign_container_options = ""
+if( params.novoalign_license ){
+  novoalign_container_options = "-v ${params.novoalign_license}:/usr/local/bin/"
+}
+// for pacbio reads, set -g 20 and -x 0
+if (params.read_type == "pacbio"){
+    if (! params.novoalign_options.contains("-g ")){
+        params.replace("novoalign_options", "${params.novoalign_options} -g 20")
+    }
+    if (! params.novoalign_options.contains("-x ")){
+        params.replace("novoalign_options", "${params.novoalign_options} -x 0")
+    }
+}
+
+// Check aligner params. Can be a list (comma or space separated)
+def aligner_list=[]
+if( !params.aligner ){
+    exit 1, "Error: <aligner> parameter is empty, please provide a aligner(s) among this list ${align_tools}.\n"
+} else {
+    str_list = params.aligner.tokenize(',')
+    str_list.each {
+        str_list2 = it.tokenize(' ')
+        str_list2.each {
+            if ( ! (it.toLowerCase() in align_tools) ){
+                exit 1, "Error: <${it}> aligner not acepted, please provide aligner(s) among this list ${align_tools}.\n"
+            }
+            else{
+                if (it.toLowerCase() == "novoalign" && !params.novoalign_license){
+                    log.warn ": NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
+                } else if (it.toLowerCase() == "novoalign" && params.read_type == "nanopore"){
+                    log.warn ": NovoAlign aligner selected but do not handle nanopore data. SKIPPED\n"
+                } else {
+                    aligner_list.add(it.toLowerCase())
+                }
+            }
+        }
+    }
+}
+
+//*************************************************
+// STEP 1 - LOG INFO
+//*************************************************
 
 log.info """
 
 General Parameters
      genome                     : ${params.genome}
      reads                      : ${params.reads}
-     single_end                 : ${params.single_end}
+     aligner                    : ${params.aligner}
+     read_type                  : ${params.read_type}
      paired_reads_pattern       : ${params.paired_reads_pattern}
      reads_extension            : ${params.reads_extension}
-     long_reads                 : ${params.long_reads}
+     stranded                   : ${params.stranded}
      outdir                     : ${params.outdir}
   
 Alignment Parameters
@@ -100,6 +159,9 @@ bbmap parameters
      hisat2_options             : ${params.hisat2_options}
  minimap2  parameters
      minimap2_options           : ${params.minimap2_options}
+ novalign parameters
+     novalign_options           : ${params.novoalign_options}
+     novoalign_license          : ${params.novoalign_license}
  nucmer parameters
      nucmer_options             : ${params.nucmer_options}
  star parameters
@@ -125,16 +187,21 @@ include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star;
-         fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_novoalign; fastqc as fastqc_ali_nucmer; 
+         fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
-include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2} from "$baseDir/modules/samtools.nf"
+include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
+include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
+         samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
+         samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
+        samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
-         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
+         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_novoalign; 
+         samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
 include {subread_index; subread} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
@@ -142,22 +209,12 @@ include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir
 // STEP 3 - Deal with parameters
 //*************************************************
 
-// Check aligner params. Can be a list (comma or space separated)
-def aligner_list=[]
-if( !params.aligner ){
-    exit 1, "Error: <aligner> parameter is empty, please provide a aligner(s) among this list ${align_tools}.\n"
+// check read type
+if( ! params.read_type ){
+    exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}.\n"
 } else {
-    str_list = params.aligner.tokenize(',')
-    str_list.each {
-        str_list2 = it.tokenize(' ')
-        str_list2.each {
-            if ( ! (it.toLowerCase() in align_tools) ){
-                exit 1, "Error: <${it}> aligner not acepted, please provide aligner(s) among this list ${align_tools}.\n"
-            }
-            else{
-                aligner_list.add(it.toLowerCase())
-            }
-        }
+    if ( ! (params.read_type.toLowerCase() in read_type_allowed) ){
+        exit 1, "Error: <${params.read_type}> aligner not acepted, please provide a read type among this list ${read_type_allowed}.\n"
     }
 }
 
@@ -172,7 +229,7 @@ else { exit 1, "No executer selected: -profile docker/singularity"}
 def list_files = []
 def pattern_reads
 def fromFilePairs_input
-def per_pair // read the reads per pair
+def per_pair = false // read the reads per pair
 def path_reads = params.reads 
 
 // in case of folder provided, add a trailing slash if missing
@@ -184,19 +241,14 @@ if(input_reads.exists()){
         }
     }
 }
-if (params.long_reads) {
-    per_pair = false
-    pattern_reads = "${params.reads_extension}"
-    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
-}
-else if (params.single_end) {
-    per_pair = false
-    pattern_reads = "${params.reads_extension}"
-    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
-} else {
+
+if (params.read_type == "short_paired") {
     per_pair = true
     pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
     fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
+} else{
+    pattern_reads = "${params.reads_extension}"
+    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
 }
 
 if(input_reads.exists()){
@@ -407,6 +459,19 @@ workflow align {
             }
         }
         // ------------------- novoalign  -----------------
+        if ("novoalign" in aligner_list ){
+            novoalign_index(genome.collect(), "alignment/minimap2/indicies") // index
+            novoalign(reads, genome.collect(), novoalign_index.out.collect(), "alignment/novoalign") // align
+            // convert sam to bam
+            samtools_sam2bam_novoalign(novoalign.out.tuple_sample_sam)
+            // sort
+            samtools_sort_novoalign(samtools_sam2bam_novoalign.out.tuple_sample_bam, "alignment/novoalign")
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_novoalign(samtools_sort_novoalign.out.tuple_sample_sortedbam, "fastqc/novoalign", "novoalign")
+                logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
+            }
+        }
 
         // ------------------- nucmer (mummer4) -----------------
         if ("nucmer" in aligner_list ){
@@ -518,8 +583,7 @@ def helpMSG() {
         --outdir                    path to the output directory (default: alignment_results)
 
     Type of input reads
-        --long_reads                set to true if reads are long reads (default: false)
-        --single_end                set to true if reads are single end (default: false)
+        --read_type                 type of reads among this list ${read_type_allowed} (default: short_paired)
         --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
         --stranded                  set to true if reads are stranded (default: false)
 
@@ -538,6 +602,8 @@ def helpMSG() {
         --hisat2_options            additional options for hisat2
         --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
         --minimap2_index_options    additional options for minimap2 index
+        --novoalign_options         additional options for novoalign
+        --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)

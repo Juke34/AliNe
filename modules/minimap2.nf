@@ -48,13 +48,13 @@ process minimap2 {
             output_format = "sam"
         }
     
-        if (params.single_end){
+        if (params.read_type == "short_paired"){
             """
-            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
+            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads[0]} ${reads[1]} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
             """
         } else {
             """
-            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads[0]} ${reads[1]} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
+            minimap2 ${params.minimap2_options} -t ${task.cpus} ${genome} ${reads} > ${fileName}_minimap2.${output_format} 2> ${fileName}_minimap2.log 
             """
         }
 }

@@ -44,8 +44,11 @@ process subread {
 
     script:
 
-        // set input according to single_end parameter
-        def input = params.single_end ? "-r ${fastq}" : "-r ${fastq[0]} -R ${fastq[1]}" // if short reads check paired or not
+        // set input according to short_paired parameter
+        def input = "-r ${fastq[0]}"
+        if (params.read_type == "short_paired"){
+            input =  "-r ${fastq[0]} -R ${fastq[1]}"
+        }
 
         // remove fastq.gz
         def fileName = fastq[0].baseName.replace('.fastq','')

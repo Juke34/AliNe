@@ -37,15 +37,9 @@ process samtools_sam2bam {
 
     script:
 
-        if (params.single_end){
         """
             samtools view -@ ${task.cpus} ${sam} -b -o ${sam.baseName}.bam 
         """
-        } else {
-        """
-            samtools view -@ ${task.cpus} ${sam} -b -o ${sam.baseName}.bam 
-        """
-        }
 
 }
 /*
@@ -66,14 +60,7 @@ process samtools_sort {
 
     script:
 
-        if (params.single_end){
-        """
-            samtools sort -@ ${task.cpus} ${bam} -o ${bam.baseName}_sorted.bam 
-        """
-        } else {
         """
             samtools sort -@ ${task.cpus} ${bam} -o ${bam.baseName}_sorted.bam  
         """
-        }
-
 }
