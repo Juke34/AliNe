@@ -50,7 +50,7 @@ process bbmap {
     
     // set tool according to read length
     def tool = "bbmap.sh"
-    if (params.read_type == "pacbio" || params.read_type == "nanopore"){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
         tool = "mapPacBio.sh"
     }
 

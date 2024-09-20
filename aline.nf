@@ -20,8 +20,9 @@ params.genome = "/path/to/genome.fa"
 params.outdir = "alignment_results"
 params.reads_extension = ".fastq.gz" // Extension used to detect reads in folder
 params.paired_reads_pattern = "{1,2}"
-read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'nanopore' ]
+read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'ont' ]
 params.read_type = "short_paired"
+params.relax = false // allow to use options that do not reflect expectation according to the read type
 
 // Read feature params
 params.stranded = false 
@@ -33,7 +34,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'star', 'subread' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -43,9 +44,10 @@ params.bwasw_options = ''
 params.graphmap2_options = '' // owler option is possible
 params.hisat2_options = ''
 params.minimap2_options = '' 
-params.minimap2_index_options = '' //  -k, -w, -H and -I 
-params.nucmer_options = ''
+params.minimap2_index_options = '' //  -k, -w, -H and -I
+params.ngmlr_options = ''
 params.novoalign_options = ''
+params.nucmer_options = ''
 params.novoalign_license = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
 params.tophat2_options = ''
 params.star_options = ''
@@ -66,40 +68,53 @@ params.help = null
 log.info header()
 if (params.help) { exit 0, helpMSG() }
 
+log.info """
+
+General Parameters
+     genome                     : ${params.genome}
+     reads                      : ${params.reads}
+     aligner                    : ${params.aligner}
+     read_type                  : ${params.read_type}
+     paired_reads_pattern       : ${params.paired_reads_pattern}
+     reads_extension            : ${params.reads_extension}
+     stranded                   : ${params.stranded}
+     outdir                     : ${params.outdir}
+
+Alignment Parameters before check
+bbmap parameters
+     bbmap_options              : ${params.bbmap_options}
+ bowtie2 parameters
+     bowtie2_options            : ${params.bowtie2_options}
+ bwaaln parameters
+     bwa_options                : ${params.bwaaln_options}
+ bwamem parameters
+     bwamem_options             : ${params.bwamem_options}
+ bwasw parameters
+     bwasw_options              : ${params.bwasw_options}
+ graphmap2 parameters
+     graphmap2_options          : ${params.graphmap2_options}
+ hisat2 parameters
+     hisat2_options             : ${params.hisat2_options}
+ minimap2 parameters
+     minimap2_options           : ${params.minimap2_options}
+ngmlr parameters
+     ngmlr_options              : ${params.ngmlr_options}
+ novalign parameters
+     novalign_options           : ${params.novoalign_options}
+     novoalign_license          : ${params.novoalign_license}
+ nucmer parameters
+     nucmer_options             : ${params.nucmer_options}
+ star parameters
+     star_options               : ${params.star_options}
+     star_2pass                 : ${params.star_2pass}
+ subread parameters
+     subread_options            : ${params.subread_options}
+"""
+
 //*************************************************
 // STEP 1 - PARAMS CHECK
 //*************************************************
-
-// bbmap tool
-def bbmap_tool = "bbmap.sh"
-if (params.read_type == "pacbio" || params.read_type == "nanopore"){
-    bbmap_tool = "mapPacBio.sh"
-    // Function to check and set maxlen in params.bbmap_options when long_reads is set
-    // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
-    if ( !params.bbmap_options.contains("maxlen") ){
-        params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
-    }
-}
-// minimap2 tool
-if ( ! params.minimap2_options.contains("-a ") ){
-    params.replace("minimap2_options", "${params.minimap2_options} -a")
-}
-
-// novoalign tool - load license into the container
-def novoalign_container_options = ""
-if( params.novoalign_license ){
-  novoalign_container_options = "-v ${params.novoalign_license}:/usr/local/bin/"
-}
-// for pacbio reads, set -g 20 and -x 0
-if (params.read_type == "pacbio"){
-    if (! params.novoalign_options.contains("-g ")){
-        params.replace("novoalign_options", "${params.novoalign_options} -g 20")
-    }
-    if (! params.novoalign_options.contains("-x ")){
-        params.replace("novoalign_options", "${params.novoalign_options} -x 0")
-    }
-}
-
+log.info """check aligner provided: ${params.aligner} ..."""
 // Check aligner params. Can be a list (comma or space separated)
 def aligner_list=[]
 if( !params.aligner ){
@@ -113,16 +128,115 @@ if( !params.aligner ){
                 exit 1, "Error: <${it}> aligner not acepted, please provide aligner(s) among this list ${align_tools}.\n"
             }
             else{
-                if (it.toLowerCase() == "novoalign" && !params.novoalign_license){
-                    log.warn ": NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
-                } else if (it.toLowerCase() == "novoalign" && params.read_type == "nanopore"){
-                    log.warn ": NovoAlign aligner selected but do not handle nanopore data. SKIPPED\n"
-                } else {
-                    aligner_list.add(it.toLowerCase())
-                }
+                aligner_list.add(it.toLowerCase())
             }
         }
     }
+}
+
+// check read type parameter
+log.info """check read type parameter: ${params.read_type} ..."""
+if( ! params.read_type ){
+    exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}.\n"
+} else {
+    if ( ! (params.read_type.toLowerCase() in read_type_allowed) ){
+        exit 1, "Error: <${params.read_type}> aligner not acepted, please provide a read type among this list ${read_type_allowed}.\n"
+    }
+}
+
+// ----------------------------------------------------------
+
+log.info """check alinger parameters ..."""
+def stop_pipeline = false
+// --- bbmap tool ---
+def bbmap_tool = "bbmap.sh"
+if ("bbmap" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        bbmap_tool = "mapPacBio.sh"
+        // Function to check and set maxlen in params.bbmap_options when long_reads is set
+        // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
+        if ( !params.bbmap_options.contains("maxlen") ){
+            params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
+        }
+    }
+}
+
+// ---- minimap2 tool ---
+// Force -a option to be sure to get sam output
+if ("minimap2" in aligner_list && !params.relax){
+
+    if (params.read_type == "short_single" || params.read_type == "short_paired"){
+        if ( ! params.minimap2_options.contains("--sr ") ){
+            params.replace("minimap2_options", "--sr ${params.minimap2_options}")
+        }
+    }
+    if (params.read_type == "pacbio"){
+        if ( ! params.minimap2_options.contains(" ava-pb") and ! params.minimap2_options.contains(" splice:hq") and 
+            ! params.minimap2_options.contains(" map-hifi") and ! params.minimap2_options.contains(" map-pb") ){
+            log.warn("""Error: <${params.minimap2_options}> minimap2 options not accepted for ont data, please provide options among this list, ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).
+Otherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n""")
+            stop_pipeline = true
+        }
+    }
+    if (params.read_type == "ont"){
+        if ( ! params.minimap2_options.contains(" ava-ont") and ! params.minimap2_options.contains(" splice") and 
+            ! params.minimap2_options.contains(" lr:hq") and ! params.minimap2_options.contains(" map-ont") ){
+            log.warn("""Error: <${params.minimap2_options}> minimap2 options not accepted for ont data, please provide options among this list, ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).
+Otherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n""")
+            stop_pipeline = true
+        }
+    }
+}
+// relax or not this option has to be used
+if ( ! params.minimap2_options.contains("-a ") ){
+     params.replace("minimap2_options", "${params.minimap2_options} -a")
+}
+
+// ngmlr tool - check options
+if ("ngmlr" in aligner_list ){
+    if (!params.relax) {
+        // for pacbio reads, set -g 20 and -x 0
+        if (params.read_type == "ont"){
+            if (! params.ngmlr_options.contains("-x ont")){
+                params.replace("ngmlr_options", "${params.ngmlr_options} -x ont")
+            }
+        }
+        else if (params.read_type.contains == "short"){
+            log.warn ": ngmlr aligner do not handle ont short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
+            stop_pipeline = true
+        }
+    }
+}       
+
+// novoalign tool - load license into the container
+if ("novoalign" in aligner_list ){
+    def novoalign_container_options = ""
+    if( params.novoalign_license ){
+        novoalign_container_options = "-v ${params.novoalign_license}:/usr/local/bin/"
+    } else {
+        log.warn ": NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
+        stop_pipeline = true
+    }
+
+    if (!params.relax) {
+        // for pacbio reads, set -g 20 and -x 0
+        if (params.read_type == "pacbio"){
+            if (! params.novoalign_options.contains("-g ")){
+                params.replace("novoalign_options", "${params.novoalign_options} -g 20")
+            }
+            if (! params.novoalign_options.contains("-x ")){
+                params.replace("novoalign_options", "${params.novoalign_options} -x 0")
+            }
+        }
+        if ( params.read_type == "ont" ){
+            log.warn ": NovoAlign aligner do not handle ont data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
+            stop_pipeline = true
+        }
+    }
+}
+
+if(stop_pipeline){
+    exit 1, "Please fix previous issues in order to run the pipeline.\n"
 }
 
 //*************************************************
@@ -131,17 +245,7 @@ if( !params.aligner ){
 
 log.info """
 
-General Parameters
-     genome                     : ${params.genome}
-     reads                      : ${params.reads}
-     aligner                    : ${params.aligner}
-     read_type                  : ${params.read_type}
-     paired_reads_pattern       : ${params.paired_reads_pattern}
-     reads_extension            : ${params.reads_extension}
-     stranded                   : ${params.stranded}
-     outdir                     : ${params.outdir}
-  
-Alignment Parameters
+Alignment Parameters after check
 bbmap parameters
      bbmap_tool                 : ${bbmap_tool}
      bbmap_options              : ${params.bbmap_options}
@@ -157,7 +261,7 @@ bbmap parameters
      graphmap2_options          : ${params.graphmap2_options}
  hisat2 parameters
      hisat2_options             : ${params.hisat2_options}
- minimap2  parameters
+ minimap2 parameters
      minimap2_options           : ${params.minimap2_options}
  novalign parameters
      novalign_options           : ${params.novoalign_options}
@@ -187,36 +291,28 @@ include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_novoalign; fastqc as fastqc_ali_nucmer; 
-         fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; fastqc as fastqc_ali_novoalign; 
+         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
+include {ngmlr} from "$baseDir/modules/ngmlr.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
          samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
          samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
-        samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
+         samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
-         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_novoalign; 
-         samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
+         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
+         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
 include {subread_index; subread} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
 //*************************************************
-// STEP 3 - Deal with parameters
+// STEP 3 - CHECK 2 for parameters
 //*************************************************
-
-// check read type
-if( ! params.read_type ){
-    exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}.\n"
-} else {
-    if ( ! (params.read_type.toLowerCase() in read_type_allowed) ){
-        exit 1, "Error: <${params.read_type}> aligner not acepted, please provide a read type among this list ${read_type_allowed}.\n"
-    }
-}
 
 // check profile
 if (
@@ -458,6 +554,21 @@ workflow align {
                 logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
         }
+        // --------------------- NGMLR --------------------
+        if ("ngmlr" in aligner_list ){
+            ngmlr(reads, genome.collect(), "alignment/ngmlr") // align
+            logs.concat(ngmlr.out.ngmlr_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_ngmlr(ngmlr.out.tuple_sample_sam)
+            // sort
+            samtools_sort_ngmlr(samtools_sam2bam_ngmlr.out.tuple_sample_bam, "alignment/ngmlr")
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_ngmlr(samtools_sort_ngmlr.out.tuple_sample_sortedbam, "fastqc/ngmlr", "ngmlr")
+                logs.concat(fastqc_ali_ngmlr.out).set{logs} // save log
+            }
+        }
+
         // ------------------- novoalign  -----------------
         if ("novoalign" in aligner_list ){
             novoalign_index(genome.collect(), "alignment/minimap2/indicies") // index

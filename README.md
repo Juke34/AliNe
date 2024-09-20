@@ -39,13 +39,15 @@ Here is the list of implemented aligners:
 | bwasw | x | x | | |
 | graphmap2 | x | x R1 and R2 independently aligned then merged with cat | | |
 | hisat2 | x | x | | |
-| minimap2 | x | x | | |
+| minimap2 | x | x | x | x |
+| ngmlr | | | x | x |
+| novoalign | x | x | x | |
 | nucmer | x | x R1 and R2 are concatenated then aligned | | |
 | star | x | x | | |
 | star 2pass mode | x | x | | |
 | subread | x | x | | |
 
-
+It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
 ## Installation
 
@@ -134,10 +136,24 @@ nextflow run main.nf -profile docker,slurm <rest of paramaters>
 
 Test data are included in the AliNe repository in the `test` folder.
 
-A typical command to run a test on single end data will look like that:
-
+Test with short single reads:
 ```
-nextflow run -profile docker aline.nf --aligner hisat2,graphmap2,bwamem,nucmer --genome test/hpv16.fa --reads test/U2OS_A1_R1_sub100000.fastq --single_end true --reads_extension .fastq
+nextflow run -profile docker,test_illumina_single.config aline.nf
+```
+
+Test with short paired reads:
+```
+nextflow run -profile docker,test_illumina_paired.config aline.nf
+```
+
+Test with ont reads:
+```
+nextflow run -profile docker,test_ont.config aline.nf
+```
+
+Test with pacbio reads:
+```
+nextflow run -profile docker,test_pacbio.config aline.nf
 ```
 
 On success you should get a message looking like this:
