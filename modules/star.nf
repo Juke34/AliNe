@@ -3,7 +3,7 @@ process prepare_star_index_options {
     label 'bash'
 
     input:
-    tuple val(sample), path(reads)
+    tuple val(sample), path(reads), val(library)
     val annotation
     val read_length
 
@@ -81,7 +81,7 @@ process star {
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(library)
         path star_index
         val outpath
 
@@ -92,6 +92,14 @@ process star {
 
     script:
 
+        // set tool according to read length
+        def star_tool = "STAR"
+        if (params.read_type == "pacbio" || params.read_type == "ont"){
+            star_tool = "STARlong"
+        }
+
+        // deal with library type - Not supported 
+
         if (params.read_type == "short_paired"){
         """
             mkfifo pipedRead1
@@ -99,7 +107,7 @@ process star {
             mkfifo pipedRead2
             zcat < ${reads[1]} > pipedRead2 &
 
-            STAR ${params.star_options} --genomeDir ${star_index} \\
+            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
@@ -113,7 +121,7 @@ process star {
             mkfifo pipedRead
             zcat < ${reads} > pipedRead &
 
-            STAR ${params.star_options} --genomeDir ${star_index} \\
+            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
@@ -136,7 +144,7 @@ process star2pass{
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(library)
         path star_index
         path splice_junctions
         val outpath
@@ -147,6 +155,14 @@ process star2pass{
 
     script:
 
+        // set tool according to read length
+        def star_tool = "STAR"
+        if (params.read_type == "pacbio" || params.read_type == "ont"){
+            star_tool = "STARlong"
+        }
+
+        // deal with library type - Not supported in STAR
+
         if (params.read_type == "short_paired"){
         """
             mkfifo pipedRead1
@@ -155,7 +171,7 @@ process star2pass{
             zcat < ${reads[1]} > pipedRead2 &
 
             # run STAR
-            STAR ${params.star_options} --genomeDir ${star_index} \\
+            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead1 pipedRead2  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
@@ -178,7 +194,7 @@ process star2pass{
             command < ${reads} > pipedRead &
 
             # run STAR
-            STAR ${params.star_options} --genomeDir ${star_index} \\
+            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
@@ -189,3 +205,12 @@ process star2pass{
         """
         }
 }
+
+/*
+Info: 
+--outFilterMismatchNmax 100 : increases the number of allowed mismatches to 100 - need to allow more mismatches for longer reads
+--seedSearchStartLmax 30 : increases the number of seed search start position in the read - important for reads with high error rate
+--seedSearchLmax 30 : similar to the above, limits the maximum length of the seeds. Presently, I do not recommend changing this parameter
+--seedPerReadNmax 100000   --seedPerWindowNmax 100 : increase the number of allowed seeds for each read and alignment window - need to store more seeds for longer reads
+--alignTranscriptsPerReadNmax 100000 --alignTranscriptsPerWindowNmax 10000 : increase the number of allowed alignments for each read and alignment window - need to store more putative alignments for longer reads
+*/

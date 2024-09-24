@@ -25,7 +25,7 @@ AliNe is a pipeline written in nextflow that aims to efficienlty align reads aga
 
 A QC with FastQC is made at each step if option activated.
 A trimming is feasible before alignment if option activated.
-The pipeline deals with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+'). All fastq will be standardised in Phred+33 for downstream alignments by seqkit. 
+**The pipeline deals automaticallu with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+').** All fastq will be standardised in Phred+33 for downstream alignments by seqkit. 
 You can choose to run one or several aligner in parallel.
 
 Here is the list of implemented aligners:
@@ -33,21 +33,46 @@ Here is the list of implemented aligners:
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
 | bbmap | x | x | x | x |
-| bowtie2 | x | x | | |
-| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | | |
-| bwamem | x | x | | |
-| bwasw | x | x | | |
-| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | | |
-| hisat2 | x | x | | |
-| minimap2 | x | x | x | x |
-| ngmlr | | | x | x |
-| novoalign | x | x | x | |
-| nucmer | x | x R1 and R2 are concatenated then aligned | | |
-| star | x | x | | |
-| star 2pass mode | x | x | | |
+| bowtie2 | x | x | x | x |
+| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | na | na |
+| bwamem | x | x | x | x |
+| bwasw | x | x | x | x |
+| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | x | x |
+| hisat2 | x | x | x | x |
+| minimap2 | x | x | X | X |
+| ngmlr | na | na | X | X |
+| novoalign | x | x | x | na |
+| nucmer | x | x R1 and R2 are concatenated then aligned | x | x |
+| star | x | x | x | x |
+| star 2pass mode | x | x | x | x |
 | subread | x | x | | |
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
+
+The pipeline deals automatically with the library types. It extract 10 000 reads by default and-d run salmon to guess the library type. 
+It is then translated to the correct option in the following aligners:
+
+| Tool	| tool option | Library type by salmon | Comment | 
+| --- | --- | --- | --- |
+| bbmap | xs=fr / xs=ss / xs=us | ISF ISR / OSF OSR / U | strand information |
+| bbmap | - / rcs=f / | ISF ISR IU / OSF OSR OU MSF MSR MU | read orientation |
+| bowtie2 | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
+| bwaaln | na | na | na | |
+| bwamem | na | na | na | |
+| bwasw | na | na | na | |
+| graphmap2 | na | na | na | |
+| hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
+| hisat2 | --fr / --rf / --ff | I / O / M | read orientation |
+| minimap2 | na | na | |
+| ngmlr | na | na | |
+| novoalign | na | na | |
+| nucmer | na | na | |
+| star | na | na | |
+| star 2pass mode | na | na | |
+| subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
+
+If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
+/!\ If you provide yourself the librairy type via the aligner parameter, it will be used over the information provided or guessed via --library_type.
 
 ## Installation
 
@@ -176,3 +201,7 @@ You can simply remove the `AliNe` directory from your computer, and remove the n
 ```
 conda remove -n nextflow
 ```
+
+## To do
+
+Add LAST to map ont?

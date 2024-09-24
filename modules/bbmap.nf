@@ -34,7 +34,7 @@ process bbmap {
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq)
+        tuple val(sample), path(fastq), val(library)
         path genome_index
         path hisat2_index_files
         val outpath
@@ -60,12 +60,36 @@ process bbmap {
         input =  "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
     }
 
+    def lib_strand=""
+    if (! params.bbmap_options.contains(" xs=") && 
+        params.read_type == "short_paired" && 
+        ! params.skip_libray_usage){ 
+        if (library.contains("U") ){ // this test must be before the others
+            lib_strand = "-xs=us"
+        }  
+        else if (library.contains("I") ){
+            lib_strand = "xs=fr"
+        } else if (library.contains("O") ){
+            lib_strand = "xs=ss"
+        } 
+    }
+    def read_orientation=""
+    if (! params.bbmap_options.contains(" rcs=") &&
+        ! params.bbmap_options.contains(" requirecorrectstrand=") && 
+        params.read_type == "short_paired" &&
+        ! library.contains("I") && 
+        ! params.skip_libray_usage){ 
+      read_orientation="rcs=f"
+    }
+
     // set fileName
     def fileName = fastq[0].baseName.replace('.fastq','')
     """
     ${tool} \\
-        ref=$genome_index \\
-        $input \\
+        ref=${genome_index} \\
+        ${input} \\
+        ${lib_strand} \\
+        ${read_orientation} \\
         out=${fileName}.bam \\
         ${params.bbmap_options} \\
         threads=${task.cpus} \\

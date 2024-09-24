@@ -10,7 +10,7 @@ process nucmer {
     publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(readtype)
         path genome
         val outpath
 
@@ -19,7 +19,11 @@ process nucmer {
 
     script:
         
+        // deal with library type - Not supported 
+
+        // extract the file name
         fileName = reads[0].baseName.replace('.fastq','')
+       
         int paired=0
         if (reads[1]){ paired = 1}
         """

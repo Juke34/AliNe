@@ -25,10 +25,11 @@ params.read_type = "short_paired"
 params.relax = false // allow to use options that do not reflect expectation according to the read type
 
 // Read feature params
-params.stranded = false 
-params.strand_type = "" // xxx Not used yet
-params.read_length = ""
-params.annotation = ""
+libtype_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR' ]
+params.library_type = "auto" 
+params.skip_libray_usage = false // Avoid to use library type provided by library_type or auto
+params.read_length = "" // Use by star to set the sjdbOverhang parameter
+params.annotation = "" // Use by star to set the sjdbGTFfile parameter
 
 // Trimming params
 params.trimming_fastp = false
@@ -60,6 +61,9 @@ params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 
 // other
 params.help = null
+params.seqtk_sample_size = 10000 // number of reads to sample for seqtk - used to determnine the library type
+bbmap_tool = "bbmap.sh"
+star_tool = "STAR"
 
 //*************************************************
 // STEP 1 - HELP
@@ -76,7 +80,8 @@ General Parameters
      read_type                  : ${params.read_type}
      paired_reads_pattern       : ${params.paired_reads_pattern}
      reads_extension            : ${params.reads_extension}
-     stranded                   : ${params.stranded}
+     library_type               : ${params.library_type}
+     skip_libray_usage          : ${params.skip_libray_usage}
      outdir                     : ${params.outdir}
 
 Report Parameters
@@ -121,12 +126,20 @@ if( ! params.read_type ){
     }
 }
 
+// check read library type parameter
+log.info """check readlibrary type parameter: ${params.library_type} ..."""
+if( ! params.library_type.contains("auto") ){
+    if ( ! (params.library_type.toUpperCase() in libtype_allowed) ){
+        exit 1, "Error: <${params.library_type}> library type is not accepted, please provide a library type among this list ${libtype_allowed}.\n"
+    }
+}
+
 // ----------------------------------------------------------
 
 log.info """check alinger parameters ..."""
 def stop_pipeline = false
+
 // --- bbmap tool ---
-def bbmap_tool = "bbmap.sh"
 if ("bbmap" in aligner_list && !params.relax){
     if (params.read_type == "pacbio" || params.read_type == "ont"){
         bbmap_tool = "mapPacBio.sh"
@@ -137,6 +150,44 @@ if ("bbmap" in aligner_list && !params.relax){
         }
     }
 }
+
+// --- bwa aln tool ---
+if ("bwaaln" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn("""Error: bwaaln is not suitable for long reads.
+However, if you know what you are doing you can activate the aline --relax parameter to use it anyway.\n""")
+        stop_pipeline = true
+    }
+}
+
+// --- bwa mem tool ---
+if ("bwamem" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio"){
+        if ( !params.bbmap_options.contains(" pacbio") ){
+            params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
+        }
+    }
+    if (params.read_type == "ont"){
+        if ( !params.bbmap_options.contains(" ont2d") ){
+            params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
+        }
+    }
+}
+
+// --- bwa sw tool ---
+if ("bwasw" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio"){
+        if ( !params.bbmap_options.contains(" pacbio") ){
+            params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
+        }
+    }
+    if (params.read_type == "ont"){
+        if ( !params.bbmap_options.contains(" ont2d") ){
+            params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
+        }
+    }
+}
+
 
 // ---- minimap2 tool ---
 // Force -a option to be sure to get sam output
@@ -179,7 +230,7 @@ if ("ngmlr" in aligner_list ){
             }
         }
         else if (params.read_type.contains == "short"){
-            log.warn ": ngmlr aligner do not handle ont short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
+            log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
             stop_pipeline = true
         }
     }
@@ -209,6 +260,13 @@ if ("novoalign" in aligner_list ){
             log.warn ": NovoAlign aligner do not handle ont data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
             stop_pipeline = true
         }
+    }
+}
+
+// --- star tool ---
+if ("star" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        star_tool = "STARlong"
     }
 }
 
@@ -242,6 +300,7 @@ include {multiqc} from "$baseDir/modules/multiqc.nf"
 include {ngmlr} from "$baseDir/modules/ngmlr.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
+include {salmon_index; salmon_guess_lib; set_tuple_withUserLib} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
          samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
          samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
@@ -250,6 +309,7 @@ include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bo
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
+include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
@@ -362,15 +422,33 @@ workflow align {
         // ------------------- FASTP -----------------
         if (params.trimming_fastp){
             fastp(raw_reads_standardized, "fastp")
-            fastp.out.trimmed.set{reads}
+            fastp.out.trimmed.set{raw_reads_trim}
             logs.concat(fastp.out.report).set{logs} // save log
             if(params.fastqc){
-                fastqc_fastp(reads, "fastqc/trimming_fastp", "trimmed")
+                fastqc_fastp(raw_reads_trim, "fastqc/trimming_fastp", "trimmed")
                 logs.concat(fastqc_fastp.out).set{logs} // save log
             }
         } else {
-            reads = raw_reads_standardized
+            raw_reads_trim = raw_reads_standardized
         }
+
+        // ------------------------------------------------------------------------------------------------
+        //                              LIBRARY TYPE GUESSING
+        // ------------------------------------------------------------------------------------------------
+
+        if (params.library_type.contains("auto")){
+            // ------------------- subsample -----------------
+            seqtk_sample(raw_reads_trim)
+
+            // ------------------- guess libtype -------------------
+            salmon_index(genome.collect())
+            salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon")
+            salmon_guess_lib.out.tuple_id_libtype.set{tuple_id_lib}
+        } else {
+             set_tuple_withUserLib(raw_reads_trim)
+             set_tuple_withUserLib.out.set{tuple_id_lib}
+        }
+        reads = raw_reads_trim.join(tuple_id_lib)
 
         // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 
@@ -580,7 +658,7 @@ workflow align {
         }
 
         // ------------------- MULTIQC -----------------
-        multiqc(logs.collect(),params.multiqc_config)
+        //multiqc(logs.collect(),params.multiqc_config)
 }
 
 
@@ -639,7 +717,10 @@ def helpMSG() {
     Type of input reads
         --read_type                 type of reads among this list ${read_type_allowed} (default: short_paired)
         --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
-        --stranded                  set to true if reads are stranded (default: false)
+        --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
+                                    If you know the library type you can set it to one of the following: ${libtype_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
+                                    In such case the sample library type will be used for all the samples.
+        --skip_libray_usage         Skip the usage of library type provided by the user or guessed by salmon. 
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
@@ -672,6 +753,7 @@ def helpMSG() {
 def printAlignerOptions() {
     return """
     bbmap parameters
+        bbmap_tool                 : ${bbmap_tool}
         bbmap_options              : ${params.bbmap_options}
     bowtie2 parameters
         bowtie2_options            : ${params.bowtie2_options}
@@ -695,6 +777,7 @@ def printAlignerOptions() {
     nucmer parameters
         nucmer_options             : ${params.nucmer_options}
     star parameters
+        star_tool                  : ${star_tool}
         star_options               : ${params.star_options}
         star_2pass                 : ${params.star_2pass}
     subread parameters

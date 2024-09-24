@@ -32,7 +32,7 @@ process novoalign {
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq)
+        tuple val(sample), path(fastq), val(library)
         path genome_index
         path hisat2_index_files
         val outpath
@@ -45,6 +45,8 @@ process novoalign {
     
     // set input according to short_paired parameter
     def input = params.read_type == "short_paired"  ? "${fastq[0]} ${fastq[1]}" : "${fastq}" // if short reads check paired or not
+
+    // deal with library type - Not supported
 
     // set fileName
     def fileName = fastq[0].baseName.replace('.fastq','')

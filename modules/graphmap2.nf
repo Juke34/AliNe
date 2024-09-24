@@ -32,7 +32,7 @@ process graphmap2 {
     publishDir "${params.outdir}/${outpath}", pattern: "*graphmap2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(readtype)
         path genome
         path graphmap2_index_files
         val outpath

@@ -26,7 +26,7 @@ process bwaaln {
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(readtype)
         path genome
         path bwa_index_files
         val outpath
@@ -63,7 +63,7 @@ process bwamem {
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(readtype)
         path genome
         path bwa_index_files
         val outpath
@@ -96,7 +96,7 @@ process bwasw {
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads)
+        tuple val(sample), path(reads), val(readtype)
         path genome
         path bwa_index_files
         val outpath

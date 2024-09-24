@@ -33,7 +33,7 @@ process subread {
     publishDir "${params.outdir}/${outpath}", pattern: "*subread.vcf", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq)
+        tuple val(sample), path(fastq), val(library)
         path genome
         path index
         val outpath
@@ -56,7 +56,20 @@ process subread {
         // prepare index name
         def index_prefix = genome.baseName + "_index"
 
+        // deal with library type
+        def read_orientation
+        if (! params.subread_options.contains("-S ") &&
+            params.read_type == "short_paired" && 
+            ! params.skip_libray_usage){ // only if -S is not set and if we are not skipping library usage
+            if (library.contains("M") ){
+                read_orientation = "-S ff"
+            } else if (library.contains("O") ) {
+                read_orientation = "-S rf"
+            } else if (library.contains("I") ) {
+                read_orientation = "-S fr"
+            } 
+        }
         """
-        subread-align -T ${task.cpus} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options}
+        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options}
         """
 }
