@@ -34,18 +34,18 @@ Here is the list of implemented aligners:
 | --- | --- | --- |  --- | --- |
 | bbmap | x | x | x | x |
 | bowtie2 | x | x | x | x |
-| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | na | na |
+| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | x | x |
 | bwamem | x | x | x | x |
 | bwasw | x | x | x | x |
 | graphmap2 | x | x R1 and R2 independently aligned then merged with cat | x | x |
 | hisat2 | x | x | x | x |
 | minimap2 | x | x | X | X |
 | ngmlr | na | na | X | X |
-| novoalign | x | x | x | na |
+| novoalign | x | x | x | ? |
 | nucmer | x | x R1 and R2 are concatenated then aligned | x | x |
 | star | x | x | x | x |
 | star 2pass mode | x | x | x | x |
-| subread | x | x | ? | ? |
+| subread | x | x | x | x |
 | tophat | x | x | na | na |
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
