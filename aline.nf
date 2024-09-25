@@ -234,10 +234,10 @@ if ("ngmlr" in aligner_list ){
                 params.replace("ngmlr_options", "${params.ngmlr_options} -x ont")
             }
         }
-        else if (params.read_type.contains == "short"){
-            log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
-            stop_pipeline = true
-        }
+        //else if (params.read_type.contains("short") ){
+        //    log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
+            //stop_pipeline = true
+        //}
     }
 }       
 

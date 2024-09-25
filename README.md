@@ -32,21 +32,22 @@ Here is the list of implemented aligners:
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
-| bbmap | x | x | x | x |
-| bowtie2 | x | x | x | x |
-| bwaaln | x | x R1 and R2 independently aligned then merged with bwa sampe | x | x |
-| bwamem | x | x | x | x |
-| bwasw | x | x | x | x |
-| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | x | x |
+| bbmap | X | X | x | x |
+| bowtie2 | X | X | x | x |
+| bwaaln | X | X R1 and R2 independently aligned then merged with bwa sampe | X | X |
+| bwamem | X | X | x | x |
+| bwasw | X | X | x | x |
+| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | X | X |
 | hisat2 | x | x | x | x |
 | minimap2 | x | x | X | X |
-| ngmlr | na | na | X | X |
-| novoalign | x | x | x | ? |
-| nucmer | x | x R1 and R2 are concatenated then aligned | x | x |
-| star | x | x | x | x |
-| star 2pass mode | x | x | x | x |
-| subread | x | x | x | x |
-| tophat | x | x | na | na |
+| ngmlr | x | x | X | X |
+| novoalign | X | X | X | ? |
+| nucmer | X | X R1 and R2 are concatenated then aligned | x | x |
+| star | X | X | x | x |
+| star 2pass mode | X | X | x | x |
+| subread | X | X | x | x |
+| sublong |  |  |  |  |
+| tophat | X | X | na | na |
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
