@@ -57,7 +57,7 @@ process subread {
         def index_prefix = genome.baseName + "_index"
 
         // deal with library type
-        def read_orientation
+        def read_orientation=""
         if (! params.subread_options.contains("-S ") &&
             params.read_type == "short_paired" && 
             ! params.skip_libray_usage){ // only if -S is not set and if we are not skipping library usage

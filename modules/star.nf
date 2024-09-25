@@ -4,26 +4,31 @@ process prepare_star_index_options {
 
     input:
     tuple val(sample), path(reads), val(library)
-    val annotation
+    path annotation
     val read_length
 
     output:
         stdout()
 
     script:
-        star_index_options = ""
+        star_index_options = "${params.star_index_options}"
 
-        if (annotation){
-            if (read_length){
-               star_index_options = "--sjdbGTFfile ${annotation} --sjdbOverhang " + (read_length.toInteger() - 1)
+        if ( annotation.toString() != "null.gtf" ){
+            // Deal with --sjdbGTFfile option
+            if( !star_index_options.contains("--sjdbGTFfile") ){
+                star_index_options += " --sjdbGTFfile ${annotation}"
+            }
+            // Deal with --sjdbOverhang option
+            if (read_length && !star_index_options.contains("--sjdbOverhang") ){
+               star_index_options += " --sjdbOverhang " + (read_length.toInteger() - 1)
                 """
                 #!/bin/bash
                 echo -n "${star_index_options}"
                 """
             } 
-            else {
+            else if ( !star_index_options.contains("--sjdbOverhang") ) {
                 file=reads[0] // In paired-end case we take the first file
-                log.info """Expected read length parameter not provided (--read_length), using the first file ${reads} from sample ${sample} as reference to deduce this value..."""
+                log.info """Expected read length parameter not provided (--read_length) for star, using the first file ${reads} from sample ${sample} as reference to deduce this value..."""
 
                 // Some bash commands as head or grep -q can interrupt another one, which return an error 141. To avoid the problem we unset pipefail
                 """
@@ -37,7 +42,7 @@ process prepare_star_index_options {
                     command="cat"
                 fi
                 a=0;b=0; RESULT=\$(\$command ${file} | head -n 40000 | awk '{if(NR%4==2){ b++; a+=length(\$1)}}END{print int(a/b)}')
-                echo -n --sjdbGTFfile ${annotation} --sjdbOverhang \$((\${RESULT} - 1 ))
+                echo -n ${star_index_options} --sjdbOverhang \$((\${RESULT} - 1 ))
                 """
             }  
         } 
@@ -58,6 +63,7 @@ process star_index {
     input:
         path (genome_fasta)
         val star_index_options
+        path annotation // needed in case the star_index_options contains --sjdbGTFfile option
         val outpath
 
     output:
@@ -83,6 +89,7 @@ process star {
     input:
         tuple val(sample), path(reads), val(library)
         path star_index
+        path annotation
         val outpath
 
     output:
@@ -147,6 +154,7 @@ process star2pass{
         tuple val(sample), path(reads), val(library)
         path star_index
         path splice_junctions
+        path annotation
         val outpath
 
     output:

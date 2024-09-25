@@ -39,8 +39,9 @@ process salmon_guess_lib {
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
         def output = "${fastq[0].baseName.replace('.fastq','')}"
+
         """
-            salmon quant -i $salmon_index -l A $input --thread ${task.cpus} -o ${output} --minAssignedFrags 2 
+            salmon quant -i ${salmon_index} -l A ${input} --thread ${task.cpus} -o ${output} --minAssignedFrags 2 
             # extract the result
             LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
         """

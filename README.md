@@ -45,7 +45,8 @@ Here is the list of implemented aligners:
 | nucmer | x | x R1 and R2 are concatenated then aligned | x | x |
 | star | x | x | x | x |
 | star 2pass mode | x | x | x | x |
-| subread | x | x | | |
+| subread | x | x | ? | ? |
+| tophat | x | x | na | na |
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
@@ -70,9 +71,30 @@ It is then translated to the correct option in the following aligners:
 | star | na | na | |
 | star 2pass mode | na | na | |
 | subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
+| tophat2 | fr-unstranded / fr-firststrand / fr-secondstrand | U / SR / SF | strand information |
 
 If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
 /!\ If you provide yourself the librairy type via the aligner parameter, it will be used over the information provided or guessed via --library_type.
+
+If you provide an annotation file the pipeline will pass automatically the file to the following aligner:  
+| Tool	| accept | 
+| --- | --- | 
+| bbmap | na | 
+| bowtie2 | na |
+| bwaaln | na |
+| bwamem | na |
+| bwasw | na |
+| graphmap2 | GTF (--gtf)  |
+| hisat2 | na |
+| minimap2 | na |
+| ngmlr | na |
+| novoalign | na |
+| nucmer | na |
+| star | GTF / GFF ( --sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
+| star 2pass mode | GTF / GFF (--sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
+| subread | na |
+| tophat | GTF/GFF3 (-G) | 
+ 
 
 ## Installation
 
@@ -201,7 +223,3 @@ You can simply remove the `AliNe` directory from your computer, and remove the n
 ```
 conda remove -n nextflow
 ```
-
-## To do
-
-Add LAST to map ont?

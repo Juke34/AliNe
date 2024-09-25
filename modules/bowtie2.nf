@@ -25,7 +25,7 @@ process bowtie2 {
     input:
         tuple val(sample), path(reads), val(library)
         path genome
-        path hisat2_index_files
+        path index_files
         val outpath
 
     output:

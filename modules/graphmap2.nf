@@ -35,6 +35,7 @@ process graphmap2 {
         tuple val(sample), path(reads), val(readtype)
         path genome
         path graphmap2_index_files
+        path annotation // needed in case set in the params.graphmap2_options
         val outpath
 
     output:
@@ -45,7 +46,7 @@ process graphmap2 {
     script:
         fileName = reads[0].baseName.replace('.fastq','')
         read_file=reads[0]
-        
+        // Check if the owler option is set
         if ( params.graphmap2_options.contains("owler") ){
 
             if (params.read_type == "short_paired"){
@@ -86,6 +87,7 @@ process graphmap2 {
                 """
             } else {
                 """
+                
                 graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${read_file}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
                 """
             }

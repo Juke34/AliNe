@@ -29,13 +29,16 @@ libtype_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'O
 params.library_type = "auto" 
 params.skip_libray_usage = false // Avoid to use library type provided by library_type or auto
 params.read_length = "" // Use by star to set the sjdbOverhang parameter
-params.annotation = "" // Use by star to set the sjdbGTFfile parameter
+// annotation is used by different aligner (tophat2, star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
+// If process receive a file wich is not the fake one it includes the file in the command. To append the options of aligner we will use the annotation_file variable
+// While the processes will be called sending the "annotation" channel created by the prepare_annotation process.
+params.annotation = ""
 
-// Trimming params
+// Trimming params 
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'tophat2' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -48,12 +51,13 @@ params.minimap2_options = ''
 params.minimap2_index_options = '' //  -k, -w, -H and -I
 params.ngmlr_options = ''
 params.novoalign_options = ''
-params.nucmer_options = ''
 params.novoalign_license = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
-params.tophat2_options = ''
+params.nucmer_options = ''
 params.star_options = ''
+params.star_index_options = ''
 params.star_2pass = false
 params.subread_options = '-t 0'// -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data.
+params.tophat2_options = ''
 
 // Report params
 params.fastqc = false
@@ -72,30 +76,10 @@ star_tool = "STAR"
 log.info header()
 if (params.help) { exit 0, helpMSG() }
 
-log.info """
-General Parameters
-     genome                     : ${params.genome}
-     reads                      : ${params.reads}
-     aligner                    : ${params.aligner}
-     read_type                  : ${params.read_type}
-     paired_reads_pattern       : ${params.paired_reads_pattern}
-     reads_extension            : ${params.reads_extension}
-     library_type               : ${params.library_type}
-     skip_libray_usage          : ${params.skip_libray_usage}
-     outdir                     : ${params.outdir}
-
-Report Parameters
- MultiQC parameters
-     fastqc                     : ${params.fastqc}
-     multiqc_config             : ${params.multiqc_config}
-
-Alignment Parameters before check
-"""
-log.info printAlignerOptions()
-
 //*************************************************
 // STEP 1 - PARAMS CHECK
 //*************************************************
+def stop_pipeline = false
 log.info """check aligner provided: ${params.aligner} ..."""
 // Check aligner params. Can be a list (comma or space separated)
 def aligner_list=[]
@@ -134,10 +118,21 @@ if( ! params.library_type.contains("auto") ){
     }
 }
 
+// ---- check annotation file
+def annotation_file = ""
+if (params.annotation){
+    File f = new File( "${params.annotation}" );
+    if (! f.exists() ){
+          log.error "Warning: Annotation file <${params.annotation}> does not exist.\n"
+          stop_pipeline = true
+    }
+    annotation_file = f.getName()
+}
+
 // ----------------------------------------------------------
 
 log.info """check alinger parameters ..."""
-def stop_pipeline = false
+
 
 // --- bbmap tool ---
 if ("bbmap" in aligner_list && !params.relax){
@@ -155,7 +150,7 @@ if ("bbmap" in aligner_list && !params.relax){
 if ("bwaaln" in aligner_list && !params.relax){
     if (params.read_type == "pacbio" || params.read_type == "ont"){
         log.warn("""Error: bwaaln is not suitable for long reads.
-However, if you know what you are doing you can activate the aline --relax parameter to use it anyway.\n""")
+However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
         stop_pipeline = true
     }
 }
@@ -163,12 +158,12 @@ However, if you know what you are doing you can activate the aline --relax param
 // --- bwa mem tool ---
 if ("bwamem" in aligner_list && !params.relax){
     if (params.read_type == "pacbio"){
-        if ( !params.bbmap_options.contains(" pacbio") ){
+        if ( !params.bwamem_options.contains(" pacbio") ){
             params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
         }
     }
     if (params.read_type == "ont"){
-        if ( !params.bbmap_options.contains(" ont2d") ){
+        if ( !params.bwamem_options.contains(" ont2d") ){
             params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
         }
     }
@@ -177,17 +172,23 @@ if ("bwamem" in aligner_list && !params.relax){
 // --- bwa sw tool ---
 if ("bwasw" in aligner_list && !params.relax){
     if (params.read_type == "pacbio"){
-        if ( !params.bbmap_options.contains(" pacbio") ){
-            params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
+        if ( !params.bwasw_options.contains(" pacbio") ){
+            params.replace("bwamem_options", "${params.bwasw_options} -x pacbio")
         }
     }
     if (params.read_type == "ont"){
-        if ( !params.bbmap_options.contains(" ont2d") ){
-            params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
+        if ( !params.bwasw_options.contains(" ont2d") ){
+            params.replace("bwamem_options", "${params.bwasw_options} -x ont2d")
         }
     }
 }
 
+// --- graphmap2 tool ---
+if ("graphmap2" in aligner_list ){
+    if (annotation_file && !params.graphmap2_options.contains("--gtf ") ){
+        params.replace("graphmap2_options", "${params.graphmap2_options} --gtf ${annotation_file}")
+    }
+}
 
 // ---- minimap2 tool ---
 // Force -a option to be sure to get sam output
@@ -201,17 +202,21 @@ if ("minimap2" in aligner_list && !params.relax){
     if (params.read_type == "pacbio"){
         if ( ! params.minimap2_options.contains(" ava-pb") and ! params.minimap2_options.contains(" splice:hq") and 
             ! params.minimap2_options.contains(" map-hifi") and ! params.minimap2_options.contains(" map-pb") ){
-            log.warn("""Error: <${params.minimap2_options}> minimap2 options not accepted for ont data, please provide options among this list, ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).
-Otherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n""")
-            stop_pipeline = true
+            log.warn("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for pacbio data. 
+We set the default <map-pb> parameter. If you do not agree, please provide options among this list:
+    ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).
+If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
+            params.replace("minimap2_options", "${params.minimap2_options} -x map-pb")
         }
     }
     if (params.read_type == "ont"){
         if ( ! params.minimap2_options.contains(" ava-ont") and ! params.minimap2_options.contains(" splice") and 
             ! params.minimap2_options.contains(" lr:hq") and ! params.minimap2_options.contains(" map-ont") ){
-            log.warn("""Error: <${params.minimap2_options}> minimap2 options not accepted for ont data, please provide options among this list, ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).
-Otherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n""")
-            stop_pipeline = true
+            log.warn("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for ont data.
+We set the default <map-ont> option. If you do not agree, please provide options among this list:
+    ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).
+If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
+            params.replace("minimap2_options", "${params.minimap2_options} -x map-ont")
         }
     }
 }
@@ -230,7 +235,7 @@ if ("ngmlr" in aligner_list ){
             }
         }
         else if (params.read_type.contains == "short"){
-            log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
+            log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
             stop_pipeline = true
         }
     }
@@ -257,16 +262,34 @@ if ("novoalign" in aligner_list ){
             }
         }
         if ( params.read_type == "ont" ){
-            log.warn ": NovoAlign aligner do not handle ont data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the aline --relax parameter to use options that do not reflect expectation.\n"
+            log.error "NovoAlign aligner does not handle ont data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
             stop_pipeline = true
         }
     }
 }
 
 // --- star tool ---
-if ("star" in aligner_list && !params.relax){
-    if (params.read_type == "pacbio" || params.read_type == "ont"){
-        star_tool = "STARlong"
+if ( "star" in aligner_list ){
+    if (annotation_file && !params.star_options.contains("--sjdbGTFfile ") ){
+         params.replace("star_options", "${params.star_options} --sjdbGTFfile ${annotation_file}")
+    }
+    if (!params.relax){
+        if (params.read_type == "pacbio" || params.read_type == "ont"){
+            star_tool = "STARlong"
+        }
+    }
+}
+
+// --- tophat2 tool ---
+if ( "tophat2" in aligner_list ){
+    if (annotation_file && !params.tophat2_options.contains("-G ") ){
+         params.replace("tophat2_options", "${params.tophat2_options} -G ${annotation_file}")
+    }
+    if (!params.relax){
+        if ( params.read_type == "ont" ||  params.read_type == "pacbio"){
+            log.error "Tophat2 aligner does not handle properly ont or pacbio data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
+            stop_pipeline = true
+        }
     }
 }
 
@@ -277,13 +300,29 @@ if(stop_pipeline){
 //*************************************************
 // STEP 1 - LOG INFO
 //*************************************************
+log.info """
+General Parameters
+     genome                     : ${params.genome}
+     reads                      : ${params.reads}
+     aligner                    : ${params.aligner}
+     read_type                  : ${params.read_type}
+     paired_reads_pattern       : ${params.paired_reads_pattern}
+     reads_extension            : ${params.reads_extension}
+     library_type               : ${params.library_type}
+     skip_libray_usage          : ${params.skip_libray_usage}
+     outdir                     : ${params.outdir}
 
-log.info """\nAlignment Parameters after check"""
-log.info printAlignerOptions()
+Report Parameters
+ MultiQC parameters
+     fastqc                     : ${params.fastqc}
+     multiqc_config             : ${params.multiqc_config}
+"""
+log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_options)
 
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
+include {prepare_annotation} from "$baseDir/modules/bash.nf"
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
@@ -293,7 +332,7 @@ include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; 
          fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; fastqc as fastqc_ali_novoalign; 
-         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread } from "$baseDir/modules/fastqc.nf"
+         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
@@ -308,10 +347,11 @@ include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; 
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
-         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer} from "$baseDir/modules/samtools.nf"
+         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_tophat2;} from "$baseDir/modules/samtools.nf"
 include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
+include {tophat2_index; tophat2} from "$baseDir/modules/tophat.nf" 
 
 //*************************************************
 // STEP 3 - CHECK 2 for parameters
@@ -406,6 +446,10 @@ workflow align {
         //                                          PREPROCESSING 
         // ------------------------------------------------------------------------------------------------
 
+        // Prepare annotation
+        prepare_annotation(params.annotation)
+        prepare_annotation.out.set{annotation}
+
         // ------------------- QC -----------------
         if(params.fastqc){
             fastqc_raw(raw_reads, "fastqc/raw", "raw")
@@ -469,7 +513,7 @@ workflow align {
         }
 
         // ------------------- BOWTIE2 -----------------
-        if ("bowtie2" in aligner_list ){
+        if ( "bowtie2" in aligner_list ){ // &&
             bowtie2_index(genome.collect(), "alignment/bowtie2/indicies") // index
             bowtie2(reads, genome.collect(), bowtie2_index.out.collect(), "alignment/bowtie2") // align
             logs.concat(bowtie2.out.bowtie2_summary).set{logs} // save log
@@ -531,7 +575,7 @@ workflow align {
         // ------------------- GRAPHMAP2 -----------------
         if ("graphmap2" in aligner_list ){
             graphmap2_index(genome.collect(), "alignment/graphmap2/indicies")
-            graphmap2(reads, genome.collect(), graphmap2_index.out.collect(), "alignment/graphmap2") // align
+            graphmap2(reads, genome.collect(), graphmap2_index.out.collect(), annotation, "alignment/graphmap2") // align
             logs.concat(graphmap2.out.graphmap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_graphmap2(graphmap2.out.tuple_sample_sam)
@@ -625,14 +669,14 @@ workflow align {
             // Take read length information from only one sample for --sjdbOverhang option
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
-            prepare_star_index_options(first_file, params.annotation, params.read_length)
-            star_index(genome.collect(), prepare_star_index_options.out, "alignment/star/indicies") // index
-            star(reads, star_index.out.collect(), "alignment/star") // align out is bam and sorted
+            prepare_star_index_options(first_file, annotation, params.read_length)
+            star_index(genome.collect(), prepare_star_index_options.out, annotation, "alignment/star/indicies") // index
+            star(reads, star_index.out.collect(), annotation, "alignment/star") // align out is bam and sorted
             logs.concat(star.out.star_summary).set{logs} // save log
             star.out.splice_junctions.collect().set{splice_junctions} // save splice junction files
             // If  2pass mode
             if(params.star_2pass){
-                star2pass(reads, star_index.out.collect(), splice_junctions, "alignment/star") // align out is bam and sorted
+                star2pass(reads, star_index.out.collect(), splice_junctions, annotation, "alignment/star") // align out is bam and sorted
                 logs.concat(star2pass.out.star_summary).set{logs} // save log
                 star2pass.out.tuple_sample_bam.set{star_result}
             } else {
@@ -657,8 +701,20 @@ workflow align {
             }
         }
 
+        // --- TOPHAT2 ---
+        if ("tophat2" in aligner_list ){
+            tophat2_index(genome.collect(), "alignment/tophat2/indicies") // index
+            tophat2(reads, genome.collect(), tophat2_index.out.collect(), annotation, "alignment/tophat2") // align
+            logs.concat(tophat2.out.tophat2_summary).set{logs} // save log
+            samtools_sort_tophat2(tophat2.out.tuple_sample_bam, "alignment/tophat2")
+            if(params.fastqc){
+                fastqc_ali_tophat2(star_result, "fastqc/tophat2", "tophat2")
+                logs.concat(fastqc_ali_tophat2.out).set{logs} // save log
+            }
+        }
+
         // ------------------- MULTIQC -----------------
-        //multiqc(logs.collect(),params.multiqc_config)
+        multiqc(logs.collect(),params.multiqc_config)
 }
 
 
@@ -713,6 +769,7 @@ def helpMSG() {
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
+        --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
         --read_type                 type of reads among this list ${read_type_allowed} (default: short_paired)
@@ -744,46 +801,100 @@ def helpMSG() {
         --star_options              additional options for star
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)
             --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
-            --annotation                [Optional][used by STAR] path to the annotation file (gtf or gff3)
         --subread_options           additional options for subread
+        --tophat2_options            additional options for tophat
 
     """
 }
 
-def printAlignerOptions() {
-    return """
+def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
+    def sentence = ""
+    if ("bbmap" in aligner_list){ 
+        sentence += """
     bbmap parameters
         bbmap_tool                 : ${bbmap_tool}
         bbmap_options              : ${params.bbmap_options}
+    """} 
+    if ("bowtie2" in aligner_list){ 
+        sentence += """       
     bowtie2 parameters
         bowtie2_options            : ${params.bowtie2_options}
+    """} 
+    if ("bwaaln" in aligner_list){
+        sentence += """
     bwaaln parameters
         bwa_options                : ${params.bwaaln_options}
+    """} 
+    if ("bwamem" in aligner_list){
+        sentence += """
     bwamem parameters
         bwamem_options             : ${params.bwamem_options}
+    """} 
+    if ("bwasw" in aligner_list){
+        sentence += """
     bwasw parameters
         bwasw_options              : ${params.bwasw_options}
+    """} 
+    if ("graphmap2" in aligner_list){
+        sentence += """
     graphmap2 parameters
         graphmap2_options          : ${params.graphmap2_options}
+    """} 
+    if ("hisat2" in aligner_list){
+        sentence += """
     hisat2 parameters
         hisat2_options             : ${params.hisat2_options}
+    """}
+    if ("minimap2" in aligner_list){
+        sentence += """
     minimap2 parameters
         minimap2_options           : ${params.minimap2_options}
+    """} 
+    if ("ngmlr" in aligner_list){
+        sentence += """
     ngmlr parameters
         ngmlr_options              : ${params.ngmlr_options}
+    """} 
+    if ("novoalign" in aligner_list){
+        sentence += """
     novalign parameters
         novalign_options           : ${params.novoalign_options}
         novoalign_license          : ${params.novoalign_license}
+    """} 
+    if ("nucmer" in aligner_list){
+        sentence += """
     nucmer parameters
         nucmer_options             : ${params.nucmer_options}
+    """}
+    if ("star" in aligner_list){
+        def new_index_sentence = "${star_index_options}"
+        if(annotation_file){      
+            if( !star_index_options.contains("--sjdbGTFfile") ){
+                new_index_sentence += " --sjdbGTFfile ${annotation_file}"
+            }
+            if (!star_index_options.contains("--sjdbOverhang") ){
+                new_index_sentence += " --sjdbOverhang XXX" // to be replaced by the read length
+            }
+        }
+        sentence += """
     star parameters
+        star_index_options         : ${new_index_sentence}
         star_tool                  : ${star_tool}
-        star_options               : ${params.star_options}
+        star_options               : ${params.star_options}      
         star_2pass                 : ${params.star_2pass}
+    """}
+    if ("subread" in aligner_list){
+        sentence += """
     subread parameters
         subread_options            : ${params.subread_options}
-
-    """
+    """}
+    if ("tophat2" in aligner_list){
+        sentence += """
+    tophat parameters
+        tophat2_options            : ${params.tophat2_options}
+    """}
+    
+    return sentence
 }
 
 
@@ -803,3 +914,9 @@ workflow.onComplete {
     Error report : ${workflow.errorReport ?: '-'}
     """
 }
+
+/*
+Add LAST to map ont?
+Check salmon can be used as aligner?
+handle annotation
+*/

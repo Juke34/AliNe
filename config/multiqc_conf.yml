@@ -12,6 +12,7 @@ run_modules:
     - mummer4
     - star
     - subread
+    - tophat
     
 module_order:
     - fastqc:
@@ -74,3 +75,8 @@ module_order:
         name: "FastQC (star)"
         path_filters:
           - "*star_logs*"
+    - tophat
+    - fastqc:
+        name: "FastQC (tophat)"
+        path_filters:
+          - "*tophat2_logs*"

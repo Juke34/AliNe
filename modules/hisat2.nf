@@ -1,3 +1,8 @@
+/* ------------ HISTA2 -----------
+
+*/
+
+
 process hisat2_index {
     label 'hisat2'
     tag "$genome_fasta"
@@ -78,13 +83,13 @@ process hisat2 {
         if (params.read_type == "short_paired"){
             """
             hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-                --new-summary --summary-file ${sample}.hisat2-summary.txt ${lib_strand} \\
+                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
                 -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${filename}.sam
             """
             } else {
             """
             hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-                --new-summary --summary-file ${sample}.hisat2-summary.txt ${lib_strand} \\
+                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
                 -p ${task.cpus} -x $index_basename -U $reads > ${filename}.sam
             """
         }
