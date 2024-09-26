@@ -255,17 +255,13 @@ if ("novoalign" in aligner_list ){
 
     if (!params.relax) {
         // for pacbio reads, set -g 20 and -x 0
-        if (params.read_type == "pacbio"){
+        if (params.read_type == "pacbio" || params.read_type == "ont"){
             if (! params.novoalign_options.contains("-g ")){
                 params.replace("novoalign_options", "${params.novoalign_options} -g 20")
             }
             if (! params.novoalign_options.contains("-x ")){
                 params.replace("novoalign_options", "${params.novoalign_options} -x 0")
             }
-        }
-        if ( params.read_type == "ont" ){
-            log.error "NovoAlign aligner does not handle ont data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
-            stop_pipeline = true
         }
     }
 }

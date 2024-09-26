@@ -41,13 +41,18 @@ Here is the list of implemented aligners:
 | hisat2 | x | x | x | x |
 | minimap2 | x | x | X | X |
 | ngmlr | x | x | X | X |
-| novoalign | X | X | X | ? |
+| novoalign | X | X | X | x |
 | nucmer | X | X R1 and R2 are concatenated then aligned | x | x |
 | star | X | X | x | x |
 | star 2pass mode | X | X | x | x |
 | subread | X | X | x | x |
 | sublong |  |  |  |  |
 | tophat | X | X | na | na |
+
+Legend  
+X Recomended
+x Not recommended
+na Not applicable
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
