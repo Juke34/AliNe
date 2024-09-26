@@ -247,6 +247,10 @@ def novoalign_lic = ""
 if ("novoalign" in aligner_list ){
     if( params.novoalign_license ){
         File f = new File( "${params.novoalign_license}" );
+        if (! f.exists() ){
+            log.warn ": NovoAlign aligner selected but license file <${params.novoalign_license}> does not exist.\n"
+            stop_pipeline = true
+        }
         license_file = f.getName()
         novoalign_lic = "-v ${params.novoalign_license}:/usr/local/bin/${license_file}"
     } else {
@@ -660,7 +664,7 @@ workflow align {
             // stat on aligned reads
             if(params.fastqc){
                 fastqc_ali_novoalign(samtools_sort_novoalign.out.tuple_sample_sortedbam, "fastqc/novoalign", "novoalign")
-                logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
+                logs.concat(fastqc_ali_novoalign.out).set{logs} // save log
             }
         }
 
@@ -829,6 +833,7 @@ def helpMSG() {
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)
             --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
+        --sublong_options           additional options for sublong
         --tophat2_options            additional options for tophat
 
     """

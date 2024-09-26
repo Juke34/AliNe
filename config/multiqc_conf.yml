@@ -3,15 +3,9 @@ title: "Nextflow Alignment pipeline"
 run_modules:
     - fastqc
     - fastp
-  #  - bbmap
     - bowtie2
-    - bwa 
-    - bwa-mem
     - hisat2
-    - minimap2
-    - mummer4
     - star
-    - subread
     - tophat
     
 module_order:
@@ -35,22 +29,18 @@ module_order:
         name: "FastQC (bowtie2)"
         path_filters:
           - "*bowtie2_logs*"
-    - bwa
     - fastqc:
         name: "FastQC (bwaaln)"
         path_filters:
           - "*bwaaln_logs*"
-    - bwa-mem
     - fastqc:
         name: "FastQC (bwamem)"
         path_filters:
           - "*bwamem_logs*"
-    - bwa-sw
     - fastqc:
         name: "FastQC (bwasw)"
         path_filters:
           - "*bwasw_logs*"
-    - graphmap2
     - fastqc:
         name: "FastQC (graphmap2)"
         path_filters:
@@ -60,16 +50,22 @@ module_order:
         name: "FastQC (hisat2)"
         path_filters:
           - "*hisat2_logs*"
-    - minimap2
     - fastqc:
         name: "FastQC (minimap2)"
         path_filters:
           - "*minimap2_logs*"
-    - mummer4
     - fastqc:
         name: "FastQC (nucmer)"
         path_filters:
           - "*nucmer_logs*"
+    - fastqc:
+        name: "FastQC (subread)"
+        path_filters:
+          - "*subread_logs*"
+    - fastqc:
+        name: "FastQC (sublong)"
+        path_filters:
+          - "*sublong_logs*"
     - star
     - fastqc:
         name: "FastQC (star)"
