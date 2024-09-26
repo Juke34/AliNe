@@ -2,13 +2,15 @@ AliNe (Alignment in Nextflow)
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
-AliNe is a pipeline written in nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.
-
-Genome + Reads => FastQC -> Alignment -> Sort -> MultiQC
+AliNe is a pipeline written in nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.  
 
 ## Table of Contents
 
    * [Foreword](#foreword)
+      * [Aligner and read types accepted](#aligner-and-read-types-accepted) 
+      * [Aligner and library types accepted](#aligner-and-library-types-accepted)   
+      * [Aligner and annotation](#aligner-and-annotation)
+   * [Flowchart](#flowchart)
    * [Installation](#installation)
       * [AliNe](#aline)
       * [Nextflow](#nextflow)
@@ -21,14 +23,19 @@ Genome + Reads => FastQC -> Alignment -> Sort -> MultiQC
 
 ## Foreword
 
-AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome.
+AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome.  
 
-A QC with FastQC is made at each step if option activated.
-A trimming is feasible before alignment if option activated.
-**The pipeline deals automaticallu with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+').** All fastq will be standardised in Phred+33 for downstream alignments by seqkit. 
+ * Can handle short reads paired or single, pacbio and ont (nanopore) data (see list of aligner in table1) .  
+ * A QC with FastQC is made at each step if option activated.  
+ * A trimming is feasible before alignment if option activated.
+ * **The pipeline deals automaticallu with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+').** All fastq will be standardised in Phred+33 for downstream alignments by seqkit.
+ * Deal automatically with the type of library used: stranded or not, firstrand, secondstrand etc... (see list of aligner in table2) 
+ * Can deal with annotation file (see list of aligner in table3) 
 You can choose to run one or several aligner in parallel.
 
-Here is the list of implemented aligners:
+### Aligner and read types accepted
+
+** Table1** Here is the list of implemented aligners and the type of reads accepted:
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
@@ -49,12 +56,14 @@ Here is the list of implemented aligners:
 | sublong | x | na | X | X |
 | tophat | X | X | na | na |
 
-Legend  
-X Recomended
-x Not recommended
-na Not applicable
+*Legend*  
+X Recomended  
+x Not recommended  
+na Not applicable  
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
+
+### Aligner and library types accepted
 
 The pipeline deals automatically with the library types. It extract 10 000 reads by default and-d run salmon to guess the library type. 
 It is then translated to the correct option in the following aligners:
@@ -83,6 +92,8 @@ It is then translated to the correct option in the following aligners:
 If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
 /!\ If you provide yourself the librairy type via the aligner parameter, it will be used over the information provided or guessed via --library_type.
 
+### Aligner and annotation
+
 If you provide an annotation file the pipeline will pass automatically the file to the following aligner:  
 | Tool	| accept | 
 | --- | --- | 
@@ -103,6 +114,37 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | sublong | na |
 | tophat | GTF/GFF3 (-G) | 
  
+
+## Flowchart
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+---
+  graph TD;
+      Genome-->Index;
+      Index-->Aligner1;
+      Index-->Aligner2;
+      Annotation--> Aligner1;
+      Annotation--> Aligner2;
+      Reads --> QCraw;
+      Reads --> StandardizeScore 
+      StandardizeScore --> Trim;
+      Trim --> LibraryGuessing;
+      Trim --> QCtrim;
+      LibraryGuessing --> Aligner1;
+      LibraryGuessing --> Aligner2;
+      Trim --> Aligner1;
+      Aligner1 --> QCaligner1;
+      Trim --> Aligner2;
+      Aligner2 --> QCaligner2;
+      QCraw --> MultiQC;
+      QCtrim --> MultiQC;
+      QCaligner1 --> MultiQC;
+      QCaligner2 --> MultiQC;
+```
 
 ## Installation
 
