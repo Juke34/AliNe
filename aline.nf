@@ -242,10 +242,12 @@ if ("ngmlr" in aligner_list ){
 }       
 
 // novoalign tool - load license into the container
+def novoalign_lic = ""
 if ("novoalign" in aligner_list ){
-    def novoalign_container_options = ""
     if( params.novoalign_license ){
-        novoalign_container_options = "-v ${params.novoalign_license}:/usr/local/bin/"
+        File f = new File( "${params.novoalign_license}" );
+        license_file = f.getName()
+        novoalign_lic = "-v ${params.novoalign_license}:/usr/local/bin/${license_file}"
     } else {
         log.warn ": NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
         stop_pipeline = true
@@ -637,7 +639,7 @@ workflow align {
         // ------------------- novoalign  -----------------
         if ("novoalign" in aligner_list ){
             novoalign_index(genome.collect(), "alignment/minimap2/indicies") // index
-            novoalign(reads, genome.collect(), novoalign_index.out.collect(), "alignment/novoalign") // align
+            novoalign(reads, genome.collect(), novoalign_index.out.collect(), novoalign_lic, "alignment/novoalign") // align
             // convert sam to bam
             samtools_sam2bam_novoalign(novoalign.out.tuple_sample_sam)
             // sort

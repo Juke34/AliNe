@@ -28,13 +28,14 @@ process novoalign_index {
 process novoalign {
     label 'novoalign'
     tag "$sample"
-    containerOptions "${novoalign_container_options}"
+    containerOptions "${novoalign_lic}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
         tuple val(sample), path(fastq), val(library)
+        path genome
         path genome_index
-        path hisat2_index_files
+        val novoalign_lic
         val outpath
 
     output:
