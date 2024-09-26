@@ -227,7 +227,7 @@ Another profile is available (/!\\ actually not yet implemented):
 
 The use of the `slurm` profile  will give a command like this one: 
 ```
-nextflow run main.nf -profile docker,slurm <rest of paramaters>
+nextflow run aline.nf -profile singularity,slurm <rest of paramaters>
 ```
 ## Test the workflow
 
@@ -235,22 +235,22 @@ Test data are included in the AliNe repository in the `test` folder.
 
 Test with short single reads:
 ```
-nextflow run -profile docker,test_illumina_single.config aline.nf
+nextflow run -profile docker,test_illumina_single aline.nf
 ```
 
 Test with short paired reads:
 ```
-nextflow run -profile docker,test_illumina_paired.config aline.nf
+nextflow run -profile docker,test_illumina_paired aline.nf
 ```
 
 Test with ont reads:
 ```
-nextflow run -profile docker,test_ont.config aline.nf
+nextflow run -profile docker,test_ont aline.nf
 ```
 
 Test with pacbio reads:
 ```
-nextflow run -profile docker,test_pacbio.config aline.nf
+nextflow run -profile docker,test_pacbio aline.nf
 ```
 
 On success you should get a message looking like this:
@@ -266,6 +266,52 @@ On success you should get a message looking like this:
 ```
 
 ## Parameters
+
+```
+        --help                      prints the help section
+
+    General Parameters
+        --reads                     path to the reads file or folder
+        --reads_extension           extension of the reads files (default: .fastq.gz)
+        --genome                    path to the genome file
+        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong, tophat2]
+        --outdir                    path to the output directory (default: alignment_results)
+        --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
+
+    Type of input reads
+        --read_type                 type of reads among this list [short_paired, short_single, pacbio, ont] (default: short_paired)
+        --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
+        --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
+                                    If you know the library type you can set it to one of the following: [U, IU, MU, OU, ISF, ISR, MSF, MSR, OSF, OSR]. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
+                                    In such case the sample library type will be used for all the samples.
+        --skip_libray_usage         Skip the usage of library type provided by the user or guessed by salmon. 
+
+    Extra steps 
+        --trimming_fastp            run fastp for trimming (default: false)
+        --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
+
+    Aligner specific options
+        --bbmap_options             additional options for bbmap
+        --bowtie2_options           additional options for bowtie2
+        --bwaaln_options            additional options for bwaaln
+        --bwamem_options            additional options for bwamem
+        --bwasw_options             additional options for bwasw
+        --graphmap2_options         additional options for graphmap2
+        --hisat2_options            additional options for hisat2
+        --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
+        --minimap2_index_options    additional options for minimap2 index
+        --ngmlr_options             additional options for ngmlr
+        --novoalign_options         additional options for novoalign
+        --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
+        --nucmer_options            additional options for nucmer
+        --star_options              additional options for star
+        --star_2pass                  set to true to run STAR in 2pass mode (default: false)
+            --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
+        --subread_options           additional options for subread
+        --sublong_options           additional options for sublong
+        --tophat2_options            additional options for tophat
+```
 
 ## Uninstall
 
