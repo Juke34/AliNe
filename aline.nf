@@ -38,7 +38,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'tophat2' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -57,6 +57,7 @@ params.star_options = ''
 params.star_index_options = ''
 params.star_2pass = false
 params.subread_options = '-t 0'// -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data.
+params.sublong_options = '-X'// -X turn on the RNA-seq mode.
 params.tophat2_options = ''
 
 // Report params
@@ -278,6 +279,20 @@ if ( "star" in aligner_list ){
     }
 }
 
+// --- subread tool ---
+if ( "subread" in aligner_list ){
+    if (annotation_file && !params.subread_options.contains("-a ") ){
+        params.replace("subread_options", "${params.subread_options} -a ${annotation_file}")
+    }
+}
+
+if ( "sublong" in aligner_list ){
+    if ( params.read_type == "short_paired"){
+        log.error "Sublong aligner does not handle paired reads, please remove it from the list of aligner to use.\n"
+        stop_pipeline = true
+    }
+}
+
 // --- tophat2 tool ---
 if ( "tophat2" in aligner_list ){
     if (annotation_file && !params.tophat2_options.contains("-G ") ){
@@ -327,10 +342,11 @@ include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {seqkit_convert} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2; 
-         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; fastqc as fastqc_ali_novoalign; 
-         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
+include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2 ; 
+         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; fastqc as fastqc_ali_novoalign ; 
+         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; fastqc as fastqc_ali_sublong ;
+         fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
@@ -345,9 +361,10 @@ include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; 
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
-         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_tophat2;} from "$baseDir/modules/samtools.nf"
+         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_tophat2;
+         samtools_sort as samtools_sort_sublong } from "$baseDir/modules/samtools.nf"
 include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
-include {subread_index; subread} from "$baseDir/modules/subread.nf"
+include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 include {tophat2_index; tophat2} from "$baseDir/modules/tophat.nf" 
 
@@ -663,7 +680,7 @@ workflow align {
         }
 
         // ------------------- STAR -----------------
-        if ("star" in aligner_list){
+        if ( "star" in aligner_list ){
             // Take read length information from only one sample for --sjdbOverhang option
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
@@ -689,13 +706,25 @@ workflow align {
         }
 
         // ---------------- subread -----------------
-        if ("subread" in aligner_list ){
+        if ( "subread" in aligner_list ){
             subread_index(genome.collect(), "alignment/subread/indicies")
-            subread(reads, genome.collect(), subread_index.out.collect(), "alignment/subread") // align
+            subread(reads, genome.collect(), subread_index.out.collect(), annotation, "alignment/subread") // align
             // stat on sorted aligned reads
             if(params.fastqc){
                 fastqc_ali_subread(subread.out.tuple_sample_bam, "fastqc/subread", "subread")
                 logs.concat(fastqc_ali_subread.out).set{logs} // save log
+            }
+        }
+
+        // ---------------- sublong -----------------
+        if ( "sublong" in aligner_list ){
+            sublong_index(genome.collect(), "alignment/sublong/indicies")
+            sublong(reads, genome.collect(), sublong_index.out.collect(), "alignment/sublong") // align
+            samtools_sort_sublong(sublong.out.tuple_sample_bam, "alignment/sublong")
+            // stat on sorted aligned reads
+            if(params.fastqc){
+                fastqc_ali_sublong(sublong.out.tuple_sample_bam, "fastqc/sublong", "sublong")
+                logs.concat(fastqc_ali_sublong.out).set{logs} // save log
             }
         }
 

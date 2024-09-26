@@ -25,7 +25,7 @@ process subread_index {
 }
 
 /*
-* To align with graphmap2
+* To align with subread
 */
 process subread {
     label 'subread'
@@ -36,11 +36,13 @@ process subread {
         tuple val(sample), path(fastq), val(library)
         path genome
         path index
+        path annotation // needed in case set in the params.graphmap2_options
         val outpath
 
     output:
         tuple val(sample), path ("*.bam"), emit: tuple_sample_bam, optional:true
         path "*subread.vcf", emit: subread_vcf, optional:true
+        path "*.log", emit: sublong_log
 
     script:
 
@@ -70,6 +72,60 @@ process subread {
             } 
         }
         """
-        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options}
+        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options} > ${fileName}_subread.log 
+        """
+}
+
+/*
+* To index
+*/ 
+process sublong_index {
+    label 'subread'
+    tag "$genome_fasta"
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
+
+    input:
+        path(genome_fasta)
+        val outpath
+
+    output:
+        path("*")
+
+    script:
+
+        """
+        subread-buildindex -o ${genome_fasta.baseName}_index ${genome_fasta}
+        """
+}
+
+/*
+* To align with sublong
+ add  -X to turn on the RNA-seq mode.
+*/
+process sublong {
+    label 'subread'
+    tag "$sample"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
+
+    input:
+        tuple val(sample), path(fastq), val(library)
+        path genome
+        path index
+        val outpath
+
+    output:
+        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam, optional:true
+        path "*.log", emit: sublong_log
+
+    script:
+
+        // remove fastq.gz
+        def fileName = fastq[0].baseName.replace('.fastq','')
+        
+        // prepare index name
+        def index_prefix = genome.baseName + "_index"
+
+        """
+        sublong -T ${task.cpus} -i ${index_prefix} -r ${fastq} -o ${fileName}.bam ${params.sublong_options} > ${fileName}_sublong.log 
         """
 }

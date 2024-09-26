@@ -14,17 +14,17 @@ process fastp {
         val outpath
 
     output:
-        tuple val(id), path("*_clean.fastq.gz"), emit: trimmed
+        tuple val(id), path("*_trim.fastq.gz"), emit: trimmed
         path("${id}_fastp_report.html"), emit: report
    
     script:
 
         // set input/output according to short_paired parameter
         def input = "-i ${fastq[0]}" 
-        def output = "-o ${fastq[0].baseName.replace('.fastq','')}_clean.fastq.gz" 
+        def output = "-o ${fastq[0].baseName.replace('.fastq','')}_trim.fastq.gz" 
         if (params.read_type == "short_paired"){
             input = "-i ${fastq[0]} -I ${fastq[1]}"
-            output = "-o ${fastq[0].baseName.replace('.fastq','')}_clean.fastq.gz -O ${fastq[1].baseName.replace('.fastq','')}_clean.fastq.gz"
+            output = "-o ${fastq[0].baseName.replace('.fastq','')}_trim.fastq.gz -O ${fastq[1].baseName.replace('.fastq','')}_trim.fastq.gz"
         }
 
         """

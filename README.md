@@ -40,13 +40,13 @@ Here is the list of implemented aligners:
 | graphmap2 | x | x R1 and R2 independently aligned then merged with cat | X | X |
 | hisat2 | x | x | x | x |
 | minimap2 | x | x | X | X |
-| ngmlr | x | x | X | X |
+| ngmlr | x | na | X | X |
 | novoalign | X | X | X | x |
 | nucmer | X | X R1 and R2 are concatenated then aligned | x | x |
 | star | X | X | x | x |
 | star 2pass mode | X | X | x | x |
 | subread | X | X | x | x |
-| sublong |  |  |  |  |
+| sublong | x | na | X | X |
 | tophat | X | X | na | na |
 
 Legend  
@@ -64,10 +64,10 @@ It is then translated to the correct option in the following aligners:
 | bbmap | xs=fr / xs=ss / xs=us | ISF ISR / OSF OSR / U | strand information |
 | bbmap | - / rcs=f / | ISF ISR IU / OSF OSR OU MSF MSR MU | read orientation |
 | bowtie2 | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
-| bwaaln | na | na | na | |
-| bwamem | na | na | na | |
-| bwasw | na | na | na | |
-| graphmap2 | na | na | na | |
+| bwaaln | na | na | |
+| bwamem | na | na | |
+| bwasw | na | na | |
+| graphmap2 | na | na | |
 | hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
 | hisat2 | --fr / --rf / --ff | I / O / M | read orientation |
 | minimap2 | na | na | |
@@ -77,6 +77,7 @@ It is then translated to the correct option in the following aligners:
 | star | na | na | |
 | star 2pass mode | na | na | |
 | subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
+| sublong | na | na | |
 | tophat2 | fr-unstranded / fr-firststrand / fr-secondstrand | U / SR / SF | strand information |
 
 If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
@@ -98,7 +99,8 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | nucmer | na |
 | star | GTF / GFF ( --sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | star 2pass mode | GTF / GFF (--sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
-| subread | na |
+| subread | GTF or compatible GFF format (-a) |
+| sublong | na |
 | tophat | GTF/GFF3 (-G) | 
  
 
