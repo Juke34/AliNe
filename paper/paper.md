@@ -45,3 +45,5 @@ The pipeline supports parallel execution, ensuring efficient processing of large
 # Availability
 
 AliNe is freely available under an open-source license. The source code, along with detailed documentation and examples, can be found at [https://github.com/Juke34/AliNe](https://github.com/Juke34/AliNe). Contributions and community feedback are welcome.
+
+# References
