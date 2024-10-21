@@ -26,7 +26,7 @@ AliNe is designed to minimize user inputs and avoid common mistakes like the def
 
 The pipeline is modular, enabling future expansion and the integration of additional tools or customization of downstream analysis steps. Users can adapt AliNe to their specific research needs, whether for RNA-seq, ChIP-seq, or whole-genome resequencing projects.
 
-# Motivation
+# Statement of Need
 
 The complexity of sequencing data analysis, especially with the advent of next-generation sequencing (NGS), has created a demand for robust, scalable, and reproducible workflows that can handle large datasets while allowing users to flexibly choose their preferred analysis tools. While individual aligners have their own strengths, users often need to evaluate multiple aligners for optimal results or based on specific project requirements. By integrating multiple aligners into a unified pipeline, AliNe simplifies this decision-making process and provides a standard workflow to ensure reproducibility and transparency across analyses.
 
