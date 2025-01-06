@@ -22,7 +22,7 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
 
 ## Foreword
 
-AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome.  
+**AliNe** is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome.  
 
  * Can handle short reads paired or single, pacbio and ont (nanopore) data (see list of aligner in [Table 1](#aligner-and-read-types-accepted)).
  * A QC with FastQC is made at each step if option activated.  
