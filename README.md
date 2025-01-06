@@ -12,7 +12,6 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
       * [Aligner and annotation](#aligner-and-annotation)
    * [Flowchart](#flowchart)
    * [Installation](#installation)
-      * [AliNe](#aline-optional)
       * [Nextflow](#nextflow)
       * [Container platform](#container-platform)
         * [Docker](#docker)
@@ -158,19 +157,8 @@ config:
 
 The prerequisites to run the pipeline are:  
 
-  * The AliNe repository
   * [Nextflow](https://www.nextflow.io/)  >= 22.04.0
   * [Docker](https://www.docker.com) or [Singularity](https://sylabs.io/singularity/)  
-
-### AliNe (optional)
-
-```bash
-# clone the workflow repository
-git clone https://github.com/Juke34/AliNe.git
-
-# Move in it
-cd AliNe
-```
 
 ### Nextflow 
 
@@ -219,7 +207,7 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 ## Usage
 
 You can first check the available options and parameters by running:
-`nextflow run aline.nf --help`
+`nextflow run Juke34/AliNe -r v1.0.0 --help`
 
 To run the workflow you must select a profile according to the container platform you want to use:   
 - `singularity`, a profile using Singularity to run the containers
@@ -227,7 +215,7 @@ To run the workflow you must select a profile according to the container platfor
 
 The command will look like that: 
 ```
-nextflow run aline.nf -profile docker <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.0.0 -profile docker <rest of paramaters>
 ```
 Another profile is available (/!\\ actually not yet implemented):
 
@@ -235,7 +223,7 @@ Another profile is available (/!\\ actually not yet implemented):
 
 The use of the `slurm` profile  will give a command like this one: 
 ```
-nextflow run aline.nf -profile singularity,slurm <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.0.0 -profile singularity,slurm <rest of paramaters>
 ```
 ## Test the workflow
 
@@ -243,22 +231,22 @@ Test data are included in the AliNe repository in the `test` folder.
 
 Test with short single reads:
 ```
-nextflow run -profile docker,test_illumina_single aline.nf
+nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.0.0
 ```
 
 Test with short paired reads:
 ```
-nextflow run -profile docker,test_illumina_paired aline.nf
+nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.0.0
 ```
 
 Test with ont reads:
 ```
-nextflow run -profile docker,test_ont aline.nf
+nextflow run -profile docker,test_ont Juke34/AliNe -r v1.0.0
 ```
 
 Test with pacbio reads:
 ```
-nextflow run -profile docker,test_pacbio aline.nf
+nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.0.0
 ```
 
 On success you should get a message looking like this:
