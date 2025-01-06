@@ -2,7 +2,7 @@ AliNe (Alignment in Nextflow)
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
-AliNe is a pipeline written in nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.  
+AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.  
 
 ## Table of Contents
 
