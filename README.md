@@ -18,7 +18,6 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
         * [Singularity](#singularity)  
    * [Usage and test](#usage)
    * [Parameters](#parameters)
-   * [Uninstall](#uninstall)
 
 ## Foreword
 
@@ -303,15 +302,8 @@ On success you should get a message looking like this:
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)
-            --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
+        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
         --tophat2_options            additional options for tophat
-```
-
-## Uninstall
-
-You can simply remove the `AliNe` directory from your computer, and remove the nextflow conda environment:
-```
-conda remove -n nextflow
 ```
