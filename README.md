@@ -39,33 +39,33 @@ You can choose to run one or several aligner in parallel.
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
-| bbmap | X | X | x | x |
-| bowtie2 | X | X | x | x |
-| bwaaln | X | X R1 and R2 independently aligned then merged with bwa sampe | X | X |
-| bwamem | X | X | x | x |
-| bwasw | X | X | x | x |
-| graphmap2 | x | x R1 and R2 independently aligned then merged with cat | X | X |
-| hisat2 | x | x | x | x |
-| minimap2 | x | x | X | X |
-| ngmlr | x | na | X | X |
-| novoalign | X | X | X | x |
-| nucmer | X | X R1 and R2 are concatenated then aligned | x | x |
-| star | X | X | x | x |
-| star 2pass mode | X | X | x | x |
-| subread | X | X | x | x |
-| sublong | x | na | X | X |
-| tophat | X | X | na | na |
+| bbmap | ✅ | ✅ | ⚠️ | ⚠️ |
+| bowtie2 | ✅ | ✅ | ⚠️ | ⚠️ |
+| bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ✅ | ✅ |
+| bwamem | ✅ | ✅ | ⚠️ | ⚠️ |
+| bwasw | ✅ | ✅ | ⚠️ | ⚠️ |
+| graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
+| hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
+| minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
+| ngmlr | ⚠️ | 🚫 | ✅ | ✅ |
+| novoalign | ✅ | ✅ | ✅ | ⚠️ |
+| nucmer | ✅ | ✅ R1 and R2 are concatenated then aligned | ⚠️ | ⚠️ |
+| star | ✅ | ✅ | ⚠️ | ⚠️ |
+| star 2pass mode | ✅ | ✅ | ⚠️ | ⚠️ |
+| subread | ✅ | ✅ | ⚠️ | ⚠️ |
+| sublong | ⚠️ | 🚫 | ✅ | ✅ |
+| tophat | ✅ | ✅ | 🚫 | 🚫 |
 
 *Legend*  
-X Recommended  
-x Not recommended  
-na Not applicable  
+✅ Recommended  
+⚠️ Not recommended - It works but results might be sub-optimal (computing ressources might also be)  
+🚫 Not applicable  
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
 ### Aligner and library types accepted
 
-The pipeline deals automatically with the library types. It extract 10 000 reads by default and-d run salmon to guess the library type. 
+The pipeline deals automatically with the library types. It extract 10 000 reads by default and run salmon to guess the library type. 
 It is then translated to the correct option in the following aligners:
 
 | Tool	| tool option | Library type by salmon | Comment | 
@@ -73,21 +73,25 @@ It is then translated to the correct option in the following aligners:
 | bbmap | xs=fr / xs=ss / xs=us | ISF ISR / OSF OSR / U | strand information |
 | bbmap | - / rcs=f / | ISF ISR IU / OSF OSR OU MSF MSR MU | read orientation |
 | bowtie2 | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
-| bwaaln | na | na | |
-| bwamem | na | na | |
-| bwasw | na | na | |
-| graphmap2 | na | na | |
+| bwaaln | 🚫 | 🚫 | 🚫 |
+| bwamem | 🚫 | 🚫 | 🚫 |
+| bwasw | 🚫 | 🚫 | 🚫 |
+| graphmap2 | 🚫 | 🚫 | 🚫 |
 | hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
 | hisat2 | --fr / --rf / --ff | I / O / M | read orientation |
-| minimap2 | na | na | |
-| ngmlr | na | na | |
-| novoalign | na | na | |
-| nucmer | na | na | |
-| star | na | na | |
-| star 2pass mode | na | na | |
+| minimap2 | 🚫 | 🚫 | 🚫 |
+| ngmlr | 🚫 | 🚫 | 🚫 |
+| novoalign | 🚫 | 🚫 | 🚫 |
+| nucmer | 🚫 | 🚫 | 🚫 |
+| star | 🚫 | 🚫 | 🚫 |
+| star 2pass mode | 🚫 | 🚫 | 🚫 |
 | subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
-| sublong | na | na | |
+| sublong | 🚫 | 🚫 | 🚫 |
 | tophat2 | fr-unstranded / fr-firststrand / fr-secondstrand | U / SR / SF | strand information |
+
+*Legend*  
+U unstranded; SR stranded reverse; SF stranded forward; IU inward unstranded; OU outward unstranded; MU matching unstranded; ISF inward stranded forward; ISR inward stranded reverse; OSF outward stranded forward; OSR outward stranded reverse; MSF matching stranded forward; MSR matching stranded reverse ([see herefor morde details](https://salmon.readthedocs.io/en/latest/library_type.html))  
+🚫 Not applicable  
 
 If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
 /!\ If you provide yourself the librairy type via the aligner parameter, it will be used over the information provided or guessed via --library_type.
