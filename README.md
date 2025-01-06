@@ -12,7 +12,7 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
       * [Aligner and annotation](#aligner-and-annotation)
    * [Flowchart](#flowchart)
    * [Installation](#installation)
-      * [AliNe](#aline)
+      * [AliNe](#aline-optional)
       * [Nextflow](#nextflow)
       * [Container platform](#container-platform)
         * [Docker](#docker)
@@ -162,7 +162,7 @@ The prerequisites to run the pipeline are:
   * [Nextflow](https://www.nextflow.io/)  >= 22.04.0
   * [Docker](https://www.docker.com) or [Singularity](https://sylabs.io/singularity/)  
 
-### AliNe 
+### AliNe (optional)
 
 ```bash
 # clone the workflow repository
