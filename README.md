@@ -23,19 +23,19 @@ AliNe is a pipeline written in nextflow that aims to efficiently align reads aga
 
 ## Foreword
 
-AliNe is a pipeline written in nextflow that aims to efficienlty align reads against a reference genome.  
+AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome.  
 
- * Can handle short reads paired or single, pacbio and ont (nanopore) data (see list of aligner in table1) .  
+ * Can handle short reads paired or single, pacbio and ont (nanopore) data (see list of aligner in [Table 1](#aligner-and-read-types-accepted)).
  * A QC with FastQC is made at each step if option activated.  
  * A trimming is feasible before alignment if option activated.
- * **The pipeline deals automaticallu with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+').** All fastq will be standardised in Phred+33 for downstream alignments by seqkit.
- * Deal automatically with the type of library used: stranded or not, firstrand, secondstrand etc... (see list of aligner in table2) 
- * Can deal with annotation file (see list of aligner in table3) 
+ * **The pipeline deals automatically with all quality encoding ('sanger', 'solexa', 'illumina-1.3+', 'illumina-1.5+', 'illumina-1.8+').** All fastq will be standardised in Phred+33 for downstream alignments by seqkit.
+ * Deal automatically with the type of library used: stranded or not, firstrand, secondstrand etc... (see list of aligner in [Table 2](#aligner-and-library-types-accepted)) 
+ * Can deal with annotation file (see list of aligner in [Table 3](#aligner-and-annotation)) 
 You can choose to run one or several aligner in parallel.
 
 ### Aligner and read types accepted
 
-** Table1** Here is the list of implemented aligners and the type of reads accepted:
+**Table 1** Here is the list of implemented aligners and the type of reads accepted:
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
@@ -57,7 +57,7 @@ You can choose to run one or several aligner in parallel.
 | tophat | X | X | na | na |
 
 *Legend*  
-X Recomended  
+X Recommended  
 x Not recommended  
 na Not applicable  
 
@@ -95,6 +95,7 @@ If the skip_libray_usage paramater is set the information provided about the lib
 ### Aligner and annotation
 
 If you provide an annotation file the pipeline will pass automatically the file to the following aligner:  
+
 | Tool	| accept | 
 | --- | --- | 
 | bbmap | na | 
