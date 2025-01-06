@@ -93,8 +93,10 @@ It is then translated to the correct option in the following aligners:
 U unstranded; SR stranded reverse; SF stranded forward; IU inward unstranded; OU outward unstranded; MU matching unstranded; ISF inward stranded forward; ISR inward stranded reverse; OSF outward stranded forward; OSR outward stranded reverse; MSF matching stranded forward; MSR matching stranded reverse ([see herefor morde details](https://salmon.readthedocs.io/en/latest/library_type.html))  
 🚫 Not applicable  
 
-If the skip_libray_usage paramater is set the information provided about the library type provided by the user or guessed by the pipeline via the --library_type parameter is not used.
-/!\ If you provide yourself the librairy type via the aligner parameter, it will be used over the information provided or guessed via --library_type.
+By default the `--library_type` is in auto mode and the pipeline will automatically detect the library type.  
+You can also specify manually the library type to use via the `--library_type` parameter.  
+If the `skip_libray_usage` paramater is set, the information about the library type—either provided by the user or inferred by the pipeline using the `--library_type` parameter—will be ignored.  
+**Note:** If you explicitly specify the library type via the aligner parameter (e.g. `hisat2_options` for hisat2), that value will take precedence over any information provided or inferred using `--library_type`.
 
 ### Aligner and annotation
 
@@ -102,23 +104,25 @@ If you provide an annotation file the pipeline will pass automatically the file 
 
 | Tool	| accept | 
 | --- | --- | 
-| bbmap | na | 
-| bowtie2 | na |
-| bwaaln | na |
-| bwamem | na |
-| bwasw | na |
+| bbmap | 🚫 | 
+| bowtie2 | 🚫 |
+| bwaaln | 🚫 |
+| bwamem | 🚫 |
+| bwasw | 🚫 |
 | graphmap2 | GTF (--gtf)  |
-| hisat2 | na |
-| minimap2 | na |
-| ngmlr | na |
-| novoalign | na |
-| nucmer | na |
+| hisat2 | 🚫 |
+| minimap2 | 🚫 |
+| ngmlr | 🚫 |
+| novoalign | 🚫 |
+| nucmer | 🚫 |
 | star | GTF / GFF ( --sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | star 2pass mode | GTF / GFF (--sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | subread | GTF or compatible GFF format (-a) |
-| sublong | na |
+| sublong | 🚫 |
 | tophat | GTF/GFF3 (-G) | 
- 
+
+ *Legend*  
+🚫 Not applicable  
 
 ## Flowchart
 
