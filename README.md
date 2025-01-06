@@ -121,7 +121,6 @@ If you provide an annotation file the pipeline will pass automatically the file 
 ```mermaid
 ---
 config:
-  look: handDrawn
   theme: neutral
 ---
   graph TD;
