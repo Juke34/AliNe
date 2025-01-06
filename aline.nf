@@ -831,7 +831,7 @@ def helpMSG() {
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
         --star_2pass                  set to true to run STAR in 2pass mode (default: false)
-            --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
+        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
         --tophat2_options            additional options for tophat
