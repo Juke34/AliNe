@@ -133,21 +133,21 @@ config:
       Genome-->Index;
       Index-->Aligner1;
       Index-->Aligner2;
-      Annotation--> Aligner1;
+      Annotation[Annotation - optional]--> Aligner1;
       Annotation--> Aligner2;
-      Reads --> QCraw;
-      Reads --> StandardizeScore 
+      Reads --> QCraw[QC raw];
+      Reads --> StandardizeScore[Standardize score] 
       StandardizeScore --> Trim;
-      Trim --> LibraryGuessing;
+      Trim[Trim - optional] --> LibraryGuessing[Library guessing<br>strandedness and orientation];
       Trim --> QCtrim;
       LibraryGuessing --> Aligner1;
       LibraryGuessing --> Aligner2;
       Trim --> Aligner1;
-      Aligner1 --> QCaligner1;
+      Aligner1 --> QCaligner1[QC aligner1];
       Trim --> Aligner2;
-      Aligner2 --> QCaligner2;
-      QCraw --> MultiQC;
-      QCtrim --> MultiQC;
+      Aligner2 --> QCaligner2[QC aligner2];
+      QCraw[QC raw] --> MultiQC;
+      QCtrim[QC trim] --> MultiQC;
       QCaligner1 --> MultiQC;
       QCaligner2 --> MultiQC;
 ```
