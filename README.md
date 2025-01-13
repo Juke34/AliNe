@@ -165,7 +165,8 @@ The prerequisites to run the pipeline are:
 
     <details>
       <summary>See here</summary>
-      ```
+      
+      ```bash
       conda create -n nextflow
       conda activate nextflow
       conda install nextflow
@@ -175,15 +176,15 @@ The prerequisites to run the pipeline are:
   * Manually
     <details>
       <summary>See here</summary>
-       Nextflow runs on most POSIX systems (Linux, macOS, etc) and can typically be installed by running these commands:
+      Nextflow runs on most POSIX systems (Linux, macOS, etc) and can typically be installed by running these commands:
 
-      ```
+      ```bash
       # Make sure 11 or later is installed on your computer by using the command:
       java -version
-
+      
       # Install Nextflow by entering this command in your terminal(it creates a file nextflow in the current dir):
       curl -s https://get.nextflow.io | bash 
-
+      
       # Add Nextflow binary to your user's PATH:
       mv nextflow ~/bin/
       # OR system-wide installation:
@@ -206,49 +207,61 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 ## Usage
 
 You can first check the available options and parameters by running:
-`nextflow run Juke34/AliNe -r v1.0.0 --help`
+
+```bash
+nextflow run Juke34/AliNe -r v1.0.0 --help
+```
 
 To run the workflow you must select a profile according to the container platform you want to use:   
 - `singularity`, a profile using Singularity to run the containers
 - `docker`, a profile using Docker to run the containers
 
 The command will look like that: 
-```
+
+```bash
 nextflow run Juke34/AliNe -r v1.0.0 -profile docker <rest of paramaters>
 ```
+
 Another profile is available (/!\\ actually not yet implemented):
 
 - `slurm`, to add if your system has a slurm executor (local by default) 
 
-The use of the `slurm` profile  will give a command like this one: 
-```
+The use of the `slurm` profile  will give a command like this one:
+
+```bash
 nextflow run Juke34/AliNe -r v1.0.0 -profile singularity,slurm <rest of paramaters>
 ```
+
 ## Test the workflow
 
 Test data are included in the AliNe repository in the `test` folder.
 
 Test with short single reads:
-```
+
+```bash
 nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.0.0
 ```
 
 Test with short paired reads:
-```
+
+```bash
 nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.0.0
 ```
 
 Test with ont reads:
-```
+
+```bash
 nextflow run -profile docker,test_ont Juke34/AliNe -r v1.0.0
 ```
 
 Test with pacbio reads:
-```
+
+```bash
 nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.0.0
 ```
 
 On success you should get a message looking like this:
+
 ```
   AliNe Pipeline execution summary
     --------------------------------------
