@@ -13,7 +13,7 @@ process prepare_star_index_options {
     script:
         star_index_options = "${params.star_index_options}"
 
-        if ( annotation.toString() != "null.gtf" ){
+        if ( annotation.toString() != "aline_null.gtf" ){
             // Deal with --sjdbGTFfile option
             if( !star_index_options.contains("--sjdbGTFfile") ){
                 star_index_options += " --sjdbGTFfile ${annotation}"

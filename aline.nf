@@ -120,20 +120,24 @@ if( ! params.library_type.contains("auto") ){
 }
 
 // ---- check annotation file
-def annotation_file = ""
+def annotation_file
 if (params.annotation){
-    File f = new File( "${params.annotation}" );
-    if (! f.exists() ){
-          log.error "Warning: Annotation file <${params.annotation}> does not exist.\n"
-          stop_pipeline = true
+    if (params.annotation.startsWith('http:') || params.annotation.startsWith('https:') || params.annotation.startsWith('s3:') || params.annotation.startsWith('az:') || params.annotation.startsWith('gs:') || params.annotation.startsWith('ftp:') ) {
+        annotation_file = file(params.annotation)
+        annotation_file = annotation_file.getName()
+    } else {
+        File f = new File( "${params.annotation}" );
+        if (! f.exists() ){
+            log.error "Warning: Annotation file <${params.annotation}> does not exist.\n"
+            stop_pipeline = true
+        }
+        annotation_file = f.getName()
     }
-    annotation_file = f.getName()
 }
 
 // ----------------------------------------------------------
 
 log.info """check alinger parameters ..."""
-
 
 // --- bbmap tool ---
 if ("bbmap" in aligner_list && !params.relax){
@@ -321,6 +325,7 @@ log.info """
 General Parameters
      genome                     : ${params.genome}
      reads                      : ${params.reads}
+     annotation                 : ${params.annotation}
      aligner                    : ${params.aligner}
      read_type                  : ${params.read_type}
      paired_reads_pattern       : ${params.paired_reads_pattern}
@@ -339,7 +344,6 @@ log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_op
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
-include {prepare_annotation} from "$baseDir/modules/bash.nf"
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
@@ -383,51 +387,72 @@ if (
   ) { "executer selected" }
 else { exit 1, "No executer selected: -profile docker/singularity"}
 
-// check input (file or folder?)
+// --------- handle read input (file or folder / local or remote / paired or not) --------
 def list_files = []
 def pattern_reads
 def fromFilePairs_input
-def per_pair = false // read the reads per pair
 def path_reads = params.reads 
 
-// in case of folder provided, add a trailing slash if missing
-File input_reads = new File(path_reads)
-if(input_reads.exists()){
-    if ( input_reads.isDirectory()) {
-        if (! input_reads.name.endsWith("/")) {
-            path_reads = "${path_reads}" + "/"
+// check if paired reads
+def per_pair = false // read the reads per pair
+if (params.read_type == "short_paired") {
+        per_pair = true
+}
+
+// Case of remote data 
+def via_URL = false
+def read_list=[]
+if (path_reads.startsWith('https:') || path_reads.startsWith('s3:') || path_reads.startsWith('az:') || path_reads.startsWith('gs:') || path_reads.startsWith('ftp:') ) {
+    log.info "The input is a based on URLs! ${path_reads}\n"
+    via_URL = true
+    str_list = path_reads.tokenize(',')
+    str_list.each {
+        str_list2 = it.tokenize(' ')
+        str_list2.each {
+            read_list.add(file(it)) // use file insted of File for URL
         }
     }
+    fromFilePairs_input = read_list
 }
-
-if (params.read_type == "short_paired") {
-    per_pair = true
-    pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
-    fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
-} else{
-    pattern_reads = "${params.reads_extension}"
-    fromFilePairs_input = "${path_reads}*${params.reads_extension}"
-}
-
-if(input_reads.exists()){
-    if ( input_reads.isDirectory()) {
-        log.info "The input ${path_reads} is a folder!\n"
-        input_reads.eachFileRecurse(FILES){
-            if (it.name =~ ~/${pattern_reads}/){
-                list_files.add(it)
+// Case of local data
+else {
+    File input_reads = file(path_reads)
+    if(input_reads.exists()){
+        if ( input_reads.isDirectory()) {
+            // in case of folder provided, add a trailing slash if missing
+            if (! input_reads.name.endsWith("/")) { 
+                path_reads = "${path_reads}" + "/"
             }
         }
-        samples_number = list_files.size()
-        log.info "${samples_number} files in ${path_reads} with pattern ${pattern_reads}"
     }
-    else {
-        log.info "The input ${path_reads} is a file!\n"
-        pattern_reads = "${path_reads}"
-    }
-} else {
-    exit 1, "The input ${path_reads} does not exists!\n"
-}
 
+    if (params.read_type == "short_paired") {
+        pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
+        fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
+    } else{
+        pattern_reads = "${params.reads_extension}"
+        fromFilePairs_input = "${path_reads}*${params.reads_extension}"
+    }
+
+    if(input_reads.exists()){
+        if ( input_reads.isDirectory()) {
+            log.info "The input ${path_reads} is a folder!\n"
+            input_reads.eachFileRecurse(FILES){
+                if (it.name =~ ~/${pattern_reads}/){
+                    list_files.add(it)
+                }
+            }
+            samples_number = list_files.size()
+            log.info "${samples_number} files in ${path_reads} with pattern ${pattern_reads}"
+        }
+        else {
+            log.info "The input ${path_reads} is a file!\n"
+            pattern_reads = "${path_reads}"
+        }
+    } else {
+        exit 1, "The input ${path_reads} does not exists!\n"
+    }
+}
 //*************************************************
 // STEP 4 - Main Workflow
 //*************************************************
@@ -435,14 +460,28 @@ if(input_reads.exists()){
 workflow {
 
     main:
-        def reads
-        reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
-            .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
-      
+        // In case of URL paired data, we cannot use fromFilePairs because matching pattern impossible. We must recreate manually a structure similar 
+        if (via_URL && per_pair){
+            my_samples = Channel.of(read_list)
+            reads = my_samples.flatten().map { it -> [it.name.split('_')[0], it] }
+                                .groupTuple()
+                                .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
+        } else {
+            reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
+                .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
+        }
+
         genome = Channel.fromPath(params.genome, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find genome matching ${params.genome}!\n" }
-           
-        align(reads,genome,aligner_list)
+
+        if(annotation_file){
+            annotation = Channel.fromPath(params.annotation, checkIfExists: true)
+                .ifEmpty { exit 1, "Cannot find annotation matching ${annotation_file}!\n" }
+        } else {
+            annotation = Channel.of("$baseDir/config/aline_null.gtf") // use the fake file (not used by tools just for the processes to be called)
+        }
+
+        align(reads, genome, annotation, aligner_list)
 }
 
 
@@ -455,6 +494,7 @@ workflow align {
     take:
         raw_reads
         genome
+        annotation
         aligner_list
 
     main:
@@ -464,10 +504,6 @@ workflow align {
         // ------------------------------------------------------------------------------------------------
         //                                          PREPROCESSING 
         // ------------------------------------------------------------------------------------------------
-
-        // Prepare annotation
-        prepare_annotation(params.annotation)
-        prepare_annotation.out.set{annotation}
 
         // ------------------- QC -----------------
         if(params.fastqc){
@@ -830,7 +866,7 @@ def helpMSG() {
         --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
-        --star_2pass                  set to true to run STAR in 2pass mode (default: false)
+        --star_2pass                set to true to run STAR in 2pass mode (default: false)
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
