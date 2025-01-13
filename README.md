@@ -206,11 +206,15 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 
 ## Usage
 
+### Help
+
 You can first check the available options and parameters by running:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.0 --help
+nextflow run Juke34/AliNe -r v1.0.1 --help
 ```
+
+### Profile
 
 To run the workflow you must select a profile according to the container platform you want to use:   
 - `singularity`, a profile using Singularity to run the containers
@@ -219,7 +223,7 @@ To run the workflow you must select a profile according to the container platfor
 The command will look like that: 
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.0 -profile docker <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.0.1 -profile docker <rest of paramaters>
 ```
 
 Another profile is available (/!\\ actually not yet implemented):
@@ -229,7 +233,24 @@ Another profile is available (/!\\ actually not yet implemented):
 The use of the `slurm` profile  will give a command like this one:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.0 -profile singularity,slurm <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.0.1 -profile singularity,slurm <rest of paramaters>
+```
+
+### Example
+
+A typical command might look like the following.  
+Here, we use the docker container platform, remote read and genome files, specify that we use single-ended short reads, list a number of aligners, enable trimming with fastp and provide specific options for the star aligner.
+
+```bash
+nextflow run Juke34/AliNe \
+  -r v1.0.1 \
+  -profile docker \
+  --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
+  --genome https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
+  --read_type short_single \
+  --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong,tophat2 \
+  --trimming_fastp \
+  --star_options "--genomeSAindexNbases 9"
 ```
 
 ## Test the workflow
@@ -239,25 +260,25 @@ Test data are included in the AliNe repository in the `test` folder.
 Test with short single reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.0.0
+nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.0.1
 ```
 
 Test with short paired reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.0.0
+nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.0.1
 ```
 
 Test with ont reads:
 
 ```bash
-nextflow run -profile docker,test_ont Juke34/AliNe -r v1.0.0
+nextflow run -profile docker,test_ont Juke34/AliNe -r v1.0.1
 ```
 
 Test with pacbio reads:
 
 ```bash
-nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.0.0
+nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.0.1
 ```
 
 On success you should get a message looking like this:
@@ -314,7 +335,7 @@ On success you should get a message looking like this:
         --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
         --star_options              additional options for star
-        --star_2pass                  set to true to run STAR in 2pass mode (default: false)
+        --star_2pass                set to true to run STAR in 2pass mode (default: false)
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
