@@ -303,6 +303,7 @@ if ( "sublong" in aligner_list ){
 
 // --- tophat2 tool ---
 if ( "tophat2" in aligner_list ){
+    log.warn ": Tophat2 has been deprecated. The developers recommend to switch to HISAT2. It is implemented here uniquely for comparison and reproducibily of ancient analyses.\n"
     if (annotation_file && !params.tophat2_options.contains("-G ") ){
          params.replace("tophat2_options", "${params.tophat2_options} -G ${annotation_file}")
     }
