@@ -40,7 +40,17 @@ jobs:
       - name: Install openjdk
         if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
         run: sudo apt-get install openjdk-11-jdk
+      
+      - name: Cache nextflow
+        id: cache-nextflow
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/bin/nextflow
+          key: ${{ runner.os }}-nextflow
+          restore-keys: |
+            ${{ runner.os }}-nextflow
       - name: Install Nextflox
+        if: ${{ steps.cache-nextflow.outputs.cache-hit != 'true' }}
         run: curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
