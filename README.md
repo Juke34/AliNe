@@ -44,11 +44,12 @@ You can choose to run one or several aligner in parallel.
 | bwasw | ✅ | ✅ | ⚠️ | ⚠️ |
 | graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
+| kallisto | ✅ | ✅ | ⚠️ | ⚠️ |
 | minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
 | ngmlr | ⚠️ | 🚫 | ✅ | ✅ |
 | novoalign | ✅ | ✅ | ✅ | ⚠️ |
 | nucmer | ✅ | ✅ R1 and R2 are concatenated then aligned | ⚠️ | ⚠️ |
-| star | ✅ | ✅ | ⚠️ | ⚠️ |
+| star | ✅ | ✅ | ✅ use STARlong | ✅ use STARlong |
 | star 2pass mode | ✅ | ✅ | ⚠️ | ⚠️ |
 | subread | ✅ | ✅ | ⚠️ | ⚠️ |
 | sublong | ⚠️ | 🚫 | ✅ | ✅ |
@@ -77,6 +78,7 @@ It is then translated to the correct option in the following aligners:
 | graphmap2 | 🚫 | 🚫 | 🚫 |
 | hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
 | hisat2 | --fr / --rf / --ff | I / O / M | read orientation |
+| kallisto | --fr-stranded / --rf-stranded | I / O | read orientation |
 | minimap2 | 🚫 | 🚫 | 🚫 |
 | ngmlr | 🚫 | 🚫 | 🚫 |
 | novoalign | 🚫 | 🚫 | 🚫 |
@@ -109,6 +111,7 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | bwasw | 🚫 |
 | graphmap2 | GTF (--gtf)  |
 | hisat2 | 🚫 |
+| kallisto | 🚫 |
 | minimap2 | 🚫 |
 | ngmlr | 🚫 |
 | novoalign | 🚫 |

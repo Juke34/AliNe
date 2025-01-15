@@ -7,6 +7,7 @@ run_modules:
     - hisat2
     - star
     - tophat
+    - kallisto
     
 module_order:
     - fastqc:
@@ -50,6 +51,11 @@ module_order:
         name: "FastQC (hisat2)"
         path_filters:
           - "*hisat2_logs*"
+    - kallisto
+    - fastqc:
+        name: "FastQC (kallisto)"
+        path_filters:
+          - "*kallisto_logs*"
     - fastqc:
         name: "FastQC (minimap2)"
         path_filters:

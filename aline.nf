@@ -38,7 +38,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
+align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie2_options = ''
@@ -47,6 +47,8 @@ params.bwamem_options = ''
 params.bwasw_options = ''
 params.graphmap2_options = '' // owler option is possible
 params.hisat2_options = ''
+params.kallisto_options = ''
+params.kallisto_index_options = '' // e.g. to use --distinguish, --make-unique, etc...
 params.minimap2_options = '' 
 params.minimap2_index_options = '' //  -k, -w, -H and -I
 params.ngmlr_options = ''
@@ -69,6 +71,7 @@ params.help = null
 params.seqtk_sample_size = 10000 // number of reads to sample for seqtk - used to determnine the library type
 bbmap_tool = "bbmap.sh"
 star_tool = "STAR"
+params.debug = false
 
 //*************************************************
 // STEP 1 - HELP
@@ -136,6 +139,8 @@ if (params.annotation){
 }
 
 // ----------------------------------------------------------
+// Add annotation file within the tool options if annotation provided
+// Add specific options for aligner according to the read type
 
 log.info """check alinger parameters ..."""
 
@@ -192,6 +197,12 @@ if ("bwasw" in aligner_list && !params.relax){
 if ("graphmap2" in aligner_list ){
     if (annotation_file && !params.graphmap2_options.contains("--gtf ") ){
         params.replace("graphmap2_options", "${params.graphmap2_options} --gtf ${annotation_file}")
+    }
+}
+
+if ( "kallisto" in aligner_list ){
+    if ( params.read_type == "ont" || params.read_type == "pacbio"){
+        log.warn "Kallisto aligner is not recommended to align long reads!\n"
     }
 }
 
@@ -345,6 +356,7 @@ log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_op
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
+include {read_length; set_tuple_withUserReadLength} from "$baseDir/modules/bash.nf" 
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
@@ -353,10 +365,11 @@ include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2 ; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; fastqc as fastqc_ali_novoalign ; 
-         fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; fastqc as fastqc_ali_sublong ;
-         fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
-include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf" 
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
+         fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
+         fastqc as fastqc_ali_sublong ; fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
+include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf"
+include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
 include {multiqc} from "$baseDir/modules/multiqc.nf" 
 include {ngmlr} from "$baseDir/modules/ngmlr.nf" 
@@ -417,13 +430,11 @@ if (path_reads.startsWith('https:') || path_reads.startsWith('s3:') || path_read
 }
 // Case of local data
 else {
-    File input_reads = file(path_reads)
+    File input_reads = new File(path_reads)
     if(input_reads.exists()){
         if ( input_reads.isDirectory()) {
             // in case of folder provided, add a trailing slash if missing
-            if (! input_reads.name.endsWith("/")) { 
-                path_reads = "${path_reads}" + "/"
-            }
+            path_reads = "${input_reads}" + "/"
         }
     }
 
@@ -448,7 +459,10 @@ else {
         }
         else {
             log.info "The input ${path_reads} is a file!\n"
-            pattern_reads = "${path_reads}"
+            fromFilePairs_input = "${path_reads}"
+            if (params.read_type == "short_paired") {
+                log.error "Providing a file is not authorized for (local) paired data! Please provide a folder path or change <read_type> parameter to <short_single>.\n"
+            }
         }
     } else {
         exit 1, "The input ${path_reads} does not exists!\n"
@@ -513,6 +527,7 @@ workflow align {
         }
 
         // ------------------- Standardize Score to Be Phred+33 ----------------
+        params.debug && log.info('Standardize Score to Be Phred+33')
         seqkit_convert(raw_reads, "seqkit_score")
         seqkit_convert.out.trimmed.set{raw_reads_standardized}
         // ------------------------------------------------------------------------------------------------
@@ -521,6 +536,7 @@ workflow align {
 
         // ------------------- FASTP -----------------
         if (params.trimming_fastp){
+            params.debug && log.info('fastp trimming')
             fastp(raw_reads_standardized, "fastp")
             fastp.out.trimmed.set{raw_reads_trim}
             logs.concat(fastp.out.report).set{logs} // save log
@@ -533,13 +549,34 @@ workflow align {
         }
 
         // ------------------------------------------------------------------------------------------------
-        //                              LIBRARY TYPE GUESSING
+        //                              LIBRARY TYPE GUESSING - 
+        // here we subsample and do read length and library type guessing only if needed.
         // ------------------------------------------------------------------------------------------------
-
+        
+        // In which case I need the mean read length (kallisto, star)
+        // Need to list here all aligner that need the read length
+        params.debug && log.info('read_length guessing')
+        def guess_read_length = null
+        if ( (!params.read_length) && 
+           ( ("kallisto" in aligner_list && params.read_type == "short_single" && ( !params.kallisto_options.contains("-l ") || !params.kallisto_options.contains("--fragment-length  ") ) ) || 
+           ( annotation.toString() != "aline_null.gtf" && !params.star_index_options.contains("--sjdbOverhang") ) ) ){
+                guess_read_length=1
+        }
+        params.debug && log.info('subsample guessing')
+        // Should I subsample for library type guessing?
+        def subsample_lg = false
         if (params.library_type.contains("auto")){
+            subsample_lg = true
+        }
+
+        // Subsample if needed (can be for library guessing or read length guessing)
+        if (subsample_lg || guess_read_length){
             // ------------------- subsample -----------------
             seqtk_sample(raw_reads_trim)
+        }
 
+        // ------------------- set libtype -----------------
+        if (params.library_type.contains("auto")){
             // ------------------- guess libtype -------------------
             salmon_index(genome.collect())
             salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon")
@@ -550,6 +587,15 @@ workflow align {
         }
         reads = raw_reads_trim.join(tuple_id_lib)
 
+        // ------------------- set read length -----------------
+        if (guess_read_length){
+            read_length(seqtk_sample.out.sampled, "mean_read_length")
+            read_length.out.tuple_id_readlength.set{tuple_id_readle}
+        }else{
+            set_tuple_withUserReadLength(raw_reads_trim)
+            set_tuple_withUserReadLength.out.set{tuple_id_readle}
+        }
+        reads = reads.join(tuple_id_readle)
         // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 
         // ------------------------------------------------------------------------------------------------
@@ -631,7 +677,7 @@ workflow align {
         // ------------------- GRAPHMAP2 -----------------
         if ("graphmap2" in aligner_list ){
             graphmap2_index(genome.collect(), "alignment/graphmap2/indicies")
-            graphmap2(reads, genome.collect(), graphmap2_index.out.collect(), annotation, "alignment/graphmap2") // align
+            graphmap2(reads, genome.collect(), graphmap2_index.out.collect(), annotation.collect(), "alignment/graphmap2") // align
             logs.concat(graphmap2.out.graphmap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_graphmap2(graphmap2.out.tuple_sample_sam)
@@ -660,6 +706,17 @@ workflow align {
             }
         }
 
+        // ------------------- KALLISTO -----------------
+        if ("kallisto" in aligner_list){
+            kallisto_index(genome.collect(),  "alignment/kallisto/indicies") // index
+            kallisto(reads, kallisto_index.out.collect(), "alignment/kallisto") // align
+            logs.concat(kallisto.out.kallisto_summary).set{logs} // save log
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_kallisto(kallisto.out.tuple_sample_bam, "fastqc/kallisto", "kallisto")
+                logs.concat(fastqc_ali_kallisto.out).set{logs} // save log
+            }
+        }
         // ------------------- minimap2 -----------------
         if ("minimap2" in aligner_list ){
             minimap2_index(genome.collect(), "alignment/minimap2/indicies") // index
@@ -725,14 +782,14 @@ workflow align {
             // Take read length information from only one sample for --sjdbOverhang option
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
-            prepare_star_index_options(first_file, annotation, params.read_length)
+            prepare_star_index_options(first_file, annotation.collect())
             star_index(genome.collect(), prepare_star_index_options.out, annotation, "alignment/star/indicies") // index
-            star(reads, star_index.out.collect(), annotation, "alignment/star") // align out is bam and sorted
+            star(reads, star_index.out.collect(), annotation.collect(), "alignment/star") // align out is bam and sorted
             logs.concat(star.out.star_summary).set{logs} // save log
             star.out.splice_junctions.collect().set{splice_junctions} // save splice junction files
             // If  2pass mode
             if(params.star_2pass){
-                star2pass(reads, star_index.out.collect(), splice_junctions, annotation, "alignment/star") // align out is bam and sorted
+                star2pass(reads, star_index.out.collect(), splice_junctions, annotation.collect(), "alignment/star") // align out is bam and sorted
                 logs.concat(star2pass.out.star_summary).set{logs} // save log
                 star2pass.out.tuple_sample_bam.set{star_result}
             } else {
@@ -749,7 +806,7 @@ workflow align {
         // ---------------- subread -----------------
         if ( "subread" in aligner_list ){
             subread_index(genome.collect(), "alignment/subread/indicies")
-            subread(reads, genome.collect(), subread_index.out.collect(), annotation, "alignment/subread") // align
+            subread(reads, genome.collect(), subread_index.out.collect(), annotation.collect(), "alignment/subread") // align
             // stat on sorted aligned reads
             if(params.fastqc){
                 fastqc_ali_subread(subread.out.tuple_sample_bam, "fastqc/subread", "subread")
@@ -772,7 +829,7 @@ workflow align {
         // --- TOPHAT2 ---
         if ("tophat2" in aligner_list ){
             tophat2_index(genome.collect(), "alignment/tophat2/indicies") // index
-            tophat2(reads, genome.collect(), tophat2_index.out.collect(), annotation, "alignment/tophat2") // align
+            tophat2(reads, genome.collect(), tophat2_index.out.collect(), annotation.collect(), "alignment/tophat2") // align
             logs.concat(tophat2.out.tophat2_summary).set{logs} // save log
             samtools_sort_tophat2(tophat2.out.tuple_sample_bam, "alignment/tophat2")
             if(params.fastqc){
@@ -832,7 +889,7 @@ def helpMSG() {
         --help                      prints the help section
 
     General Parameters
-        --reads                     path to the reads file or folder
+        --reads                     path to the reads file or folder. If a folder is provided, all the files with <reads_extension> in the folder will be used. You can provide remote files (commma separated list).
         --reads_extension           extension of the reads files (default: .fastq.gz)
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
@@ -860,6 +917,8 @@ def helpMSG() {
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
+        --kallisto_options          additional options for kallisto
+        --kallisto_index_options    additional options for kallisto index
         --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
         --minimap2_index_options    additional options for minimap2 index
         --ngmlr_options             additional options for ngmlr
@@ -914,10 +973,30 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
     hisat2 parameters
         hisat2_options             : ${params.hisat2_options}
     """}
+    if ("kallisto" in aligner_list){
+        def new_kallisto_sentence = "${params.kallisto_options}"
+        def extra_info="" 
+        if (!params.kallisto_options.contains("-l ") && !params.kallisto_options.contains("--fragment-length  ")){
+            new_kallisto_sentence += " -l XXX" 
+            extra_info = " xxx computed by AliNe"
+        }
+        if (!params.kallisto_options.contains("-s ")){
+            new_kallisto_sentence += " -s YYY" 
+             extra_info += " yyy computed by AliNe"
+        }
+        if (extra_info){
+            new_kallisto_sentence += " # ${extra_info}"
+        }
+        sentence += """
+    kallisto parameters
+        kallisto_options             : ${new_kallisto_sentence}
+        kallisto_index_options       : ${params.kallisto_index_options}
+    """}
     if ("minimap2" in aligner_list){
         sentence += """
     minimap2 parameters
         minimap2_options           : ${params.minimap2_options}
+        minimap2_index_options     : ${params.minimap2_index_options}
     """} 
     if ("ngmlr" in aligner_list){
         sentence += """
@@ -942,7 +1021,7 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
                 new_index_sentence += " --sjdbGTFfile ${annotation_file}"
             }
             if (!star_index_options.contains("--sjdbOverhang") ){
-                new_index_sentence += " --sjdbOverhang XXX" // to be replaced by the read length
+                new_index_sentence += " --sjdbOverhang XXX # xxx computed by AliNe" // to be replaced by the read length
             }
         }
         sentence += """
@@ -970,8 +1049,19 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
 /**************         onComplete         ***************/
 
 workflow.onComplete {
-    log.info ( workflow.success ? "\nAliNe pipeline complete!\n" : "Oops .. something went wrong\n" )
 
+    // Log colors ANSI codes
+    c_reset = params.monochrome_logs ? '' : "\033[0m";
+    c_green = params.monochrome_logs ? '' : "\033[0;32m";
+    c_red = params.monochrome_logs ? '' : "\033[0;31m";
+
+    if (workflow.success) {
+        log.info "\n${c_green}    AliNe pipeline complete!${c_reset}"
+    } else {
+        log.error "${c_red}Oops .. something went wrong${c_reset}"
+    }
+
+    log.info "    The results are available in the ‘${params.outdir}’ directory."
     log.info """
     AliNe Pipeline execution summary
     --------------------------------------
@@ -985,7 +1075,27 @@ workflow.onComplete {
 }
 
 /*
-Add LAST to map ont?
-Check salmon can be used as aligner?
-handle annotation
+Other aligner?
+ - to map ont?
+ - Check salmon can be used as aligner?
+ - dragmap 
+ - bowtie1
+ 
+Annotation:
+Star: When annotation is provided star will need read length information to index the genome. 
+If no read length provided by the user and several fastq files are provided, only the first one will be used to get the read length (we perform only one index).
+
+How to add an aliger ?
+Add a module,
+In aline.nf 
+    Add the aligner in the aligner_list
+    Import module here
+    If behaves differently depending sequencing techniology add condition in the PARAMS CHECK section
+    If tool need read length guessing add it in the LIBRARY TYPE GUESSING to activate the guessing if read length not provided by user.
+    Add in help
+    Add in printAlignerOptions
+    Add process in the workflow align
+    Think to convert sam to bam if necessary
+    Think to sort bam output if necessary 
+Add info in README.md
 */

@@ -48,7 +48,7 @@ process salmon_guess_lib {
 
 }
 
-// Process not related to the tool but to the  library guessing step made with salmon
+// Process not related to the tool but to the library guessing step made with salmon
 process set_tuple_withUserLib{
     label 'salmon'
    

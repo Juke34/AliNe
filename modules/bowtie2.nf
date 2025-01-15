@@ -23,7 +23,7 @@ process bowtie2 {
     publishDir "${params.outdir}/${outpath}", pattern: "*bowtie2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library)
+        tuple val(sample), path(reads), val(library), val(read_length)
         path genome
         path index_files
         val outpath

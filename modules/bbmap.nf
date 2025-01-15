@@ -34,7 +34,7 @@ process bbmap {
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq), val(library)
+        tuple val(sample), path(fastq), val(library), val(read_length)
         path genome_index
         path hisat2_index_files
         val outpath

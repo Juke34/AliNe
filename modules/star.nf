@@ -3,9 +3,8 @@ process prepare_star_index_options {
     label 'bash'
 
     input:
-    tuple val(sample), path(reads), val(library)
+    tuple val(sample), path(reads), val(library), val(read_length)
     path annotation
-    val read_length
 
     output:
         stdout()
@@ -22,7 +21,6 @@ process prepare_star_index_options {
             if (read_length && !star_index_options.contains("--sjdbOverhang") ){
                star_index_options += " --sjdbOverhang " + (read_length.toInteger() - 1)
                 """
-                #!/bin/bash
                 echo -n "${star_index_options}"
                 """
             } 
@@ -33,16 +31,7 @@ process prepare_star_index_options {
                 // Some bash commands as head or grep -q can interrupt another one, which return an error 141. To avoid the problem we unset pipefail
                 """
                 #!/bin/bash
-                set +euo pipefail
-                # use cat or zcat according to extension
-                extension=\$(echo ${file} | awk -F . '{print \$NF}')
-                if [[ \${extension} == "gz" ]];then
-                    command="zcat"
-                else
-                    command="cat"
-                fi
-                a=0;b=0; RESULT=\$(\$command ${file} | head -n 40000 | awk '{if(NR%4==2){ b++; a+=length(\$1)}}END{print int(a/b)}')
-                echo -n ${star_index_options} --sjdbOverhang \$((\${RESULT} - 1 ))
+                echo -n ${star_index_options} --sjdbOverhang ${read_length}
                 """
             }  
         } 
@@ -87,7 +76,7 @@ process star {
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library)
+        tuple val(sample), path(reads), val(library), val(read_length)
         path star_index
         path annotation
         val outpath
@@ -151,7 +140,7 @@ process star2pass{
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library)
+        tuple val(sample), path(reads), val(library), val(read_length)
         path star_index
         path splice_junctions
         path annotation

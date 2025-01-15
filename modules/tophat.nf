@@ -37,7 +37,7 @@ process tophat2 {
                 
 
     input:
-        tuple val(sample), path(reads), val(library)
+        tuple val(sample), path(reads), val(library), val(read_length)
         path genome
         path index_files
         path annotation // optional -if provided the option is set in tophat2_options in main.nf

@@ -28,7 +28,7 @@ process hisat2 {
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library)
+        tuple val(sample), path(reads), val(library), val(read_length)
         path hisat2_index_files
         val outpath
 

@@ -10,7 +10,7 @@ process nucmer {
     publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype)
+        tuple val(sample), path(reads), val(readtype), val(read_length)
         path genome
         val outpath
 

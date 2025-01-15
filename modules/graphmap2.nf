@@ -32,7 +32,7 @@ process graphmap2 {
     publishDir "${params.outdir}/${outpath}", pattern: "*graphmap2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype)
+        tuple val(sample), path(reads), val(readtype), val(read_length)
         path genome
         path graphmap2_index_files
         path annotation // needed in case set in the params.graphmap2_options
@@ -82,7 +82,7 @@ process graphmap2 {
                 # Merge sam
                 cat ${fileName}_graphmap2.sam > ${fileName}_graphmap2_concatR1R2.sam
                 rm ${fileName}_graphmap2.sam
-                grep -v ^@ ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
+                awk '!/^@SQ/ && NF' ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
                 rm ${reads[1].baseName}_graphmap2.sam
                 """
             } else {

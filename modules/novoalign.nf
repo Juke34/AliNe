@@ -32,7 +32,7 @@ process novoalign {
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq), val(library)
+        tuple val(sample), path(fastq), val(library), val(read_length)
         path genome
         path genome_index
         val novoalign_lic
