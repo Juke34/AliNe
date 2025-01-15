@@ -18,6 +18,7 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
         * [Singularity](#singularity)  
    * [Usage and test](#usage)
    * [Parameters](#parameters)
+   * [Contributing](#contributing)
 
 ## Foreword
 
@@ -344,3 +345,7 @@ On success you should get a message looking like this:
         --sublong_options           additional options for sublong
         --tophat2_options            additional options for tophat
 ```
+
+## Contributing
+
+Contributions from the community are welcome ! See the [Contributing guidelines](https://github.com/Juke34/aline/blob/main/CONTRIBUTING.md)
