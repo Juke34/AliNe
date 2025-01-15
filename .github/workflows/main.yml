@@ -29,7 +29,16 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Install Nextflow dependencies
+      - name: Cache OpenJDK
+        id: cache-openjdk
+        uses: actions/cache@v3
+        with:
+          path: /usr/lib/jvm/java-11-openjdk
+          key: ${{ runner.os }}-openjdk-11
+          restore-keys: |
+            ${{ runner.os }}-openjdk
+      - name: Install openjdk
+        if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
         run: sudo apt-get install openjdk-11-jdk
       - name: Install Nextflox
         run: curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
