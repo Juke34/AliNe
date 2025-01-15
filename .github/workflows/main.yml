@@ -36,6 +36,11 @@ jobs:
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+      - name: test short single
+        run: nextflow run -profile docker,test_illumina_single aline.nf
       - name: test short paired
         run: nextflow run -profile docker,test_illumina_paired aline.nf
-
+      - name: test ont
+        run: nextflow run -profile docker,test_ont aline.nf
+      - name: test pacbio
+        run: nextflow run -profile docker,test_pacbio aline.nf
