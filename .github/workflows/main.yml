@@ -19,7 +19,13 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
     # The type of runner that the job will run on
-    runs-on: docker:dind
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged --shm-size=2g
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
