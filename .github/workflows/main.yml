@@ -1,0 +1,34 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+# Triggers the workflow on push or pull request events
+on: [push, pull_request, workflow_dispatch]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:  
+
+  # This workflow contains a second job called "build2"
+  build_perl536:
+    # avoid to run twice push and PR
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    # The type of runner that the job will run on
+    runs-on: stable-dind
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Install Nextflow dependencies
+        run: apk add --no-cache bash curl openjdk11
+      - name: Install Nextflox
+        run: curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
+        
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        run: nextflow run -profile docker,test_illumina_paired aline.nf
+
