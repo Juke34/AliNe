@@ -82,7 +82,7 @@ process graphmap2 {
                 # Merge sam
                 cat ${fileName}_graphmap2.sam > ${fileName}_graphmap2_concatR1R2.sam
                 rm ${fileName}_graphmap2.sam
-                awk '!/^@SQ/ && NF' ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
+                awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
                 rm ${reads[1].baseName}_graphmap2.sam
                 """
             } else {
