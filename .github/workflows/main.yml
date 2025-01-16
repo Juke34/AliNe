@@ -1,0 +1,67 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+# Triggers the workflow on push or pull request events
+on: [push, pull_request, workflow_dispatch]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:  
+
+  # This workflow contains a second job called "build2"
+  test_aline:
+    # avoid to run twice push and PR
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged --shm-size=2g
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Install/cache OpenJDK
+      - name: Cache OpenJDK
+        id: cache-openjdk
+        uses: actions/cache@v3
+        with:
+          path: /usr/lib/jvm/java-11-openjdk-amd64
+          key: ${{ runner.os }}-openjdk-11
+          restore-keys: |
+            ${{ runner.os }}-openjdk-11
+      - name: Install openjdk
+        if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
+        run: sudo apt-get install openjdk-11-jdk
+      # Install/cache nextflow
+      - name: Cache nextflow
+        id: cache-nextflow
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/bin/nextflow
+          key: ${{ runner.os }}-nextflow
+          restore-keys: |
+            ${{ runner.os }}-nextflow
+      - name: Install Nextflox
+        if: ${{ steps.cache-nextflow.outputs.cache-hit != 'true' }}
+        run: curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
+        
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      # Run tests sequentialy
+      - name: test short single
+        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
+      - name: test short paired
+        run: nextflow run -ansi-log -profile docker,test_illumina_paired aline.nf
+      - name: test ont
+        run: nextflow run -ansi-log -profile docker,test_ont aline.nf
+      - name: test pacbio
+        run: nextflow run -ansi-log -profile docker,test_pacbio aline.nf
