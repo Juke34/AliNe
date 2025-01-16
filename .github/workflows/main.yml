@@ -29,6 +29,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Install/cache OpenJDK
       - name: Cache OpenJDK
         id: cache-openjdk
         uses: actions/cache@v3
@@ -40,7 +41,7 @@ jobs:
       - name: Install openjdk
         if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
         run: sudo apt-get install openjdk-11-jdk
-      
+      # Install/cache nextflow
       - name: Cache nextflow
         id: cache-nextflow
         uses: actions/cache@v3
@@ -55,6 +56,7 @@ jobs:
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+      # Run tests sequentialy
       - name: test short single
         run: nextflow run -profile docker,test_illumina_single aline.nf
       - name: test short paired
