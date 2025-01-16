@@ -33,10 +33,10 @@ jobs:
         id: cache-openjdk
         uses: actions/cache@v3
         with:
-          path: /usr/lib/jvm/java-11-openjdk
+          path: /usr/lib/jvm/java-11-openjdk-amd64
           key: ${{ runner.os }}-openjdk-11
           restore-keys: |
-            ${{ runner.os }}-openjdk
+            ${{ runner.os }}-openjdk-11
       - name: Install openjdk
         if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
         run: sudo apt-get install openjdk-11-jdk
