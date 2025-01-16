@@ -38,9 +38,10 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
 params.aligner = ''
 params.bbmap_options = ''
+params.bowtie_options = ''
 params.bowtie2_options = ''
 params.bwaaln_options = ''
 params.bwamem_options = ''
@@ -358,12 +359,13 @@ log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_op
 //*************************************************
 include {read_length; set_tuple_withUserReadLength} from "$baseDir/modules/bash.nf" 
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
+include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {seqkit_convert} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie2 ; 
+include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie ; fastqc as fastqc_ali_bowtie2 ; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
          fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
          fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
@@ -376,11 +378,11 @@ include {ngmlr} from "$baseDir/modules/ngmlr.nf"
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {salmon_index; salmon_guess_lib; set_tuple_withUserLib} from "$baseDir/modules/salmon.nf" 
-include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
+include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
          samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
          samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
-include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
+include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_tophat2;
@@ -611,6 +613,22 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_bbmap(samtools_sort_bbmap.out.tuple_sample_sortedbam, "fastqc/bbmap", "bbmap")
                 logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
+            }
+        }
+
+        // ------------------- BOWTIE -----------------
+        if ( "bowtie" in aligner_list ){ // &&
+            bowtie_index(genome.collect(), "alignment/bowtie/indicies") // index
+            bowtie(reads, genome.collect(), bowtie_index.out.collect(), "alignment/bowtie") // align
+            logs.concat(bowtie.out.bowtie_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_bowtie(bowtie.out.tuple_sample_sam)
+            // sort
+            samtools_sort_bowtie(samtools_sam2bam_bowtie.out.tuple_sample_bam, "alignment/bowtie")
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_bowtie(samtools_sort_bowtie.out.tuple_sample_sortedbam, "fastqc/bowtie", "bowtie")
+                logs.concat(fastqc_ali_bowtie.out).set{logs} // save log
             }
         }
 
@@ -911,6 +929,7 @@ def helpMSG() {
 
     Aligner specific options
         --bbmap_options             additional options for bbmap
+        --bowtie_options            additional options for bowtie
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
@@ -942,6 +961,11 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
     bbmap parameters
         bbmap_tool                 : ${bbmap_tool}
         bbmap_options              : ${params.bbmap_options}
+    """} 
+    if ("bowtie" in aligner_list){ 
+        sentence += """       
+    bowtie parameters
+        bowtie_options            : ${params.bowtie_options}
     """} 
     if ("bowtie2" in aligner_list){ 
         sentence += """       

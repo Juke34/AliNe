@@ -39,6 +39,7 @@ You can choose to run one or several aligner in parallel.
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
 | bbmap | ✅ | ✅ | ⚠️ | ⚠️ |
+| bowtie | ✅ | ✅ | ⚠️ | ⚠️ |
 | bowtie2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ✅ | ✅ |
 | bwamem | ✅ | ✅ | ⚠️ | ⚠️ |
@@ -72,6 +73,7 @@ It is then translated to the correct option in the following aligners:
 | --- | --- | --- | --- |
 | bbmap | xs=fr / xs=ss / xs=us | ISF ISR / OSF OSR / U | strand information |
 | bbmap | - / rcs=f / | ISF ISR IU / OSF OSR OU MSF MSR MU | read orientation |
+| bowtie | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
 | bowtie2 | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
 | bwaaln | 🚫 | 🚫 | 🚫 |
 | bwamem | 🚫 | 🚫 | 🚫 |
@@ -104,8 +106,9 @@ If the `skip_libray_usage` paramater is set, the information about the library t
 If you provide an annotation file the pipeline will pass automatically the file to the following aligner:  
 
 | Tool	| accept | 
-| --- | --- | 
-| bbmap | 🚫 | 
+| --- | --- |
+| bbmap | 🚫 |
+| bowtie | 🚫 |
 | bowtie2 | 🚫 |
 | bwaaln | 🚫 |
 | bwamem | 🚫 |
