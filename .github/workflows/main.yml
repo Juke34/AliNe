@@ -58,10 +58,10 @@ jobs:
       - uses: actions/checkout@v3
       # Run tests sequentialy
       - name: test short single
-        run: nextflow run -profile docker,test_illumina_single aline.nf
+        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
       - name: test short paired
-        run: nextflow run -profile docker,test_illumina_paired aline.nf
+        run: nextflow run -ansi-log -profile docker,test_illumina_paired aline.nf
       - name: test ont
-        run: nextflow run -profile docker,test_ont aline.nf
+        run: nextflow run -ansi-log -profile docker,test_ont aline.nf
       - name: test pacbio
-        run: nextflow run -profile docker,test_pacbio aline.nf
+        run: nextflow run -ansi-log -profile docker,test_pacbio aline.nf
