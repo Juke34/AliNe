@@ -55,7 +55,6 @@ You can choose to run one or several aligner in parallel.
 | star 2pass mode | ✅ | ✅ | ⚠️ | ⚠️ |
 | subread | ✅ | ✅ | ⚠️ | ⚠️ |
 | sublong | ⚠️ | 🚫 | ✅ | ✅ |
-| tophat | ✅ | ✅ | 🚫 | 🚫 |
 
 *Legend*  
 ✅ Recommended  
@@ -90,7 +89,6 @@ It is then translated to the correct option in the following aligners:
 | star 2pass mode | 🚫 | 🚫 | 🚫 |
 | subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
 | sublong | 🚫 | 🚫 | 🚫 |
-| tophat2 | fr-unstranded / fr-firststrand / fr-secondstrand | U / SR / SF | strand information |
 
 *Legend*  
 U unstranded; SR stranded reverse; SF stranded forward; IU inward unstranded; OU outward unstranded; MU matching unstranded; ISF inward stranded forward; ISR inward stranded reverse; OSF outward stranded forward; OSR outward stranded reverse; MSF matching stranded forward; MSR matching stranded reverse ([see herefor morde details](https://salmon.readthedocs.io/en/latest/library_type.html))  
@@ -124,7 +122,6 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | star 2pass mode | GTF / GFF (--sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | subread | GTF or compatible GFF format (-a) |
 | sublong | 🚫 |
-| tophat | GTF/GFF3 (-G) | 
 
  *Legend*  
 🚫 Not applicable  
@@ -255,7 +252,7 @@ nextflow run Juke34/AliNe \
   --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
   --genome https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
   --read_type short_single \
-  --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong,tophat2 \
+  --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong \
   --trimming_fastp \
   --star_options "--genomeSAindexNbases 9"
 ```
@@ -310,7 +307,7 @@ On success you should get a message looking like this:
         --reads                     path to the reads file or folder
         --reads_extension           extension of the reads files (default: .fastq.gz)
         --genome                    path to the genome file
-        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong, tophat2]
+        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
@@ -346,7 +343,6 @@ On success you should get a message looking like this:
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
-        --tophat2_options            additional options for tophat
 ```
 
 ## Contributing
