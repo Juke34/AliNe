@@ -6,7 +6,6 @@ run_modules:
     - bowtie2
     - hisat2
     - star
-    - tophat
     - kallisto
     
 module_order:
@@ -77,8 +76,3 @@ module_order:
         name: "FastQC (star)"
         path_filters:
           - "*star_logs*"
-    - tophat
-    - fastqc:
-        name: "FastQC (tophat)"
-        path_filters:
-          - "*tophat2_logs*"

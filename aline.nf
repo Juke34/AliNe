@@ -29,7 +29,7 @@ libtype_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'O
 params.library_type = "auto" 
 params.skip_libray_usage = false // Avoid to use library type provided by library_type or auto
 params.read_length = "" // Use by star to set the sjdbOverhang parameter
-// annotation is used by different aligner (tophat2, star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
+// annotation is used by different aligner (star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
 // If process receive a file wich is not the fake one it includes the file in the command. To append the options of aligner we will use the annotation_file variable
 // While the processes will be called sending the "annotation" channel created by the prepare_annotation process.
 params.annotation = ""
@@ -38,7 +38,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong', 'tophat2' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie_options = ''
@@ -61,7 +61,6 @@ params.star_index_options = ''
 params.star_2pass = false
 params.subread_options = '-t 0'// -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data.
 params.sublong_options = '-X'// -X turn on the RNA-seq mode.
-params.tophat2_options = ''
 
 // Report params
 params.fastqc = false
@@ -313,20 +312,6 @@ if ( "sublong" in aligner_list ){
     }
 }
 
-// --- tophat2 tool ---
-if ( "tophat2" in aligner_list ){
-    log.warn ": Tophat2 has been deprecated. The developers recommend to switch to HISAT2. It is implemented here uniquely for comparison and reproducibily of ancient analyses.\n"
-    if (annotation_file && !params.tophat2_options.contains("-G ") ){
-         params.replace("tophat2_options", "${params.tophat2_options} -G ${annotation_file}")
-    }
-    if (!params.relax){
-        if ( params.read_type == "ont" ||  params.read_type == "pacbio"){
-            log.error "Tophat2 aligner does not handle properly ont or pacbio data, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
-            stop_pipeline = true
-        }
-    }
-}
-
 if(stop_pipeline){
     exit 1, "Please fix previous issues in order to run the pipeline.\n"
 }
@@ -369,7 +354,7 @@ include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbma
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
          fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
          fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
-         fastqc as fastqc_ali_sublong ; fastqc as fastqc_ali_tophat2} from "$baseDir/modules/fastqc.nf"
+         fastqc as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf"
 include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf" 
 include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
@@ -385,12 +370,11 @@ include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; s
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
-         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_tophat2;
+         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer;
          samtools_sort as samtools_sort_sublong } from "$baseDir/modules/samtools.nf"
 include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
-include {tophat2_index; tophat2} from "$baseDir/modules/tophat.nf" 
 
 //*************************************************
 // STEP 3 - CHECK 2 for parameters
@@ -844,18 +828,6 @@ workflow align {
             }
         }
 
-        // --- TOPHAT2 ---
-        if ("tophat2" in aligner_list ){
-            tophat2_index(genome.collect(), "alignment/tophat2/indicies") // index
-            tophat2(reads, genome.collect(), tophat2_index.out.collect(), annotation.collect(), "alignment/tophat2") // align
-            logs.concat(tophat2.out.tophat2_summary).set{logs} // save log
-            samtools_sort_tophat2(tophat2.out.tuple_sample_bam, "alignment/tophat2")
-            if(params.fastqc){
-                fastqc_ali_tophat2(star_result, "fastqc/tophat2", "tophat2")
-                logs.concat(fastqc_ali_tophat2.out).set{logs} // save log
-            }
-        }
-
         // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
 }
@@ -949,7 +921,6 @@ def helpMSG() {
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
-        --tophat2_options            additional options for tophat
 
     """
 }
@@ -1059,11 +1030,6 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
         sentence += """
     subread parameters
         subread_options            : ${params.subread_options}
-    """}
-    if ("tophat2" in aligner_list){
-        sentence += """
-    tophat parameters
-        tophat2_options            : ${params.tophat2_options}
     """}
     
     return sentence
