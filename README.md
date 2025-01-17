@@ -312,7 +312,7 @@ On success you should get a message looking like this:
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
-        --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
+        --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
         --read_type                 type of reads among this list [short_paired, short_single, pacbio, ont] (default: short_paired)
@@ -329,12 +329,14 @@ On success you should get a message looking like this:
 
     Aligner specific options
         --bbmap_options             additional options for bbmap
+        --bowtie_options            additional options for bowtie
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
+        --kallisto_options          additional options for kallisto
         --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
         --minimap2_index_options    additional options for minimap2 index
         --ngmlr_options             additional options for ngmlr
