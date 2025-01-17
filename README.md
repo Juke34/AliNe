@@ -310,7 +310,7 @@ On success you should get a message looking like this:
         --reads                     path to the reads file or folder
         --reads_extension           extension of the reads files (default: .fastq.gz)
         --genome                    path to the genome file
-        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong, tophat2]
+        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong, tophat2]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
