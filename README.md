@@ -176,7 +176,7 @@ The prerequisites to run the pipeline are:
       ```bash
       conda create -n nextflow
       conda activate nextflow
-      conda install nextflow
+      conda install bioconda::nextflow
       ```  
     </details>
 
