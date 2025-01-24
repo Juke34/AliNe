@@ -107,7 +107,7 @@ process star {
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}  \\
+                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -121,7 +121,7 @@ process star {
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}  \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -172,7 +172,7 @@ process star2pass{
                 --readFilesIn pipedRead1 pipedRead2  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_2pass  \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${star_tool}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab
@@ -195,7 +195,7 @@ process star2pass{
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_2pass  \\
+                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${star_tool}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab

@@ -53,7 +53,7 @@ process subread {
         }
 
         // remove fastq.gz
-        def fileName = fastq[0].baseName.replace('.fastq','')
+        def fileName = fastq[0].baseName.replace('.fastq','') + "_subread"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"
@@ -120,7 +120,7 @@ process sublong {
     script:
 
         // remove fastq.gz
-        def fileName = fastq[0].baseName.replace('.fastq','')
+        def fileName = fastq[0].baseName.replace('.fastq','') + "_sublong"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"

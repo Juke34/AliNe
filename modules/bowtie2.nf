@@ -30,7 +30,7 @@ process bowtie2 {
 
     output:
         tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
-        path "*bowtie2.log",  emit: bowtie2_summary
+        path "*.log",  emit: bowtie2_summary
 
     script:
     
@@ -48,22 +48,25 @@ process bowtie2 {
                 read_orientation = "--ff"
             }  
         }
+        
+        // catch filename
+        filename = reads[0].baseName.replace('.fastq','') + "_bowtie2"
 
         if (params.read_type == "short_paired"){
         """
             bowtie2 ${params.bowtie2_options} ${read_orientation}\\
                 -p ${task.cpus} \\
                 -x ${genome.baseName} \\
-                -S ${reads[0].baseName.replace('.fastq','')}_bowtie2.sam \\
-                -1 ${reads[0]} -2 ${reads[1]}  2> ${reads[0].baseName.replace('.fastq','')}_bowtie2.log
+                -S ${filename}.sam \\
+                -1 ${reads[0]} -2 ${reads[1]}  2> ${filename}_sorted.log
         """
         } else {
         """
             bowtie2 ${params.bowtie2_options} ${read_orientation}\\
                     -p ${task.cpus} \\
                     -x ${genome.baseName} \\
-                    -S ${reads.baseName.replace('.fastq','')}_bowtie2.sam \\
-                    -U ${reads} 2> ${reads.baseName}_bowtie2.log
+                    -S ${filename}.sam \\
+                    -U ${reads} 2> ${filename}_sorted.log
         """
         }
 
