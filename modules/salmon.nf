@@ -20,7 +20,7 @@ process salmon_index {
 
 process salmon_guess_lib {
     label 'salmon'
-    publishDir "${params.outdir}/${outpath}", pattern: "*", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:
         tuple val(id), path(fastq)
@@ -29,7 +29,7 @@ process salmon_guess_lib {
 
     output:
         tuple val(id), env(LIBTYPE), emit: tuple_id_libtype
-
+        path "*/*lib_format_counts.json"
    
     script:
 
@@ -44,6 +44,8 @@ process salmon_guess_lib {
             salmon quant -i ${salmon_index} -l A ${input} --thread ${task.cpus} -o ${output} --minAssignedFrags 2 
             # extract the result
             LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
+            # change output name
+            mv ${output}/lib_format_counts.json ${output}/${id}_lib_format_counts.json
         """
 
 }
