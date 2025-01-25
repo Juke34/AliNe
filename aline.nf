@@ -255,6 +255,10 @@ if ("ngmlr" in aligner_list ){
             //stop_pipeline = true
         //}
     }
+    if ( params.read_type == "short_paired"){
+        log.error "ngmlr aligner does not handle paired reads, please remove it from the list of aligner to use.\n"
+        stop_pipeline = true
+    }
 }       
 
 // novoalign tool - load license into the container
@@ -565,7 +569,7 @@ workflow align {
         if (params.library_type.contains("auto")){
             // ------------------- guess libtype -------------------
             salmon_index(genome.collect())
-            salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon")
+            salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon_libtype")
             salmon_guess_lib.out.tuple_id_libtype.set{tuple_id_lib}
         } else {
              set_tuple_withUserLib(raw_reads_trim)
