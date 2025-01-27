@@ -415,7 +415,9 @@ Here the description of typical ouput you will get from AliNe:
 
 In order to compare several aligner output you should activate the `--fastqc` parameter. AliNe will run the FastQC program for each output file, thereafter all FastQC file will be gathered in an html file using MultiQC. The resulting file called `multiqc_report.html` can be found in <outdir>/MultiQC ( <outdir> by default is called `alignment_results` and can be setup using `--outdir` AliNe parameter).
 
-FastQC collect the following information:  
+To compare the output of multiple aligners, you should enable the `--fastqc` parameter. AliNe will execute the FastQC program for each output file. Subsequently, all FastQC reports will be gathered into an HTML file using MultiQC. The resulting file, named `multiqc_report.html`, can be found in the `<output_directory>/MultiQC directory`. By default, the output directory is named `alignment_results`, but this can be customized using the `--outdir` parameter in AliNe.
+
+FastQC collects the following information:  
   * Sequence Counts
   * Sequence Quality 
   * Per Sequence Quality Scores
@@ -429,7 +431,7 @@ FastQC collect the following information:
 
 #### General Statistics
 
-Sequence Duplication Levels, Per Sequence GC Content and Sequence Counts are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` as % Dups, %GC a,d M Seqs accordingly (see below).
+"Sequence Duplication Levels", "Per Sequence GC Content" and "Sequence Count" are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` as "% Dups", "%GC" and "M Seqs" accordingly (see below).
 
 <img src="img/multiqc.png" />
 
