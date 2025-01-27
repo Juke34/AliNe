@@ -513,7 +513,7 @@ workflow align {
         // ------------------- QC -----------------
         if(params.fastqc){
             fastqc_raw(raw_reads, "fastqc/raw", "raw")
-            logs.mix(fastqc_raw.out)
+            logs.concat(fastqc_raw.out).set{logs} // save log
         }
 
         // ------------------- Standardize Score to Be Phred+33 ----------------
@@ -1092,4 +1092,5 @@ In aline.nf
     Think to convert sam to bam if necessary
     Think to sort bam output if necessary 
 Add info in README.md
+Add tool in multiqc config file (at least for fastqc)
 */

@@ -22,6 +22,8 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
    * [Usage and test](#usage)
    * [Parameters](#parameters)
    * [Output](#output)
+      * [Structure](#structure)
+      * [Statistics](#statistics)
    * [Contributing](#contributing)
 
 ## Foreword
@@ -353,6 +355,9 @@ On success you should get a message looking like this:
 
 ## Output
 
+
+### Structure
+
 Here the description of typical ouput you will get from AliNe:  
 
 ```
@@ -404,7 +409,87 @@ Here the description of typical ouput you will get from AliNe:
     └── MultiQC                                               # MultiQC folder that aggregate results across many samples into a single report
         ├── multiqc_report.html                               # Report with interactive plots for statistics across many samples.
         └── multiqc_report_data                               # Plot and data used by the multiqc_report.html
+```
 
+### Statistics
+
+In order to compare several aligner output you should activate the `--fastqc` parameter. AliNe will run the FastQC program for each output file, thereafter all FastQC file will be gathered in an html file using MultiQC. The resulting file called `multiqc_report.html` can be found in <outdir>/MultiQC ( <outdir> by default is called `alignment_results` and can be setup using `--outdir` AliNe parameter).
+
+FastQC collect the following information:  
+  * Sequence Counts
+  * Sequence Quality 
+  * Per Sequence Quality Scores
+  * Per Base Sequence Content
+  * Per Sequence GC Content
+  * Per Base N Content
+  * Sequence Length Distribution
+  * Sequence Duplication Levels 
+  * Overrepresented sequences
+  * Adapter Content
+
+#### General Statistics
+
+Sequence Duplication Levels, Per Sequence GC Content and Sequence Counts are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` as % Dups, %GC a,d M Seqs accordingly (see below).
+
+<img src="img/multiqc.png" />
+
+In order to facilitate the reading of this `General Statistics` you can export the table in tsv using the `Export as CSV...` button and execute the following piece of R code on the downloaded `general_stats_table.tsv` file :
+
+```R
+# install packages
+install.packages("dplyr")
+install.packages("stringr")
+install.packages("tidyr")
+
+# Load necessary libraries
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+# Read the TSV file
+file_path <- "general_stats_table.tsv"
+df <- read.delim(file_path, check.names = FALSE)
+
+# sample name as row name
+rownames(df) <- df$Sample
+
+# remove Sample column and clean up the column names
+tmp <- cbind(ID = rownames(df), stack(df[-1])) |> 
+  transform(ind = as.character(ind) |> stringr::str_remove_all("\\.\\d+"))
+
+# remove na values
+tmp <- tmp[!is.na(tmp$values),]
+# remove . values
+tmp$values <- tmp$values |> stringr::str_remove_all("^\\.$")
+
+# pivot data
+tmp <- tmp |> pivot_wider(id_cols = ID , names_from = ind, values_from = values, 
+              values_fn = \(x) paste(unique(x), collapse = ""))
+
+# print only 4 first columns
+tmp[1:4]
+```
+
+You will get a table similar to this one:  
+
+```
+   ID                                       Dups              GC    Seqs                  
+   <chr>                                    <chr>             <chr> <chr>                 
+ 1 yeast_R1                                 73.01             43    0.01                  
+ 2 yeast_R1_seqkit_trim                     69.21661409043114 44    0.007607999999999999  
+ 3 yeast_R1_seqkit_trim_STAR_sorted         69.54090258811289 44    0.007689              
+ 4 yeast_R1_seqkit_trim_bbmap_sorted        69.21661409043114 44    0.007607999999999999  
+ 5 yeast_R1_seqkit_trim_bowtie2_sorted      69.21661409043114 44    0.007607999999999999  
+ 6 yeast_R1_seqkit_trim_bwaaln_sorted       69.21661409043114 44    0.007607999999999999  
+ 7 yeast_R1_seqkit_trim_bwamem_sorted       69.18933123111286 44    0.007611              
+ 8 yeast_R1_seqkit_trim_bwasw_sorted        69.23279033105622 44    0.007612              
+ 9 yeast_R1_seqkit_trim_graphmap2_sorted    69.21661409043114 44    0.007607999999999999  
+10 yeast_R1_seqkit_trim_hisat2_sorted       69.21661409043114 44    0.007607999999999999  
+11 yeast_R1_seqkit_trim_kallisto_sorted     69.21661409043114 44    0.007607999999999999  
+12 yeast_R1_seqkit_trim_minimap2_sorted     69.63058976020739 44    0.007715              
+13 yeast_R1_seqkit_trim_nucmer.fixed_sorted 64.70588235294117 42    0.00016999999999999999
+14 yeast_R1_seqkit_trim_sublong             53.23343848580442 44    0.007607999999999999  
+15 yeast_R1_seqkit_trim_subread             69.21661409043114 44    0.007607999999999999  
 ```
 
 

@@ -34,8 +34,8 @@ process hisat2 {
 
     output:
         tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
-        path "${sample}_splicesite.txt"
-        path "*hisat2-summary.txt",  emit: hisat2_summary
+        path "*_splicesite.txt"
+        path "*_summary.txt",  emit: hisat2_summary
 
     script:
 
@@ -43,7 +43,7 @@ process hisat2 {
         index_basename = hisat2_index_files[0].toString() - ~/.\d.ht2l?/
         
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','')
+        filename = reads[0].baseName.replace('.fastq','') + "_hisat2"
        
         // deal with library type - default is unstranded.
         def lib_strand=""
@@ -82,14 +82,14 @@ process hisat2 {
 
         if (params.read_type == "short_paired"){
             """
-            hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
+            hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${filename}_splicesite.txt \\
+                --new-summary --summary-file ${filename}_sorted_summary.txt \\
                 -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${filename}.sam
             """
             } else {
             """
-            hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${sample}_splicesite.txt \\
-                --new-summary --summary-file ${sample}.hisat2-summary.txt \\
+            hisat2 ${lib_strand} ${read_orientation} ${params.hisat2_options} --novel-splicesite-outfile ${filename}_splicesite.txt \\
+                --new-summary --summary-file ${filename}_sorted_summary.txt \\
                 -p ${task.cpus} -x $index_basename -U $reads > ${filename}.sam
             """
         }

@@ -83,7 +83,7 @@ process bbmap {
     }
 
     // set fileName
-    def fileName = fastq[0].baseName.replace('.fastq','')
+    def fileName = fastq[0].baseName.replace('.fastq','') + "_bbmap"
     """
     ${tool} \\
         ref=${genome_index} \\

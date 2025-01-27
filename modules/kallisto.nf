@@ -26,7 +26,7 @@ process kallisto_index {
 process kallisto {
     label 'kallisto'
     tag "$sample"
-    publishDir "${params.outdir}/${outpath}", pattern: "*.bam", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", pattern: "${filename}/*.bam", mode: 'copy'
 
     input:
         tuple val(sample), path(reads), val(library), val(read_length)
@@ -34,13 +34,13 @@ process kallisto {
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
-        path "*kallisto.log",  emit: kallisto_summary
+        tuple val(sample), path ("${filename}/*.bam"), emit: tuple_sample_bam
+        path "*.log",  emit: kallisto_summary
 
     script:
        
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','')
+        filename = reads[0].baseName.replace('.fastq','') + "_kallisto_sorted"
        
         // deal with library type 
         def read_orientation=""
@@ -61,7 +61,11 @@ process kallisto {
                 -t ${task.cpus} \
                 --pseudobam \
                 -i ${kallisto_index} \
-                ${reads[0]} ${reads[1]} -o ${filename}.bam 2> ${filename}_kallisto.log
+                ${reads[0]} ${reads[1]} -o ${filename} 2> ${filename}.log
+            
+            mv ${filename}/pseudoalignments.bam ${filename}/${filename}.bam
+            # in order that the log file contains the name of the output fastq files (MultiQC)
+            sed -i 's/${reads[0]}/${filename}.fastq.gz/' ${filename}.log
             """
         } else {
             
@@ -83,8 +87,11 @@ process kallisto {
                 --pseudobam \
                 -i ${kallisto_index} \
                 --single \
-                ${reads} -o ${filename}.bam 2> ${filename}_kallisto.log
+                ${reads} -o ${filename} 2> ${filename}.log
+
+            mv ${filename}/pseudoalignments.bam ${filename}/${filename}.bam
+            # in order that the log file contains the name of the output fastq files (MultiQC)
+            sed -i 's/${reads[0]}/${filename}.fastq.gz/' ${filename}.log
             """
         }
-
 }

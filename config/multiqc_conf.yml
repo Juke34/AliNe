@@ -1,4 +1,4 @@
-title: "Nextflow Alignment pipeline"
+title: "AliNe - Nextflow Alignment pipeline (https://github.com/Juke34/AliNe)"
 
 run_modules:
     - fastqc
@@ -45,6 +45,10 @@ module_order:
         name: "FastQC (graphmap2)"
         path_filters:
           - "*graphmap2_logs*"
+    - fastqc:
+        name: "FastQC (hisat)"
+        path_filters:
+          - "*hisat_logs*"
     - hisat2
     - fastqc:
         name: "FastQC (hisat2)"
@@ -73,6 +77,12 @@ module_order:
           - "*sublong_logs*"
     - star
     - fastqc:
-        name: "FastQC (star)"
+        name: "FastQC (STAR)"
         path_filters:
           - "*star_logs*"
+          - "*STAR_logs*"
+    - fastqc:
+        name: "FastQC (STARlong)"
+        path_filters:
+          - "*starlong_logs*"
+          - "*STARlong_logs*"
