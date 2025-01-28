@@ -64,3 +64,29 @@ process samtools_sort {
             samtools sort -@ ${task.cpus} ${bam} -o ${bam.baseName}_sorted.bam  
         """
 }
+
+
+/*
+http://www.htslib.org/doc/samtools-stats.html
+Produces comprehensive statistics from alignment file
+*/
+process samtools_stats {
+    label 'samtools'
+    tag "$sample"
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
+
+    input:
+        tuple val(sample), path(bam)
+        path(genome_fasta)
+        val outpath
+        val suffix
+
+    output:
+       path ("*.txt"), emit: bam_samtools_stats
+
+    script:
+
+        """
+            samtools stats  --reference ${genome_fasta} ${bam} > ${bam.baseName}.txt
+        """
+}

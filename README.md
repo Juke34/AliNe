@@ -222,7 +222,7 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 You can first check the available options and parameters by running:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.1 --help
+nextflow run Juke34/AliNe -r v1.1.0 --help
 ```
 
 ### Profile
@@ -234,7 +234,7 @@ To run the workflow you must select a profile according to the container platfor
 The command will look like that: 
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.1 -profile docker <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.1.0 -profile docker <rest of paramaters>
 ```
 
 Another profile is available (/!\\ actually not yet implemented):
@@ -244,7 +244,7 @@ Another profile is available (/!\\ actually not yet implemented):
 The use of the `slurm` profile  will give a command like this one:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.0.1 -profile singularity,slurm <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.1.0 -profile singularity,slurm <rest of paramaters>
 ```
 
 ### Example
@@ -254,13 +254,15 @@ Here, we use the docker container platform, remote read and genome files, specif
 
 ```bash
 nextflow run Juke34/AliNe \
-  -r v1.0.1 \
+  -r v1.1.0 \
   -profile docker \
   --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
   --genome https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
   --read_type short_single \
   --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong \
   --trimming_fastp \
+  --fastqc \
+  --samtools_statss \
   --star_options "--genomeSAindexNbases 9"
 ```
 
@@ -271,25 +273,25 @@ Test data are included in the AliNe repository in the `test` folder.
 Test with short single reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.0.1
+nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.1.0
 ```
 
 Test with short paired reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.0.1
+nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.1.0
 ```
 
 Test with ont reads:
 
 ```bash
-nextflow run -profile docker,test_ont Juke34/AliNe -r v1.0.1
+nextflow run -profile docker,test_ont Juke34/AliNe -r v1.1.0
 ```
 
 Test with pacbio reads:
 
 ```bash
-nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.0.1
+nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.1.0
 ```
 
 On success you should get a message looking like this:
@@ -329,6 +331,7 @@ On success you should get a message looking like this:
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --samtools_stats            run samtools stats on aligned reads (default: false)
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
     Aligner specific options
@@ -389,6 +392,12 @@ Here the description of typical ouput you will get from AliNe:
     │       ├── sample1_seqkit_trim_aligner2_sorted.log       # Contains the log of the aligner
     │       └── sample1_seqkit_trim_aligner2_sorted.bam       # Sorted bam output
     │
+    ├─── samtools_stats                                       # Samtools stats folder
+    │   ├── aligner1                                          # Folder with Samtools stats result for aligner1
+    │   │   └── sample1_seqkit_trim_aligner1_sorted.txt       # Samtools stats file for sample1
+    │   └── aligner2                                          # Folder with Samtools stats result for aligner2
+    │       └── sample1_seqkit_trim_aligner2_sorted.txt       # Samtools stats file for sample1
+    |
     ├── fastqc                                                # FastQC statistics folder
     │   ├── raw                                               # Folder with FastQC result for raw data
     │   │   └── fastqc_sample1_raw_logs                       # Folder with FastQC result for raw sample1 data
@@ -414,9 +423,9 @@ Here the description of typical ouput you will get from AliNe:
 
 ### Statistics
 
-In order to compare several aligner output you should activate the `--fastqc` parameter. AliNe will run the FastQC program for each output file, thereafter all FastQC file will be gathered in an html file using MultiQC. The resulting file called `multiqc_report.html` can be found in <outdir>/MultiQC ( <outdir> by default is called `alignment_results` and can be setup using `--outdir` AliNe parameter).
+#### FastQC
 
-To compare the output of multiple aligners, you should enable the `--fastqc` parameter. AliNe will execute the FastQC program for each output file. Subsequently, all FastQC reports will be gathered into an HTML file using MultiQC. The resulting file, named `multiqc_report.html`, can be found in the `<output_directory>/MultiQC directory`. By default, the output directory is named `alignment_results`, but this can be customized using the `--outdir` parameter in AliNe.
+To compare the output of multiple aligners, you can enable the `--fastqc` parameter. AliNe will execute the FastQC program for each output file. Subsequently, all FastQC reports will be gathered into an HTML file using MultiQC. The resulting file, named `multiqc_report.html`, can be found in the `<output_directory>/MultiQC directory`. By default, the output directory is named `alignment_results`, but this can be customized using the `--outdir` parameter in AliNe.
 
 FastQC collects the following information:  
   * Sequence Counts
@@ -430,9 +439,27 @@ FastQC collects the following information:
   * Overrepresented sequences
   * Adapter Content
 
+Among these metrics, "Sequence Duplication Levels", "Per Sequence GC Content" and "Sequence Count" are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` as "% Dups", "%GC" and "M Seqs" accordingly ([see below](#general-statistics)).
+
+
+#### Samtools stats
+
+To compare the output of multiple aligners, you can enable the `--samtools_stats` parameter. AliNe will execute the Samtools stats program for each alignment file. Subsequently, all Samtools stats output will be gathered into an HTML file using MultiQC. The resulting file, named `multiqc_report.html`, can be found in the `<output_directory>/MultiQC directory`. By default, the output directory is named `alignment_results`, but this can be customized using the `--outdir` parameter in AliNe.
+
+Samtools stats produces comprehensive statistics, see [here](http://www.htslib.org/doc/samtools-stats.html) for details.
+
+Among all the produceds metrics, "Error rate", "Non-primary", "Reads mapped", "% Mapped", "Total seqs"" are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` ([see below](#general-statistics)).  
+These fields correspond to the following information : 
+
+  * Error rate - The percentage of mismatches between the aligned reads and the reference genome (mismatches (NM) / bases mapped (CIGAR))
+  * Non-primary - Non-primary alignments is the number of reads that are aligned to multiple locations in the reference genome.
+  * Reads mapped - The number of reads that are successfully aligned to the reference genome.
+  * % Mapped - The percentage of total reads that are mapped. Calculated from reads mapped / total sequences
+  * Total seqs - The total number of reads in the BAM
+
 #### General Statistics
 
-"Sequence Duplication Levels", "Per Sequence GC Content" and "Sequence Count" are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` as "% Dups", "%GC" and "M Seqs" accordingly (see below).
+Some information produced via FastQC or Samtools stats are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` (see below):
 
 <img src="img/multiqc.png" />
 
@@ -443,61 +470,66 @@ In order to facilitate the reading of this `General Statistics` you can export t
 install.packages("dplyr")
 install.packages("stringr")
 install.packages("tidyr")
+install.packages("knitr")
 
 # Load necessary libraries
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(knitr)
 
 # Read the TSV file
 file_path <- "general_stats_table.tsv"
 df <- read.delim(file_path, check.names = FALSE)
 
+# clean sample name to remove suffix _*_samtoolsstats
+df$Sample <- df$Sample |> stringr::str_remove_all("_\\d+_samtoolsstats")
+
 # sample name as row name
 rownames(df) <- df$Sample
 
 # remove Sample column and clean up the column names
-tmp <- cbind(ID = rownames(df), stack(df[-1])) |> 
+tableout <- cbind(ID = rownames(df), stack(df[-1])) |> 
   transform(ind = as.character(ind) |> stringr::str_remove_all("\\.\\d+"))
 
 # remove na values
-tmp <- tmp[!is.na(tmp$values),]
+tableout <- tableout[!is.na(tableout$values),]
 # remove . values
-tmp$values <- tmp$values |> stringr::str_remove_all("^\\.$")
+tableout$values <- tableout$values |> stringr::str_remove_all("^\\.$")
 
 # pivot data
-tmp <- tmp |> pivot_wider(id_cols = ID , names_from = ind, values_from = values, 
+tableout <- tableout |> pivot_wider(id_cols = ID , names_from = ind, values_from = values, 
               values_fn = \(x) paste(unique(x), collapse = ""))
 
-# print only 4 first columns
-tmp[1:4]
+# print with nice output
+knitr::kable(tmp)
 ```
 
 You will get a table similar to this one:  
 
 ```
-   ID                                       Dups              GC    Seqs                  
-   <chr>                                    <chr>             <chr> <chr>                 
- 1 yeast_R1                                 73.01             43    0.01                  
- 2 yeast_R1_seqkit_trim                     69.21661409043114 44    0.007607999999999999  
- 3 yeast_R1_seqkit_trim_STAR_sorted         69.54090258811289 44    0.007689              
- 4 yeast_R1_seqkit_trim_bbmap_sorted        69.21661409043114 44    0.007607999999999999  
- 5 yeast_R1_seqkit_trim_bowtie2_sorted      69.21661409043114 44    0.007607999999999999  
- 6 yeast_R1_seqkit_trim_bwaaln_sorted       69.21661409043114 44    0.007607999999999999  
- 7 yeast_R1_seqkit_trim_bwamem_sorted       69.18933123111286 44    0.007611              
- 8 yeast_R1_seqkit_trim_bwasw_sorted        69.23279033105622 44    0.007612              
- 9 yeast_R1_seqkit_trim_graphmap2_sorted    69.21661409043114 44    0.007607999999999999  
-10 yeast_R1_seqkit_trim_hisat2_sorted       69.21661409043114 44    0.007607999999999999  
-11 yeast_R1_seqkit_trim_kallisto_sorted     69.21661409043114 44    0.007607999999999999  
-12 yeast_R1_seqkit_trim_minimap2_sorted     69.63058976020739 44    0.007715              
-13 yeast_R1_seqkit_trim_nucmer.fixed_sorted 64.70588235294117 42    0.00016999999999999999
-14 yeast_R1_seqkit_trim_sublong             53.23343848580442 44    0.007607999999999999  
-15 yeast_R1_seqkit_trim_subread             69.21661409043114 44    0.007607999999999999  
+|ID                                  |Dups              |GC |Seqs                 |Error rate          |Non-primary            |Reads mapped            |% Mapped           |Total seqs |
+|:-----------------------------------|:-----------------|:--|:--------------------|:-------------------|:----------------------|:-----------------------|:------------------|:----------|
+|yeast_R1                            |73.01             |43 |0.01                 |                    |                       |                        |                   |           |
+|yeast_R1_seqkit_STAR_sorted         |73.22686241444302 |43 |0.010081             |0                   |0.00008099999999999999 |0.000096                |0.96               |0.01       |
+|yeast_R1_seqkit_bbmap_sorted        |73.01             |43 |0.01                 |2020.4080000000001  |0                      |0.000099                |0.9900000000000001 |0.01       |
+|yeast_R1_seqkit_bowtie2_sorted      |73.01             |43 |0.01                 |11.46977            |0                      |0.00008599999999999999  |0.86               |0.01       |
+|yeast_R1_seqkit_bowtie_sorted       |73.01             |43 |0.01                 |49.57576            |0                      |0.000032999999999999996 |0.33               |0.01       |
+|yeast_R1_seqkit_bwaaln_sorted       |73.01             |43 |0.01                 |0                   |0                      |0                       |0                  |0.01       |
+|yeast_R1_seqkit_bwamem_sorted       |72.98080767692923 |43 |0.010003999999999999 |0.37602579999999997 |0                      |0.001914                |19.139999999999997 |0.01       |
+|yeast_R1_seqkit_bwasw_sorted        |73.0288797841511  |43 |0.010007             |0.2639272           |0                      |0.0018369999999999999   |18.357149995003496 |0.010007   |
+|yeast_R1_seqkit_graphmap2_sorted    |73.01             |43 |0.01                 |0                   |0                      |0                       |0                  |0.01       |
+|yeast_R1_seqkit_hisat2_sorted       |73.01             |43 |0.01                 |0                   |0                      |0.000004                |0.04               |0.01       |
+|yeast_R1_seqkit_kallisto_sorted     |73.01             |43 |0.01                 |0                   |0                      |0.00181                 |18.099999999999998 |0.01       |
+|yeast_R1_seqkit_minimap2_sorted     |73.28848436881678 |43 |0.010107999999999999 |0.3211603           |0.000108               |0.000252                |2.52               |0.01       |
+|yeast_R1_seqkit_nucmer.fixed_sorted |64.73988439306359 |42 |0.000173             |0.2809365           |0                      |0.000169                |100                |0.000169   |
+|yeast_R1_seqkit_sublong_sorted      |45.26             |43 |0.01                 |0                   |0                      |0.0012339999999999999   |12.34              |0.01       |
+|yeast_R1_seqkit_subread_sorted      |73.01             |43 |0.01                 |0.1395645           |0                      |0.00156                 |15.6               |0.01       |
 ```
 
 ## Integrating AliNe in another nf pipeline
 
-In nextflow it is possible to call external workflow like AliNe from another workflow.
+In Nextflow it is possible to call external workflow like AliNe from another workflow.
 This require to write a dedicated process that will call AliNe and get back the results.
 A complete guide how to do so is axailable [here](https://github.com/mahesh-panchal/nf-cascade?tab=readme-ov-file)
 

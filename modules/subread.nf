@@ -53,7 +53,7 @@ process subread {
         }
 
         // remove fastq.gz
-        def fileName = fastq[0].baseName.replace('.fastq','') + "_subread"
+        def fileName = fastq[0].baseName.replace('.fastq','') + "_subread_sorted"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"
@@ -72,7 +72,7 @@ process subread {
             } 
         }
         """
-        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options} > ${fileName}_subread.log 
+        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options} > ${fileName}_subread_sorted.log 
         """
 }
 
