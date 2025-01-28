@@ -3,86 +3,140 @@ title: "AliNe - Nextflow Alignment pipeline (https://github.com/Juke34/AliNe)"
 run_modules:
     - fastqc
     - fastp
-    - bowtie2
-    - hisat2
-    - star
-    - kallisto
+    - samtools
     
 module_order:
     - fastqc:
         name: "FastQC (raw)"
         path_filters:
-          - "*raw_logs*"
+          - "*raw_logs/*"
     - fastp
     - fastqc:
         name: "FastQC (trimmed)"
         path_filters:
-          - "*trimmed_logs*"
+          - "*trimmed_logs/*"
     # issue #2866 - bbmap
     - fastqc:
         name: "FastQC (bbmap)"
         path_filters:
-          - "*bbmap_logs*"
-    - bowtie2:
-        name: "bowtie2"
+          - "*bbmap_logs/*"
+    - samtools:
+        name: "Samtools stats (bbmap)"
+        path_filters:
+          - "*bbmap_*.txt"
+    - fastqc:
+        name: "FastQC (bowtie)"
+        path_filters:
+          - "*bowtie_logs/*"
+    - samtools:
+        name: "Samtools stats (bowtie)"
+        path_filters:
+          - "*bowtie_*.txt"
     - fastqc:
         name: "FastQC (bowtie2)"
         path_filters:
-          - "*bowtie2_logs*"
+          - "*bowtie2_logs/*"
+    - samtools:
+        name: "Samtools stats (bowtie2)"
+        path_filters:
+          - "*bowtie2_*.txt"
     - fastqc:
         name: "FastQC (bwaaln)"
         path_filters:
-          - "*bwaaln_logs*"
+          - "*bwaaln_logs/*"
+    - samtools:
+        name: "Samtools stats (bwaaln)"
+        path_filters:
+          - "*bwaaln_*.txt"
     - fastqc:
         name: "FastQC (bwamem)"
         path_filters:
-          - "*bwamem_logs*"
+          - "*bwamem_logs/*"
+    - samtools:
+        name: "Samtools stats (bwamem)"
+        path_filters:
+          - "*bwamem_*.txt"
     - fastqc:
         name: "FastQC (bwasw)"
         path_filters:
-          - "*bwasw_logs*"
+          - "*bwasw_logs/*"
+    - samtools:
+        name: "Samtools stats (bwasw)"
+        path_filters:
+          - "*bwasw_*.txt"
     - fastqc:
         name: "FastQC (graphmap2)"
         path_filters:
-          - "*graphmap2_logs*"
-    - fastqc:
-        name: "FastQC (hisat)"
+          - "*graphmap2_logs/*"
+    - samtools: 
+        name: "Samtools stats (graphmap2)"
         path_filters:
-          - "*hisat_logs*"
-    - hisat2
+          - "*graphmap2_*.txt"
     - fastqc:
         name: "FastQC (hisat2)"
         path_filters:
-          - "*hisat2_logs*"
-    - kallisto
+          - "*hisat2_logs/*"
+    - samtools:
+        name: "Samtools stats (hisat2)"
+        path_filters:
+          - "*hisat2_*.txt"
     - fastqc:
         name: "FastQC (kallisto)"
         path_filters:
-          - "*kallisto_logs*"
+          - "*kallisto_logs/*"
+    - samtools:
+        name: "Samtools stats (kallisto)"
+        path_filters:
+          - "*kallisto_*.txt"
     - fastqc:
         name: "FastQC (minimap2)"
         path_filters:
-          - "*minimap2_logs*"
+          - "*minimap2_logs/*"
+    - samtools: 
+        name: "Samtools stats (minimap2)"
+        path_filters:
+          - "*minimap2_*.txt"
     - fastqc:
         name: "FastQC (nucmer)"
         path_filters:
-          - "*nucmer_logs*"
-    - fastqc:
-        name: "FastQC (subread)"
+          - "*nucmer_logs/*"
+    - samtools:
+        name: "Samtools stats (nucmer)"
         path_filters:
-          - "*subread_logs*"
-    - fastqc:
-        name: "FastQC (sublong)"
-        path_filters:
-          - "*sublong_logs*"
-    - star
+          - "*nucmer*.txt"
     - fastqc:
         name: "FastQC (STAR)"
         path_filters:
-          - "*star_logs*"
-          - "*STAR_logs*"
+          - "*star_logs/*"
+          - "*STAR_logs/*"
+    - samtools:
+        name: "Samtools stats (STAR)"
+        path_filters:
+          - "*star_*.txt"
+          - "*STAR_*.txt"
     - fastqc:
         name: "FastQC (STARlong)"
         path_filters:
-          - "*starlong_logs*"
-          - "*STARlong_logs*"
+          - "*starlong_logs/*"
+          - "*STARlong_logs/*"
+    - samtools:
+        name: "Samtools stats (STARlong)"
+        path_filters:
+          - "*starlong_*.txt"
+          - "*STARlong_*.txt"
+    - fastqc:
+        name: "FastQC (subread)"
+        path_filters:
+          - "*subread_logs/*"
+    - samtools:
+        name: "Samtools stats (subread)"
+        path_filters:
+          - "*subread_*.txt"
+    - fastqc:
+        name: "FastQC (sublong)"
+        path_filters:
+          - "*sublong_logs/*"
+    - samtools:
+        name: "Samtools stats (sublong)"
+        path_filters:
+          - "*sublong_*.txt"

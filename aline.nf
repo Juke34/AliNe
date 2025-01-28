@@ -64,6 +64,7 @@ params.sublong_options = '-X'// -X turn on the RNA-seq mode.
 
 // Report params
 params.fastqc = false
+params.samtools_stats = false
 params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 
 // other
@@ -337,9 +338,10 @@ General Parameters
      outdir                     : ${params.outdir}
 
 Report Parameters
- MultiQC parameters
-     fastqc                     : ${params.fastqc}
-     multiqc_config             : ${params.multiqc_config}
+    fastqc                     : ${params.fastqc}
+    samtools_stats             : ${params.samtools_stats}
+    multiqc_config             : ${params.multiqc_config}
+
 """
 log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_options)
 
@@ -376,6 +378,11 @@ include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bo
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer;
          samtools_sort as samtools_sort_sublong } from "$baseDir/modules/samtools.nf"
+include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie ; samtools_stats as samtools_stats_ali_bowtie2 ; 
+         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2 ; 
+         samtools_stats as samtools_stats_ali_hisat2; samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
+         samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_star; samtools_stats as samtools_stats_ali_subread ; 
+         samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
@@ -609,6 +616,10 @@ workflow align {
                 fastqc_ali_bbmap(bbmap_ali, "fastqc/bbmap", "bbmap")
                 logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
             }
+            if(params.samtools_stats){
+                samtools_stats_ali_bbmap(bbmap_ali, genome.collect(), "samtools_stats/bbmap", "bbmap")
+                logs.concat(samtools_stats_ali_bbmap.out).set{logs} // save log
+            }
         }
 
         // ------------------- BOWTIE -----------------
@@ -627,6 +638,10 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_bowtie(bowtie_ali, "fastqc/bowtie", "bowtie")
                 logs.concat(fastqc_ali_bowtie.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_bowtie(bowtie_ali, genome.collect(), "samtools_stats/bowtie", "bowtie")
+                logs.concat(samtools_stats_ali_bowtie.out).set{logs} // save log
             }
         }
 
@@ -648,6 +663,10 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_bowtie2(bowtie2_ali, "fastqc/bowtie2", "bowtie2")
                 logs.concat(fastqc_ali_bowtie2.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_bowtie2(bowtie2_ali, genome.collect(), "samtools_stats/bowtie2", "bowtie2")
+                logs.concat(samtools_stats_ali_bowtie2.out).set{logs} // save log
             }
         }
 
@@ -671,6 +690,10 @@ workflow align {
                     fastqc_ali_bwaaln(bwaaln_ali, "fastqc/bwaaln", "bwaaln")
                     logs.concat(fastqc_ali_bwaaln.out).set{logs} // save log
                 }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwaaln(bwaaln_ali, genome.collect(), "samtools_stats/bwaaln", "bwaaln")
+                    logs.concat(samtools_stats_ali_bwaaln.out).set{logs} // save log
+                }
             }
             if ("bwamem" in aligner_list){
                 // align
@@ -688,6 +711,10 @@ workflow align {
                     fastqc_ali_bwamem(bwamem_ali, "fastqc/bwamem", "bwamem")
                     logs.concat(fastqc_ali_bwamem.out).set{logs} // save log
                 }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwamem(bwamem_ali, genome.collect(), "samtools_stats/bwamem", "bwamem")
+                    logs.concat(samtools_stats_ali_bwamem.out).set{logs} // save log
+                }
             }
             if ("bwasw" in aligner_list){
                 // align
@@ -704,6 +731,10 @@ workflow align {
                 if(params.fastqc){
                     fastqc_ali_bwasw(bwasw_ali, "fastqc/bwasw", "bwasw")
                     logs.concat(fastqc_ali_bwasw.out).set{logs} // save log
+                }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwasw(bwasw_ali, genome.collect(), "samtools_stats/bwasw", "bwasw")
+                    logs.concat(samtools_stats_ali_bwasw.out).set{logs} // save log
                 }
             }
         }
@@ -727,6 +758,10 @@ workflow align {
                 fastqc_ali_graphmap2(graphmap2_ali, "fastqc/graphmap2", "graphmap2")
                 logs.concat(fastqc_ali_graphmap2.out).set{logs} // save log
             }
+            if(params.samtools_stats){
+                samtools_stats_ali_graphmap2(graphmap2_ali, genome.collect(), "samtools_stats/graphmap2", "graphmap2")
+                logs.concat(samtools_stats_ali_graphmap2.out).set{logs} // save log
+            }
         }
 
         // ------------------- HISAT2 -----------------
@@ -748,6 +783,10 @@ workflow align {
                 fastqc_ali_hisat2(hisat2_ali, "fastqc/hisat2", "hisat2")
                 logs.concat(fastqc_ali_hisat2.out).set{logs} // save log
             }
+            if(params.samtools_stats){
+                samtools_stats_ali_hisat2(hisat2_ali, genome.collect(), "samtools_stats/hisat2", "hisat2")
+                logs.concat(samtools_stats_ali_hisat2.out).set{logs} // save log
+            }
         }
 
         // ------------------- KALLISTO -----------------
@@ -764,6 +803,10 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_kallisto(kallisto_ali, "fastqc/kallisto", "kallisto")
                 logs.concat(fastqc_ali_kallisto.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_kallisto(kallisto_ali, genome.collect(), "samtools_stats/kallisto", "kallisto")
+                logs.concat(samtools_stats_ali_kallisto.out).set{logs} // save log
             }
         }
         // ------------------- minimap2 -----------------
@@ -785,6 +828,10 @@ workflow align {
                 fastqc_ali_minimap2(minimap2_ali, "fastqc/minimap2", "minimap2")
                 logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
+            if(params.samtools_stats){
+                samtools_stats_ali_minimap2(minimap2_ali, genome.collect(), "samtools_stats/minimap2", "minimap2")
+                logs.concat(samtools_stats_ali_minimap2.out).set{logs} // save log
+            }
         }
         // --------------------- NGMLR --------------------
         if ("ngmlr" in aligner_list ){
@@ -799,9 +846,13 @@ workflow align {
             // save aligned reads
             sorted_bam.concat(ngmlr_ali).set{sorted_bam} 
             // stat on aligned reads
-            if(params.fastqc){
+            if (params.fastqc){
                 fastqc_ali_ngmlr(ngmlr_ali, "fastqc/ngmlr", "ngmlr")
                 logs.concat(fastqc_ali_ngmlr.out).set{logs} // save log
+            }
+            if (params.samtools_stats){
+                samtools_stats_ali_ngmlr(ngmlr_ali, genome.collect(), "samtools_stats/ngmlr", "ngmlr")
+                logs.concat(samtools_stats_ali_ngmlr.out).set{logs} // save log
             }
         }
 
@@ -819,9 +870,13 @@ workflow align {
             // save aligned reads
             sorted_bam.concat(novoalign_ali).set{sorted_bam} 
             // stat on aligned reads
-            if(params.fastqc){
+            if (params.fastqc){
                 fastqc_ali_novoalign(novoalign_ali, "fastqc/novoalign", "novoalign")
                 logs.concat(fastqc_ali_novoalign.out).set{logs} // save log
+            }
+            if (params.samtools_stats){
+                samtools_stats_ali_novoalign(novoalign_ali, genome.collect(), "samtools_stats/novoalign", "novoalign")
+                logs.concat(samtools_stats_ali_novoalign.out).set{logs} // save log
             }
         }
 
@@ -838,9 +893,13 @@ workflow align {
             // save aligned reads
             sorted_bam.concat(nucmer_ali).set{sorted_bam} 
             // stat on aligned reads
-            if(params.fastqc){
+            if (params.fastqc){
                 fastqc_ali_nucmer(nucmer_ali, "fastqc/nucmer", "nucmer")
                 logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
+            }
+            if (params.samtools_stats){
+                samtools_stats_ali_nucmer(nucmer_ali, genome.collect(), "samtools_stats/nucmer", "nucmer")
+                logs.concat(samtools_stats_ali_nucmer.out).set{logs} // save log
             }
         }
 
@@ -869,6 +928,10 @@ workflow align {
                 fastqc_ali_star(star_ali, "fastqc/star", "star")
                 logs.concat(fastqc_ali_star.out).set{logs} // save log
             }
+            if(params.samtools_stats){
+                samtools_stats_ali_star(star_ali, genome.collect(), "samtools_stats/star", "star")
+                logs.concat(samtools_stats_ali_star.out).set{logs} // save log
+            }
         }
 
         // ---------------- subread -----------------
@@ -884,6 +947,10 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_subread(subread_ali, "fastqc/subread", "subread")
                 logs.concat(fastqc_ali_subread.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_subread(subread_ali, genome.collect(), "samtools_stats/subread", "subread")
+                logs.concat(samtools_stats_ali_subread.out).set{logs} // save log
             }
         }
 
@@ -902,6 +969,10 @@ workflow align {
             if(params.fastqc){
                 fastqc_ali_sublong(sublong_ali, "fastqc/sublong", "sublong")
                 logs.concat(fastqc_ali_sublong.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_sublong(sublong_ali, genome.collect(), "samtools_stats/sublong", "sublong")
+                logs.concat(samtools_stats_ali_sublong.out).set{logs} // save log
             }
         }
 
@@ -978,6 +1049,7 @@ def helpMSG() {
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --samtools_stats            run samtools stats on aligned reads (default: false)
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
     Aligner specific options
