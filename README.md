@@ -24,6 +24,7 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
    * [Output](#output)
       * [Structure](#structure)
       * [Statistics](#statistics)
+   * [Integrating AliNe in another nf pipeline](#integrating-aline-in-another-nf-pipeline)
    * [Contributing](#contributing)
 
 ## Foreword
@@ -494,6 +495,11 @@ You will get a table similar to this one:
 15 yeast_R1_seqkit_trim_subread             69.21661409043114 44    0.007607999999999999  
 ```
 
+## Integrating AliNe in another nf pipeline
+
+In nextflow it is possible to call external workflow like AliNe from another workflow.
+This require to write a dedicated process that will call AliNe and get back the results.
+A complete guide how to do so is axailable [here](https://github.com/mahesh-panchal/nf-cascade?tab=readme-ov-file)
 
 ## Contributing
 
