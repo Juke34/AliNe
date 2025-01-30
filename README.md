@@ -262,7 +262,7 @@ nextflow run Juke34/AliNe \
   --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong \
   --trimming_fastp \
   --fastqc \
-  --samtools_statss \
+  --samtools_stats \
   --star_options "--genomeSAindexNbases 9"
 ```
 
