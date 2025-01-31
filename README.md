@@ -501,37 +501,40 @@ tableout$values <- tableout$values |> stringr::str_remove_all("^\\.$")
 tableout <- tableout |> pivot_wider(id_cols = ID , names_from = ind, values_from = values, 
               values_fn = \(x) paste(unique(x), collapse = ""))
 
+# round each value to 4 decimals
+tableout <- tableout |> mutate(across(-ID, ~round(as.numeric(.), 4)))
+
 # print with nice output
-knitr::kable(tmp)
+knitr::kable(tableout)
 ```
 
 You will get a table similar to this one:  
 
 ```
-|ID                                  |Dups              |GC |Seqs                 |Error rate          |Non-primary            |Reads mapped            |% Mapped           |Total seqs |
-|:-----------------------------------|:-----------------|:--|:--------------------|:-------------------|:----------------------|:-----------------------|:------------------|:----------|
-|yeast_R1                            |73.01             |43 |0.01                 |                    |                       |                        |                   |           |
-|yeast_R1_seqkit_STAR_sorted         |73.22686241444302 |43 |0.010081             |0                   |0.00008099999999999999 |0.000096                |0.96               |0.01       |
-|yeast_R1_seqkit_bbmap_sorted        |73.01             |43 |0.01                 |2020.4080000000001  |0                      |0.000099                |0.9900000000000001 |0.01       |
-|yeast_R1_seqkit_bowtie2_sorted      |73.01             |43 |0.01                 |11.46977            |0                      |0.00008599999999999999  |0.86               |0.01       |
-|yeast_R1_seqkit_bowtie_sorted       |73.01             |43 |0.01                 |49.57576            |0                      |0.000032999999999999996 |0.33               |0.01       |
-|yeast_R1_seqkit_bwaaln_sorted       |73.01             |43 |0.01                 |0                   |0                      |0                       |0                  |0.01       |
-|yeast_R1_seqkit_bwamem_sorted       |72.98080767692923 |43 |0.010003999999999999 |0.37602579999999997 |0                      |0.001914                |19.139999999999997 |0.01       |
-|yeast_R1_seqkit_bwasw_sorted        |73.0288797841511  |43 |0.010007             |0.2639272           |0                      |0.0018369999999999999   |18.357149995003496 |0.010007   |
-|yeast_R1_seqkit_graphmap2_sorted    |73.01             |43 |0.01                 |0                   |0                      |0                       |0                  |0.01       |
-|yeast_R1_seqkit_hisat2_sorted       |73.01             |43 |0.01                 |0                   |0                      |0.000004                |0.04               |0.01       |
-|yeast_R1_seqkit_kallisto_sorted     |73.01             |43 |0.01                 |0                   |0                      |0.00181                 |18.099999999999998 |0.01       |
-|yeast_R1_seqkit_minimap2_sorted     |73.28848436881678 |43 |0.010107999999999999 |0.3211603           |0.000108               |0.000252                |2.52               |0.01       |
-|yeast_R1_seqkit_nucmer.fixed_sorted |64.73988439306359 |42 |0.000173             |0.2809365           |0                      |0.000169                |100                |0.000169   |
-|yeast_R1_seqkit_sublong_sorted      |45.26             |43 |0.01                 |0                   |0                      |0.0012339999999999999   |12.34              |0.01       |
-|yeast_R1_seqkit_subread_sorted      |73.01             |43 |0.01                 |0.1395645           |0                      |0.00156                 |15.6               |0.01       |
+|ID                                  |    Dups| GC|   Seqs| Error rate| Non-primary| Reads mapped| % Mapped| Total seqs|
+|:-----------------------------------|-------:|--:|------:|----------:|-----------:|------------:|--------:|----------:|
+|yeast_R1                            | 73.0100| 43| 0.0100|         NA|          NA|           NA|       NA|         NA|
+|yeast_R1_seqkit_STAR_sorted         | 73.2269| 43| 0.0101|     0.0000|       1e-04|       0.0001|   0.9600|      1e-02|
+|yeast_R1_seqkit_bbmap_sorted        | 73.0100| 43| 0.0100|  2020.4080|       0e+00|       0.0001|   0.9900|      1e-02|
+|yeast_R1_seqkit_bowtie2_sorted      | 73.0100| 43| 0.0100|    11.4698|       0e+00|       0.0001|   0.8600|      1e-02|
+|yeast_R1_seqkit_bowtie_sorted       | 73.0100| 43| 0.0100|    49.5758|       0e+00|       0.0000|   0.3300|      1e-02|
+|yeast_R1_seqkit_bwaaln_sorted       | 73.0100| 43| 0.0100|     0.0000|       0e+00|       0.0000|   0.0000|      1e-02|
+|yeast_R1_seqkit_bwamem_sorted       | 72.9808| 43| 0.0100|     0.3760|       0e+00|       0.0019|  19.1400|      1e-02|
+|yeast_R1_seqkit_bwasw_sorted        | 73.0289| 43| 0.0100|     0.2639|       0e+00|       0.0018|  18.3572|      1e-02|
+|yeast_R1_seqkit_graphmap2_sorted    | 73.0100| 43| 0.0100|     0.0000|       0e+00|       0.0000|   0.0000|      1e-02|
+|yeast_R1_seqkit_hisat2_sorted       | 73.0100| 43| 0.0100|     0.0000|       0e+00|       0.0000|   0.0400|      1e-02|
+|yeast_R1_seqkit_kallisto_sorted     | 73.0100| 43| 0.0100|     0.0000|       0e+00|       0.0018|  18.1000|      1e-02|
+|yeast_R1_seqkit_minimap2_sorted     | 73.2885| 43| 0.0101|     0.3212|       1e-04|       0.0003|   2.5200|      1e-02|
+|yeast_R1_seqkit_nucmer.fixed_sorted | 64.7399| 42| 0.0002|     0.2809|       0e+00|       0.0002| 100.0000|      2e-04|
+|yeast_R1_seqkit_sublong_sorted      | 45.2600| 43| 0.0100|     0.0000|       0e+00|       0.0012|  12.3400|      1e-02|
+|yeast_R1_seqkit_subread_sorted      | 73.0100| 43| 0.0100|     0.1396|       0e+00|       0.0016|  15.6000|      1e-02|
 ```
 
 ## Integrating AliNe in another nf pipeline
 
 In Nextflow it is possible to call external workflow like AliNe from another workflow.
 This require to write a dedicated process that will call AliNe and get back the results.
-A complete guide how to do so is axailable [here](https://github.com/mahesh-panchal/nf-cascade?tab=readme-ov-file)
+A complete guide how to do so is available [here](https://github.com/mahesh-panchal/nf-cascade?tab=readme-ov-file)
 
 ## Contributing
 
