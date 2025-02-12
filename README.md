@@ -1,7 +1,7 @@
 ![GitHub CI](https://github.com/Juke34/AliNe/actions/workflows/main.yml/badge.svg)
 [![status](https://joss.theoj.org/papers/3691aa3dd83d8ccab8dfacce69c9b4c6/status.svg)](https://joss.theoj.org/papers/3691aa3dd83d8ccab8dfacce69c9b4c6)
 
-AliNe (Alignment in Nextflow) 
+AliNe (Alignment in Nextflow) - RNAseq DNAseq 
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
