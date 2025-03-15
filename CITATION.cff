@@ -1,0 +1,28 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Dainat
+  given-names: Jacques
+  orcid: "https://orcid.org/0000-0002-6629-0173"
+doi: 10.5281/zenodo.14953389
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Dainat
+    given-names: Jacques
+    orcid: "https://orcid.org/0000-0002-6629-0173"
+  date-published: 2025-03-15
+  doi: 10.21105/joss.07545
+  issn: 2475-9066
+  issue: 107
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 7545
+  title: "AliNe: A Flexible and Efficient Nextflow Pipeline for Read
+    Alignment"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.07545"
+  volume: 10
+title: "AliNe: A Flexible and Efficient Nextflow Pipeline for Read
+  Alignment"
