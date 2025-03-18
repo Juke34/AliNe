@@ -50,6 +50,7 @@ You can choose to run one or several aligner in parallel.
 | bowtie2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ✅ | ✅ |
 | bwamem | ✅ | ✅ | ⚠️ | ⚠️ |
+| bwamem2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | bwasw | ✅ | ✅ | ⚠️ | ⚠️ |
 | graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
@@ -83,6 +84,7 @@ It is then translated to the correct option in the following aligners:
 | bowtie2 | --fr / --rf / --ff |  ISF ISR IU / OSF OSR OU / MSF MSR MU| read orientation |
 | bwaaln | 🚫 | 🚫 | 🚫 |
 | bwamem | 🚫 | 🚫 | 🚫 |
+| bwamem2 | 🚫 | 🚫 | 🚫 |
 | bwasw | 🚫 | 🚫 | 🚫 |
 | graphmap2 | 🚫 | 🚫 | 🚫 |
 | hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
@@ -117,6 +119,7 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | bowtie2 | 🚫 |
 | bwaaln | 🚫 |
 | bwamem | 🚫 |
+| bwamem2 | 🚫 |
 | bwasw | 🚫 |
 | graphmap2 | GTF (--gtf)  |
 | hisat2 | 🚫 |
@@ -316,7 +319,7 @@ On success you should get a message looking like this:
         --reads                     path to the reads file or folder
         --reads_extension           extension of the reads files (default: .fastq.gz)
         --genome                    path to the genome file
-        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
+        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
@@ -340,6 +343,7 @@ On success you should get a message looking like this:
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
+        --bwamem2_options            additional options for bwamem2
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2

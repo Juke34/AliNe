@@ -38,13 +38,14 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie_options = ''
 params.bowtie2_options = ''
 params.bwaaln_options = ''
 params.bwamem_options = ''
+params.bwamem2_options = ''
 params.bwasw_options = ''
 params.graphmap2_options = '' // owler option is possible
 params.hisat2_options = ''
@@ -158,13 +159,13 @@ if ("bbmap" in aligner_list && !params.relax){
 }
 
 // --- bwa aln tool ---
-//if ("bwaaln" in aligner_list && !params.relax){
-//    if (params.read_type == "pacbio" || params.read_type == "ont"){
-//        log.warn("""Error: bwaaln is not suitable for long reads.
-//However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
-//        stop_pipeline = true
-//    }
-//}
+if ("bwaaln" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn("""Error: bwaaln is not suitable for long reads.
+However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
+        stop_pipeline = true
+    }
+}
 
 // --- bwa mem tool ---
 if ("bwamem" in aligner_list && !params.relax){
@@ -180,17 +181,26 @@ if ("bwamem" in aligner_list && !params.relax){
     }
 }
 
-// --- bwa sw tool ---
-if ("bwasw" in aligner_list && !params.relax){
+// --- bwa mem2 tool ---
+if ("bwamem2" in aligner_list && !params.relax){
     if (params.read_type == "pacbio"){
-        if ( !params.bwasw_options.contains(" pacbio") ){
-            params.replace("bwamem_options", "${params.bwasw_options} -x pacbio")
+        if ( !params.bwamem2_options.contains(" pacbio") ){
+            params.replace("bwamem2_options", "${params.bwamem2_options} -x pacbio")
         }
     }
     if (params.read_type == "ont"){
-        if ( !params.bwasw_options.contains(" ont2d") ){
-            params.replace("bwamem_options", "${params.bwasw_options} -x ont2d")
+        if ( !params.bwamem2_options.contains(" ont2d") ){
+            params.replace("bwamem2_options", "${params.bwamem2_options} -x ont2d")
         }
+    }
+}
+
+// --- bwa sw tool ---
+if ("bwasw" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn("""Error: bwasw is not suitable for long reads.
+However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
+        stop_pipeline = true
     }
 }
 
@@ -353,11 +363,12 @@ include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
+include {bwamem2_index; bwamem2} from "$baseDir/modules/bwamem2.nf"
 include {seqkit_convert} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie ; fastqc as fastqc_ali_bowtie2 ; 
-         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
+         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwamem2; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
          fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
          fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
          fastqc as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
@@ -370,16 +381,16 @@ include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {salmon_index; salmon_guess_lib; set_tuple_withUserLib} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
-         samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
+         samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
          samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
-         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
+         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer;
          samtools_sort as samtools_sort_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie ; samtools_stats as samtools_stats_ali_bowtie2 ; 
-         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2 ; 
+         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2; samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2 ; 
          samtools_stats as samtools_stats_ali_hisat2; samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_star; samtools_stats as samtools_stats_ali_subread ; 
          samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
@@ -670,7 +681,7 @@ workflow align {
             }
         }
 
-        // ------------------- BWA -----------------
+        // ------------------- BWA ALN/MEM/SW -----------------
         if ("bwaaln" in aligner_list || "bwamem" in aligner_list || "bwasw" in aligner_list){
             // index
             bwa_index(genome.collect(), "alignment/bwa/indicies")
@@ -736,6 +747,31 @@ workflow align {
                     samtools_stats_ali_bwasw(bwasw_ali, genome.collect(), "samtools_stats/bwasw", "bwasw")
                     logs.concat(samtools_stats_ali_bwasw.out).set{logs} // save log
                 }
+            }
+        }
+
+        // ------------------- BWA MEM2 -----------------
+        if ("bwamem2" in aligner_list){
+            // index
+            bwamem2_index(genome.collect(), "alignment/bwamem2/indicies")
+            // align
+            bwamem2(reads, genome.collect(), bwamem2_index.out.collect(), "alignment/bwamem2/") 
+            logs.concat(bwamem2.out.bwamem2_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_bwamem2(bwamem2.out.tuple_sample_sam)
+            // sort
+            samtools_sort_bwamem2(samtools_sam2bam_bwamem2.out.tuple_sample_bam, "alignment/bwamem2/")
+            samtools_sort_bwamem2.out.tuple_sample_sortedbam.set{bwamem2_ali} // set name
+            // save aligned reads
+            sorted_bam.concat(bwamem2_ali).set{sorted_bam} 
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_bwamem2(bwamem2_ali, "fastqc/bwamem2", "bwamem2")
+                logs.concat(fastqc_ali_bwamem2.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_bwamem2(bwamem2_ali, genome.collect(), "samtools_stats/bwamem2", "bwamem2")
+                logs.concat(samtools_stats_ali_bwamem2.out).set{logs} // save log
             }
         }
 
@@ -1058,6 +1094,7 @@ def helpMSG() {
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
+        --bwamem2_options            additional options for bwamem2
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
@@ -1105,6 +1142,11 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
         sentence += """
     bwamem parameters
         bwamem_options             : ${params.bwamem_options}
+    """} 
+    if ("bwamem2" in aligner_list){
+        sentence += """
+    bwamem2 parameters
+        bwamem2_options             : ${params.bwamem2_options}
     """} 
     if ("bwasw" in aligner_list){
         sentence += """
