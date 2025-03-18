@@ -159,13 +159,13 @@ if ("bbmap" in aligner_list && !params.relax){
 }
 
 // --- bwa aln tool ---
-//if ("bwaaln" in aligner_list && !params.relax){
-//    if (params.read_type == "pacbio" || params.read_type == "ont"){
-//        log.warn("""Error: bwaaln is not suitable for long reads.
-//However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
-//        stop_pipeline = true
-//    }
-//}
+if ("bwaaln" in aligner_list && !params.relax){
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn("""Error: bwaaln is not suitable for long reads.
+However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
+        stop_pipeline = true
+    }
+}
 
 // --- bwa mem tool ---
 if ("bwamem" in aligner_list && !params.relax){
@@ -197,15 +197,10 @@ if ("bwamem2" in aligner_list && !params.relax){
 
 // --- bwa sw tool ---
 if ("bwasw" in aligner_list && !params.relax){
-    if (params.read_type == "pacbio"){
-        if ( !params.bwasw_options.contains(" pacbio") ){
-            params.replace("bwasw_options", "${params.bwasw_options} -x pacbio")
-        }
-    }
-    if (params.read_type == "ont"){
-        if ( !params.bwasw_options.contains(" ont2d") ){
-            params.replace("bwasw_options", "${params.bwasw_options} -x ont2d")
-        }
+    if (params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn("""Error: bwasw is not suitable for long reads.
+However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
+        stop_pipeline = true
     }
 }
 
