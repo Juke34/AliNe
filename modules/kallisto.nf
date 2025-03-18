@@ -55,6 +55,7 @@ process kallisto {
             } 
         }
 
+        // For paired-end reads, Kallisto automatically estimates the fragment length distribution from the data and does not require you to specify it manually
         if (params.read_type == "short_paired"){
             """
             kallisto quant  ${read_orientation} ${params.kallisto_options} \
@@ -70,7 +71,7 @@ process kallisto {
         } else {
             
             // Use read length (-l) and sd (-s) from params?
-            def l_s_params = params.kallisto_options
+            def l_s_params = ""
             def read_length_copy = read_length // to avoid error "Variable read_length already defined in the process scope "
             if ( !params.kallisto_options.contains("-l ") ){
                 l_s_params += " -l ${read_length}"
@@ -82,7 +83,8 @@ process kallisto {
             }
 
             """
-            kallisto quant  ${read_orientation} ${l_s_params} \
+            kallisto quant  ${read_orientation} ${params.kallisto_options} \
+                ${l_s_params} \
                 -t ${task.cpus} \
                 --pseudobam \
                 -i ${kallisto_index} \
