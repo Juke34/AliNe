@@ -22,7 +22,7 @@ params.reads_extension = ".fastq.gz" // Extension used to detect reads in folder
 params.paired_reads_pattern = "{1,2}"
 read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'ont' ]
 params.read_type = "short_paired"
-params.relax = false // allow to use options that do not reflect expectation according to the read type
+params.relax = false // Avoid to automatically set option specific to ready type (e.g minimap, bwa-mem for long reads.).
 
 // Read feature params
 libtype_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR' ]
@@ -38,7 +38,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie_options = ''
@@ -57,6 +57,8 @@ params.ngmlr_options = ''
 params.novoalign_options = ''
 params.novoalign_license = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
 params.nucmer_options = ''
+params.salmon_options = ''
+params.salmon_index_options = ''
 params.star_options = ''
 params.star_index_options = ''
 params.star_2pass = false
@@ -147,9 +149,10 @@ if (params.annotation){
 log.info """check alinger parameters ..."""
 
 // --- bbmap tool ---
-if ("bbmap" in aligner_list && !params.relax){
+if ( "bbmap" in aligner_list && !params.relax ){
     if (params.read_type == "pacbio" || params.read_type == "ont"){
         bbmap_tool = "mapPacBio.sh"
+        log.warn "Long reads being used, using mapPacBio.sh to align with bbmap!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter to use bbmap.sh anyway."
         // Function to check and set maxlen in params.bbmap_options when long_reads is set
         // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
         if ( !params.bbmap_options.contains("maxlen") ){
@@ -159,24 +162,24 @@ if ("bbmap" in aligner_list && !params.relax){
 }
 
 // --- bwa aln tool ---
-if ("bwaaln" in aligner_list && !params.relax){
-    if (params.read_type == "pacbio" || params.read_type == "ont"){
-        log.warn("""Error: bwaaln is not suitable for long reads.
-However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
-        stop_pipeline = true
+if ( "bwaaln" in aligner_list ){
+    if ( params.read_type == "pacbio" || params.read_type == "ont"){
+        log.warn "Bwaaln aligner is not recommended to align long reads!\n"
     }
 }
 
 // --- bwa mem tool ---
-if ("bwamem" in aligner_list && !params.relax){
+if ( "bwamem" in aligner_list && !params.relax ){
     if (params.read_type == "pacbio"){
         if ( !params.bwamem_options.contains(" pacbio") ){
             params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
+            log.warn "Pacbio reads being used, setting -x pacbio to bwamem!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
         }
     }
     if (params.read_type == "ont"){
         if ( !params.bwamem_options.contains(" ont2d") ){
             params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
+            log.warn "Ont reads being used, setting -x ont2d to bwamem!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
         }
     }
 }
@@ -186,31 +189,35 @@ if ("bwamem2" in aligner_list && !params.relax){
     if (params.read_type == "pacbio"){
         if ( !params.bwamem2_options.contains(" pacbio") ){
             params.replace("bwamem2_options", "${params.bwamem2_options} -x pacbio")
+            log.warn "Pacbio reads being used, setting -x pacbio to bwamem2!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
         }
     }
     if (params.read_type == "ont"){
         if ( !params.bwamem2_options.contains(" ont2d") ){
             params.replace("bwamem2_options", "${params.bwamem2_options} -x ont2d")
+            log.warn "Ont reads being used, setting -x ont2d to bwamem2!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
         }
     }
 }
 
 // --- bwa sw tool ---
-if ("bwasw" in aligner_list && !params.relax){
+if ( "bwasw" in aligner_list ){
     if (params.read_type == "pacbio" || params.read_type == "ont"){
-        log.warn("""Error: bwasw is not suitable for long reads.
-However, if you know what you are doing you can activate the AliNe --relax parameter to use it anyway.\n""")
-        stop_pipeline = true
+        log.warn "Bwasw aligner is not recommended to align long reads!\n"
     }
 }
 
 // --- graphmap2 tool ---
-if ("graphmap2" in aligner_list ){
+if ( "graphmap2" in aligner_list ){
+    if (! params.read_type == "pacbio" && ! params.read_type == "ont"){
+        log.warn "Graphmap2 aligner is not recommended to align short reads!\n"
+    }
     if (annotation_file && !params.graphmap2_options.contains("--gtf ") ){
         params.replace("graphmap2_options", "${params.graphmap2_options} --gtf ${annotation_file}")
     }
 }
 
+// --- kallisto tool ---
 if ( "kallisto" in aligner_list ){
     if ( params.read_type == "ont" || params.read_type == "pacbio"){
         log.warn "Kallisto aligner is not recommended to align long reads!\n"
@@ -259,18 +266,14 @@ if ("ngmlr" in aligner_list ){
         if (params.read_type == "ont"){
             if (! params.ngmlr_options.contains("-x ont")){
                 params.replace("ngmlr_options", "${params.ngmlr_options} -x ont")
+                log.warn "Ont reads being used, setting -x ont to ngmlr!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
             }
         }
-        //else if (params.read_type.contains("short") ){
-        //    log.warn ": ngmlr aligner do not handle short reads, please remove it from the list of aligner to use.\nOtherwise, if you know what you are doing you can activate the AliNe --relax parameter to use options that do not reflect expectation.\n"
-            //stop_pipeline = true
-        //}
     }
-    if ( params.read_type == "short_paired"){
-        log.error "ngmlr aligner does not handle paired reads, please remove it from the list of aligner to use.\n"
-        stop_pipeline = true
+    if (! params.read_type == "pacbio" && ! params.read_type == "ont"){
+        log.warn "Ngmlr aligner is not recommended to align short reads!\n"
     }
-}       
+}
 
 // novoalign tool - load license into the container
 def novoalign_lic = ""
@@ -293,11 +296,20 @@ if ("novoalign" in aligner_list ){
         if (params.read_type == "pacbio" || params.read_type == "ont"){
             if (! params.novoalign_options.contains("-g ")){
                 params.replace("novoalign_options", "${params.novoalign_options} -g 20")
+                log.warn "Long reads being used, setting -g 20 to Novoalign!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
             }
             if (! params.novoalign_options.contains("-x ")){
                 params.replace("novoalign_options", "${params.novoalign_options} -x 0")
+                log.warn "Long reads being used, setting -x 0 to Novoalign!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
             }
         }
+    }
+}
+
+// --- salmon tool ---
+if ( "salmon" in aligner_list ){
+    if ( params.read_type == "ont" || params.read_type == "pacbio"){
+        log.warn "Salmon aligner is not recommended to align long reads!\n"
     }
 }
 
@@ -309,6 +321,7 @@ if ( "star" in aligner_list ){
     if (!params.relax){
         if (params.read_type == "pacbio" || params.read_type == "ont"){
             star_tool = "STARlong"
+            log.warn "Long reads being used, using STARlong to align with star!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter to use star anyway."
         }
     }
 }
@@ -321,9 +334,8 @@ if ( "subread" in aligner_list ){
 }
 
 if ( "sublong" in aligner_list ){
-    if ( params.read_type == "short_paired"){
-        log.error "Sublong aligner does not handle paired reads, please remove it from the list of aligner to use.\n"
-        stop_pipeline = true
+    if ( params.read_type == "short_single" || params.read_type == "short_paired"){
+        log.warn "Sublong aligner is not recommended to align short reads!\n"
     }
 }
 
@@ -370,7 +382,7 @@ include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie ; fastqc as fastqc_ali_bowtie2 ; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwamem2; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
          fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
-         fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
+         fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer;  fastqc as fastqc_ali_salmon; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
          fastqc as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf"
 include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf" 
@@ -379,21 +391,22 @@ include {multiqc} from "$baseDir/modules/multiqc.nf"
 include {ngmlr} from "$baseDir/modules/ngmlr.nf" 
 include {nucmer} from "$baseDir/modules/mummer4.nf" 
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
-include {salmon_index; salmon_guess_lib; set_tuple_withUserLib} from "$baseDir/modules/salmon.nf" 
+include {salmon_index; salmon_guess_lib; set_tuple_withUserLib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
          samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
          samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
-         samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign } from "$baseDir/modules/samtools.nf"
+         samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign; samtools_sam2bam as samtools_sam2bam_salmon } from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
-         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer;
-         samtools_sort as samtools_sort_sublong } from "$baseDir/modules/samtools.nf"
+         samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
+         samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie ; samtools_stats as samtools_stats_ali_bowtie2 ; 
          samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2; samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2 ; 
          samtools_stats as samtools_stats_ali_hisat2; samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
-         samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_star; samtools_stats as samtools_stats_ali_subread ; 
-         samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
+         samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
+         samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
+include {samtools_merge_bam} from "$baseDir/modules/samtools.nf"
 include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
@@ -563,13 +576,14 @@ workflow align {
         // here we subsample and do read length and library type guessing only if needed.
         // ------------------------------------------------------------------------------------------------
         
-        // In which case I need the mean read length (kallisto, star)
+        // In which case I need the mean read length (kallisto, salmon, star)
         // Need to list here all aligner that need the read length
         params.debug && log.info('read_length guessing')
         def guess_read_length = null
         if ( (!params.read_length) && 
            ( ("kallisto" in aligner_list && params.read_type == "short_single" && ( !params.kallisto_options.contains("-l ") || !params.kallisto_options.contains("--fragment-length  ") ) ) || 
-           ( annotation.toString() != "aline_null.gtf" && !params.star_index_options.contains("--sjdbOverhang") ) ) ){
+           ( annotation.toString() != "aline_null.gtf" && !params.star_index_options.contains("--sjdbOverhang") ) || 
+           ( "salmon" in aligner_list && params.read_type == "short_single" && !params.salmon.contains("--fldMean ") ) ) ){
                 guess_read_length=1
         }
         params.debug && log.info('subsample guessing')
@@ -938,6 +952,32 @@ workflow align {
                 logs.concat(samtools_stats_ali_nucmer.out).set{logs} // save log
             }
         }
+        
+        if ("salmon" in aligner_list ){
+            // index
+            if (! params.library_type.contains("auto")){ // run salmon index only if library type is not provided otherwise it has been already ran
+                salmon_index(genome.collect(), "alignment/salmon/indicies")
+            }
+            // align
+            salmon(reads, salmon_index.out.collect(), "alignment/salmon")
+            logs.concat(salmon.out.salmon_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_salmon(salmon.out.tuple_sample_sam)
+            // sort
+            samtools_sort_salmon(samtools_sam2bam_salmon.out.tuple_sample_bam, "alignment/salmon")
+            samtools_sort_salmon.out.tuple_sample_sortedbam.set{salmon_ali} // set name
+            // save aligned reads
+            sorted_bam.concat(salmon_ali).set{sorted_bam} 
+            // stat on aligned reads
+            if(params.fastqc){
+                fastqc_ali_salmon(salmon_ali, "fastqc/salmon", "salmon")
+                logs.concat(fastqc_ali_salmon.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_salmon(salmon_ali, genome.collect(), "samtools_stats/salmon", "salmon")
+                logs.concat(samtools_stats_ali_salmon.out).set{logs} // save log
+            }
+        }
 
         // ------------------- STAR -----------------
         if ( "star" in aligner_list ){
@@ -995,9 +1035,15 @@ workflow align {
             // index
             sublong_index(genome.collect(), "alignment/sublong/indicies")
             // align
-            sublong(reads, genome.collect(), sublong_index.out.collect(), "alignment/sublong") 
+            sublong(reads, genome.collect(), sublong_index.out.collect(), "alignment/sublong")
+            sublong.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
+            // merge bam if paired
+            if (params.read_type == "short_paired"){ 
+                samtools_merge_bam(sublong.out.tuple_sample_bam)
+                samtools_merge_bam.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
+            }
             // sort
-            samtools_sort_sublong(sublong.out.tuple_sample_bam, "alignment/sublong")
+            samtools_sort_sublong(sublong_ali_tmp, "alignment/sublong")
             samtools_sort_sublong.out.tuple_sample_sortedbam.set{sublong_ali} // set name
             // save aligned reads
             sorted_bam.concat(sublong_ali).set{sorted_bam}
@@ -1094,7 +1140,7 @@ def helpMSG() {
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
-        --bwamem2_options            additional options for bwamem2
+        --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
@@ -1106,7 +1152,10 @@ def helpMSG() {
         --novoalign_options         additional options for novoalign
         --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
+        --salmon_options            additional options for salmon
+        --salmon_index_options      additional options for salmon index
         --star_options              additional options for star
+        --star_index_options        additional options for star index
         --star_2pass                set to true to run STAR in 2pass mode (default: false)
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
@@ -1126,7 +1175,7 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
     if ("bowtie" in aligner_list){ 
         sentence += """       
     bowtie parameters
-        bowtie_options            : ${params.bowtie_options}
+        bowtie_options             : ${params.bowtie_options}
     """} 
     if ("bowtie2" in aligner_list){ 
         sentence += """       
@@ -1146,7 +1195,7 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
     if ("bwamem2" in aligner_list){
         sentence += """
     bwamem2 parameters
-        bwamem2_options             : ${params.bwamem2_options}
+        bwamem2_options            : ${params.bwamem2_options}
     """} 
     if ("bwasw" in aligner_list){
         sentence += """
@@ -1179,8 +1228,8 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
         }
         sentence += """
     kallisto parameters
-        kallisto_options             : ${new_kallisto_sentence}
-        kallisto_index_options       : ${params.kallisto_index_options}
+        kallisto_options           : ${new_kallisto_sentence}
+        kallisto_index_options     : ${params.kallisto_index_options}
     """}
     if ("minimap2" in aligner_list){
         sentence += """
@@ -1203,6 +1252,25 @@ def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
         sentence += """
     nucmer parameters
         nucmer_options             : ${params.nucmer_options}
+    """}
+     if ("salmon" in aligner_list){
+        def new_salmon_sentence = "${params.salmon_options}"
+        def extra_info="" 
+        if ( !params.salmon_options.contains("--fldMean ") ){
+            new_salmon_sentence += " --fldMean XXX" 
+            extra_info = " xxx computed by AliNe"
+        }
+        if (!params.salmon_options.contains("--fldSD ")){
+            new_salmon_sentence += " --fldSD YYY" 
+             extra_info += " yyy computed by AliNe"
+        }
+        if (extra_info){
+            new_salmon_sentence += " # ${extra_info}"
+        }
+        sentence += """
+    salmon parameters
+        salmon_options             : ${new_salmon_sentence}
+        salmon_index_options       : ${params.salmon_index_options}
     """}
     if ("star" in aligner_list){
         def new_index_sentence = "${star_index_options}"
