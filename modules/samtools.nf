@@ -24,7 +24,6 @@ process samtools_sam2bam_nucmer {
 
 }
 
-
 process samtools_sam2bam {
     label 'samtools'
     tag "$sample"
@@ -39,6 +38,23 @@ process samtools_sam2bam {
 
         """
             samtools view -@ ${task.cpus} ${sam} -b -o ${sam.baseName}.bam 
+        """
+
+}
+process samtools_merge_bam {
+    label 'samtools'
+    tag "$sample"
+
+    input:
+        tuple val(sample), path(bam)
+
+    output:
+        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+
+    script:
+
+        """
+            samtools merge -@ ${task.cpus} ${bam[0].baseName}_concatR1R2.bam *.bam
         """
 
 }

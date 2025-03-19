@@ -14,7 +14,7 @@ process salmon_index {
 
     script:
         """
-        salmon index -t ${genome_fasta} -i salmon_index --threads ${task.cpus}
+        salmon index ${params.salmon_index_options} -t ${genome_fasta} -i salmon_index --threads ${task.cpus}
         """
 }
 
@@ -65,4 +65,72 @@ process set_tuple_withUserLib{
 
         """
         """
+}
+
+//  Use salmon as aligner - output sorted sam
+process salmon {
+    label 'salmon'
+    publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
+   
+    input:
+        tuple val(sample), path(fastq), val(library), val(read_length)
+        path salmon_index
+        val outpath
+
+    output:
+        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        path "*.log",  emit: salmon_summary
+   
+    script:
+
+        // set input according to read_type parameter
+        def input =  "-r ${fastq[0]}"
+        if (params.read_type == "short_paired"){
+            input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
+        }
+
+        // deal with library type 
+        def read_orientation=""
+        if (! params.salmon_options.contains("-l ") && ! params.salmon_options.contains("--libType ") &&
+            ! params.skip_libray_usage){ 
+                read_orientation = "-l ${library}"
+        }
+
+        // catch filename
+        def filename = "${fastq[0].baseName.replace('.fastq','')}"
+       
+        // Salmon automatically estimates the fragment length distribution for paired-end reads (like Kallisto)
+        if (params.read_type == "short_paired"){
+            """
+                salmon quant -i ${salmon_index} ${params.salmon_options} \
+                    ${read_orientation} \
+                    ${input} \
+                    --thread ${task.cpus} \
+                    --writeMappings \
+                    --output ${filename} > ${filename}.sam 2> ${filename}.log
+            """
+        } else {
+            
+            // Use read length (--fldMean) and sd (--fldSD) from params?
+            def l_s_params = ""
+            def read_length_copy = read_length // to avoid error "Variable read_length already defined in the process scope "
+            if ( !params.salmon_options.contains("--fldMean ") ){
+                l_s_params += " --fldMean ${read_length}"
+            }
+            if ( !params.salmon_options.contains("--fldSD ") ){
+                // 10% of read length will be used as Estimated standard deviation of fragment length
+                def tenPercent = (read_length_copy.toInteger() * 10 / 100) as int 
+                l_s_params += " --fldSD ${tenPercent}"
+            }
+
+            """
+                salmon quant -i ${salmon_index} ${params.salmon_options} \
+                    ${l_s_params} \
+                    ${read_orientation} \
+                    ${input} \
+                    --thread ${task.cpus} \
+                    --writeMappings \
+                    --output ${filename} > ${filename}.sam 2> ${filename}.log
+            """
+        }
 }

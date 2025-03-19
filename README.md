@@ -48,21 +48,22 @@ You can choose to run one or several aligner in parallel.
 | bbmap | ✅ | ✅ | ⚠️ | ⚠️ |
 | bowtie | ✅ | ✅ | ⚠️ | ⚠️ |
 | bowtie2 | ✅ | ✅ | ⚠️ | ⚠️ |
-| bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ✅ | ✅ |
-| bwamem | ✅ | ✅ | ⚠️ | ⚠️ |
-| bwamem2 | ✅ | ✅ | ⚠️ | ⚠️ |
+| bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ⚠️ | ⚠️ |
+| bwamem | ✅ | ✅ | ✅ | ✅ |
+| bwamem2 | ✅ | ✅ | ✅ | ✅ |
 | bwasw | ✅ | ✅ | ⚠️ | ⚠️ |
 | graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | kallisto | ✅ | ✅ | ⚠️ | ⚠️ |
 | minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
-| ngmlr | ⚠️ | 🚫 | ✅ | ✅ |
+| ngmlr | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | novoalign | ✅ | ✅ | ✅ | ⚠️ |
 | nucmer | ✅ | ✅ R1 and R2 are concatenated then aligned | ⚠️ | ⚠️ |
+| salmon | ✅ | ✅ | ⚠️ | ⚠️ |
 | star | ✅ | ✅ | ✅ use STARlong | ✅ use STARlong |
 | star 2pass mode | ✅ | ✅ | ⚠️ | ⚠️ |
 | subread | ✅ | ✅ | ⚠️ | ⚠️ |
-| sublong | ⚠️ | 🚫 | ✅ | ✅ |
+| sublong | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 
 *Legend*  
 ✅ Recommended  
@@ -94,6 +95,7 @@ It is then translated to the correct option in the following aligners:
 | ngmlr | 🚫 | 🚫 | 🚫 |
 | novoalign | 🚫 | 🚫 | 🚫 |
 | nucmer | 🚫 | 🚫 | 🚫 |
+| salmon | U SR SF IU MU OU ISF ISR MSF MSR OSR OSF | identical | strand information and read orientation | 
 | star | 🚫 | 🚫 | 🚫 |
 | star 2pass mode | 🚫 | 🚫 | 🚫 |
 | subread | -S fr / -S rf / -S ff | ISF ISR IU / OSF OSR OU / MSF MSR MU | read orientation |
@@ -128,6 +130,7 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | ngmlr | 🚫 |
 | novoalign | 🚫 |
 | nucmer | 🚫 |
+| salmon | 🚫 |
 | star | GTF / GFF ( --sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | star 2pass mode | GTF / GFF (--sjdbGTFfile + --sjdbGTFtagExonParentTranscript Parent in case of GFF ) |
 | subread | GTF or compatible GFF format (-a) |
@@ -343,18 +346,22 @@ On success you should get a message looking like this:
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
         --bwamem_options            additional options for bwamem
-        --bwamem2_options            additional options for bwamem2
+        --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
         --kallisto_options          additional options for kallisto
+        --kallisto_index_options    additional options for kallisto index
         --minimap2_options          additional options for minimap2 (default: -a (to get sam output))
         --minimap2_index_options    additional options for minimap2 index
         --ngmlr_options             additional options for ngmlr
         --novoalign_options         additional options for novoalign
         --novoalign_license         license for novoalign. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
         --nucmer_options            additional options for nucmer
+        --salmon_options            additional options for salmon
+        --salmon_index_options      additional options for salmon index
         --star_options              additional options for star
+        --star_index_options        additional options for star index
         --star_2pass                set to true to run STAR in 2pass mode (default: false)
         --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
