@@ -55,6 +55,7 @@ You can choose to run one or several aligner in parallel.
 | graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | kallisto | ✅ | ✅ | ⚠️ | ⚠️ |
+| last | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with maf-convert | ✅ | ✅ |
 | minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
 | ngmlr | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | novoalign | ✅ | ✅ | ✅ | ⚠️ |
@@ -91,6 +92,7 @@ It is then translated to the correct option in the following aligners:
 | hisat2 | --rna-strandness [ F / R / FR / RF ] | SF / SR / ISF OSF MSF / ISR OSR MSR | strand information |
 | hisat2 | --fr / --rf / --ff | I / O / M | read orientation |
 | kallisto | --fr-stranded / --rf-stranded | I / O | read orientation |
+| last | 🚫 | 🚫 | 🚫 |
 | minimap2 | 🚫 | 🚫 | 🚫 |
 | ngmlr | 🚫 | 🚫 | 🚫 |
 | novoalign | 🚫 | 🚫 | 🚫 |
@@ -126,6 +128,7 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | graphmap2 | GTF (--gtf)  |
 | hisat2 | 🚫 |
 | kallisto | 🚫 |
+| last | 🚫 |
 | minimap2 | 🚫 |
 | ngmlr | 🚫 |
 | novoalign | 🚫 |
