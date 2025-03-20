@@ -59,7 +59,7 @@ You can choose to run one or several aligner in parallel.
 | minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
 | ngmlr | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | novoalign | ✅ | ✅ | ✅ | ⚠️ |
-| nucmer | ✅ | ✅ R1 and R2 are concatenated then aligned | ⚠️ | ⚠️ |
+| nucmer | ✅ | ✅ R1 and R2 independently aligned then merged with cat | ⚠️ | ⚠️ |
 | salmon | ✅ | ✅ | ⚠️ | ⚠️ |
 | star | ✅ | ✅ | ✅ use STARlong | ✅ use STARlong |
 | star 2pass mode | ✅ | ✅ | ⚠️ | ⚠️ |
