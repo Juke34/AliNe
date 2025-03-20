@@ -16,7 +16,7 @@ process minimap2_index {
 
     script:
         """
-        minimap2 -d ${genome_fasta.baseName}.mmi ${genome_fasta}                    
+        minimap2 -d ${genome_fasta.baseName}.mmi ${genome_fasta}
         """
 }
 

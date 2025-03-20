@@ -38,7 +38,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options = ''
 params.bowtie_options = ''
@@ -51,6 +51,8 @@ params.graphmap2_options = '' // owler option is possible
 params.hisat2_options = ''
 params.kallisto_options = ''
 params.kallisto_index_options = '' // e.g. to use --distinguish, --make-unique, etc...
+params.last_options = ''
+params.last_index_options = ''
 params.minimap2_options = '' 
 params.minimap2_index_options = '' //  -k, -w, -H and -I
 params.ngmlr_options = ''
@@ -381,29 +383,32 @@ include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie ; fastqc as fastqc_ali_bowtie2 ; 
          fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwamem2; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
+         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_last; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
          fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer;  fastqc as fastqc_ali_salmon; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
          fastqc as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf"
-include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf" 
-include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf" 
-include {multiqc} from "$baseDir/modules/multiqc.nf" 
-include {ngmlr} from "$baseDir/modules/ngmlr.nf" 
-include {nucmer} from "$baseDir/modules/mummer4.nf" 
+include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf"
+include {last_index; last} from "$baseDir/modules/last.nf"
+include {minimap2_index; minimap2} from "$baseDir/modules/minimap2.nf"
+include {multiqc} from "$baseDir/modules/multiqc.nf"
+include {ngmlr} from "$baseDir/modules/ngmlr.nf"
+include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {salmon_index; salmon_guess_lib; set_tuple_withUserLib; salmon} from "$baseDir/modules/salmon.nf" 
-include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; samtools_sam2bam as samtools_sam2bam_bwaaln; 
-         samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; 
-         samtools_sam2bam as samtools_sam2bam_hisat2; samtools_sam2bam as samtools_sam2bam_minimap2; 
+include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
+         samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
+         samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
+         samtools_sam2bam as samtools_sam2bam_last; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign; samtools_sam2bam as samtools_sam2bam_salmon } from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
-         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
+         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
          samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
-include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie ; samtools_stats as samtools_stats_ali_bowtie2 ; 
-         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2; samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2 ; 
-         samtools_stats as samtools_stats_ali_hisat2; samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
+include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie; samtools_stats as samtools_stats_ali_bowtie2 ;
+         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2;
+         samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
+         samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_last; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_merge_bam} from "$baseDir/modules/samtools.nf"
@@ -859,6 +864,32 @@ workflow align {
                 logs.concat(samtools_stats_ali_kallisto.out).set{logs} // save log
             }
         }
+
+        // --------------------- LAST --------------------
+        if ("last" in aligner_list ){
+            // index
+            last_index(genome.collect(), "alignment/last/indicies")
+            // align
+            last(reads, genome.collect(), last_index.out.collect(), "alignment/last") 
+            logs.concat(last.out.last_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_last(last.out.tuple_sample_sam)
+            // sort
+            samtools_sort_last(samtools_sam2bam_last.out.tuple_sample_bam, "alignment/last")
+            samtools_sort_last.out.tuple_sample_sortedbam.set{last_ali} // set name
+            // save aligned reads
+            sorted_bam.concat(last_ali).set{sorted_bam} 
+            // stat on aligned reads
+            if (params.fastqc){
+                fastqc_ali_last(last_ali, "fastqc/last", "last")
+                logs.concat(fastqc_ali_last.out).set{logs} // save log
+            }
+            if (params.samtools_stats){
+                samtools_stats_ali_last(last_ali, genome.collect(), "samtools_stats/last", "last")
+                logs.concat(samtools_stats_ali_last.out).set{logs} // save log
+            }
+        }
+
         // ------------------- minimap2 -----------------
         if ("minimap2" in aligner_list ){
             // index
@@ -883,6 +914,7 @@ workflow align {
                 logs.concat(samtools_stats_ali_minimap2.out).set{logs} // save log
             }
         }
+
         // --------------------- NGMLR --------------------
         if ("ngmlr" in aligner_list ){
             // align

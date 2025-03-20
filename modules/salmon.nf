@@ -97,7 +97,7 @@ process salmon {
         }
 
         // catch filename
-        def filename = "${fastq[0].baseName.replace('.fastq','')}"
+        def filename = "${fastq[0].baseName.replace('.fastq','')}_salmon"
        
         // Salmon automatically estimates the fragment length distribution for paired-end reads (like Kallisto)
         if (params.read_type == "short_paired"){

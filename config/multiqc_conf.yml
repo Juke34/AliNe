@@ -4,7 +4,7 @@ run_modules:
     - fastqc
     - fastp
     - samtools
-    
+
 module_order:
     - fastqc:
         name: "FastQC (raw)"
@@ -57,6 +57,14 @@ module_order:
         path_filters:
           - "*bwamem_*.txt"
     - fastqc:
+        name: "FastQC (bwamem2)"
+        path_filters:
+          - "*bwamem2_logs/*"
+    - samtools:
+        name: "Samtools stats (bwamem2)"
+        path_filters:
+          - "*bwamem2_*.txt"
+    - fastqc:
         name: "FastQC (bwasw)"
         path_filters:
           - "*bwasw_logs/*"
@@ -89,6 +97,14 @@ module_order:
         path_filters:
           - "*kallisto_*.txt"
     - fastqc:
+        name: "FastQC (last)"
+        path_filters:
+          - "*last_logs/*"
+    - samtools: 
+        name: "Samtools stats (last)"
+        path_filters:
+          - "*last_*.txt"
+    - fastqc:
         name: "FastQC (minimap2)"
         path_filters:
           - "*minimap2_logs/*"
@@ -104,6 +120,14 @@ module_order:
         name: "Samtools stats (nucmer)"
         path_filters:
           - "*nucmer*.txt"
+    - fastqc:
+        name: "FastQC (salmon)"
+        path_filters:
+          - "*salmon_logs/*"
+    - samtools: 
+        name: "Samtools stats (salmon)"
+        path_filters:
+          - "*salmon_*.txt"
     - fastqc:
         name: "FastQC (STAR)"
         path_filters:
