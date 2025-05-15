@@ -231,7 +231,7 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 You can first check the available options and parameters by running:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.1.0 --help
+nextflow run Juke34/AliNe -r v1.4.0 --help
 ```
 
 ### Profile
@@ -243,7 +243,7 @@ To run the workflow you must select a profile according to the container platfor
 The command will look like that: 
 
 ```bash
-nextflow run Juke34/AliNe -r v1.1.0 -profile docker <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.4.0 -profile docker <rest of paramaters>
 ```
 
 Another profile is available (/!\\ actually not yet implemented):
@@ -253,7 +253,7 @@ Another profile is available (/!\\ actually not yet implemented):
 The use of the `slurm` profile  will give a command like this one:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.1.0 -profile singularity,slurm <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.4.0 -profile singularity,slurm <rest of paramaters>
 ```
 
 ### Example
@@ -263,7 +263,7 @@ Here, we use the docker container platform, remote read and genome files, specif
 
 ```bash
 nextflow run Juke34/AliNe \
-  -r v1.1.0 \
+  -r v1.4.0 \
   -profile docker \
   --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
   --genome https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
@@ -282,25 +282,25 @@ Test data are included in the AliNe repository in the `test` folder.
 Test with short single reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.1.0
+nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.4.0
 ```
 
 Test with short paired reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.1.0
+nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.4.0
 ```
 
 Test with ont reads:
 
 ```bash
-nextflow run -profile docker,test_ont Juke34/AliNe -r v1.1.0
+nextflow run -profile docker,test_ont Juke34/AliNe -r v1.4.0
 ```
 
 Test with pacbio reads:
 
 ```bash
-nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.1.0
+nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.4.0
 ```
 
 On success you should get a message looking like this:
@@ -322,8 +322,10 @@ On success you should get a message looking like this:
         --help                      prints the help section
 
     General Parameters
-        --reads                     path to the reads file or folder
-        --reads_extension           extension of the reads files (default: .fastq.gz)
+        --reads                     path to the reads folder or (remote) file (commma separated list of remote file accepted).
+                                    If a folder is provided, all the files with proper extension are detected.
+                                    file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
+                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)       
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
@@ -331,7 +333,6 @@ On success you should get a message looking like this:
 
     Type of input reads
         --read_type                 type of reads among this list [short_paired, short_single, pacbio, ont] (default: short_paired)
-        --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
         --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: [U, IU, MU, OU, ISF, ISR, MSF, MSR, OSF, OSR]. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
