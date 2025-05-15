@@ -390,6 +390,7 @@ include {multiqc} from "$baseDir/modules/multiqc.nf"
 include {ngmlr} from "$baseDir/modules/ngmlr.nf"
 include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
+include {fasta_uncompress} from "$baseDir/modules/pigz.nf"
 include {salmon_index; salmon_guess_lib; set_tuple_withUserLib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
          samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
@@ -527,8 +528,12 @@ workflow {
                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
         }
 
-        genome = Channel.fromPath(params.genome, checkIfExists: true)
+        Channel.fromPath(params.genome, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find genome matching ${params.genome}!\n" }
+            .set{genome_raw}
+        // uncompress it if needed because some aligner need the genome to be uncompressed (e.g. histat2)
+        fasta_uncompress(genome_raw)
+        fasta_uncompress.out.genomeFa.set{genome} // set genome to the output of fasta_uncompress
 
         if(annotation_file){
             annotation = Channel.fromPath(params.annotation, checkIfExists: true)
