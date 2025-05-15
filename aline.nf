@@ -18,8 +18,6 @@ import java.nio.file.*
 params.reads = "/path/to/reads_{1,2}.fastq.gz"
 params.genome = "/path/to/genome.fa"
 params.outdir = "alignment_results"
-params.reads_extension = ".fastq.gz" // Extension used to detect reads in folder
-params.paired_reads_pattern = "{1,2}"
 read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'ont' ]
 params.read_type = "short_paired"
 params.relax = false // Avoid to automatically set option specific to ready type (e.g minimap, bwa-mem for long reads.).
@@ -355,8 +353,6 @@ General Parameters
      annotation                 : ${params.annotation}
      aligner                    : ${params.aligner}
      read_type                  : ${params.read_type}
-     paired_reads_pattern       : ${params.paired_reads_pattern}
-     reads_extension            : ${params.reads_extension}
      library_type               : ${params.library_type}
      skip_libray_usage          : ${params.skip_libray_usage}
      outdir                     : ${params.outdir}
@@ -429,7 +425,7 @@ else { exit 1, "No executer selected: -profile docker/singularity"}
 
 // --------- handle read input (file or folder / local or remote / paired or not) --------
 def list_files = []
-def pattern_reads
+def pattern_reads = ""
 def fromFilePairs_input
 def path_reads = params.reads 
 
@@ -442,20 +438,30 @@ if (params.read_type == "short_paired") {
 // Case of remote data 
 def via_URL = false
 def read_list=[]
-if (path_reads.startsWith('https:') || path_reads.startsWith('s3:') || path_reads.startsWith('az:') || path_reads.startsWith('gs:') || path_reads.startsWith('ftp:') ) {
-    log.info "The input is a based on URLs! ${path_reads}\n"
+// Case of local data
+if( path_reads.indexOf(',') >= 0) {
+    log.info "The input is a list!"
     via_URL = true
+    // Cut into list with coma separator
     str_list = path_reads.tokenize(',')
+    // loop over elements
     str_list.each {
         str_list2 = it.tokenize(' ')
         str_list2.each {
+            if (it.startsWith('https:') || it.startsWith('s3:') || it.startsWith('az:') || it.startsWith('gs:') || it.startsWith('ftp:') ) {
+                log.info "This input is an URL: ${it}"
+            }
             read_list.add(file(it)) // use file insted of File for URL
         }
     }
+    // check if the list is a paired list
+    if ( read_list.size() % 2 != 0 && params.read_type == "short_paired") {
+        exit 1, "The list has an odd number of elements which is not in line with read type <${params.read_type}>."
+    }
     fromFilePairs_input = read_list
 }
-// Case of local data
 else {
+
     File input_reads = new File(path_reads)
     if(input_reads.exists()){
         if ( input_reads.isDirectory()) {
@@ -465,11 +471,11 @@ else {
     }
 
     if (params.read_type == "short_paired") {
-        pattern_reads = "${params.paired_reads_pattern}${params.reads_extension}"
-        fromFilePairs_input = "${path_reads}*${params.paired_reads_pattern}${params.reads_extension}"
+        pattern_reads = "_R?[12](_\\d+)?(\\.fastq|\\.fq)(\\.gz)?\$"
+        fromFilePairs_input = "${path_reads}*_{,R}{1,2}{,_*}.{fastq,fq}{,.gz}"
     } else{
-        pattern_reads = "${params.reads_extension}"
-        fromFilePairs_input = "${path_reads}*${params.reads_extension}"
+        pattern_reads = "(\\.fastq|\\.fq)(\\.gz)?\$"
+        fromFilePairs_input = "${path_reads}*.{fastq,fq}{,.gz}"
     }
 
     if(input_reads.exists()){
@@ -478,6 +484,7 @@ else {
             input_reads.eachFileRecurse(FILES){
                 if (it.name =~ ~/${pattern_reads}/){
                     list_files.add(it)
+                    log.info "Found file ${it}"
                 }
             }
             samples_number = list_files.size()
@@ -490,9 +497,16 @@ else {
                 log.error "Providing a file is not authorized for (local) paired data! Please provide a folder path or change <read_type> parameter to <short_single>.\n"
             }
         }
-    } else {
+    } 
+    else if (path_reads.startsWith('https:') || path_reads.startsWith('s3:') || path_reads.startsWith('az:') || path_reads.startsWith('gs:') || path_reads.startsWith('ftp:') ) {
+        log.info "The input is a based on URLs! ${path_reads}\n"
+        via_URL = true
+        read_list = path_reads
+    }   
+    else {
         exit 1, "The input ${path_reads} does not exists!\n"
     }
+
 }
 //*************************************************
 // STEP 4 - Main Workflow
@@ -508,6 +522,7 @@ workflow {
                                 .groupTuple()
                                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
         } else {
+            log.info "Equivalent fromFilePairs regex: ${fromFilePairs_input} \n"
             reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
         }
@@ -1145,8 +1160,9 @@ def helpMSG() {
         --help                      prints the help section
 
     General Parameters
-        --reads                     path to the reads file or folder. If a folder is provided, all the files with <reads_extension> in the folder will be used. You can provide remote files (commma separated list).
-        --reads_extension           extension of the reads files (default: .fastq.gz)
+        --reads                     path to the reads file or folder. If a folder is provided, all the files with proper extension in the folder will be used. You can provide remote files (commma separated list).
+                                    file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
+                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)         
         --genome                    path to the genome file
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
@@ -1154,7 +1170,6 @@ def helpMSG() {
 
     Type of input reads
         --read_type                 type of reads among this list ${read_type_allowed} (default: short_paired)
-        --paired_reads_pattern      pattern to detect paired reads (default: {1,2})
         --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: ${libtype_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
