@@ -5,7 +5,7 @@ AliNe (Alignment in Nextflow) - RNAseq DNAseq
 =========================================  
 <img align="right" src="img/IRD.png" width="200" height="66" /> <img align="right" src="img/MIVEGEC.png" width="100" height="66" />
 
-AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome using the tools of your choice.  
+AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference using the tools of your choice.  
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ AliNe is a pipeline written in Nextflow that aims to efficiently align reads aga
 
 ## Foreword
 
-**AliNe** is a pipeline written in Nextflow that aims to efficiently align reads against a reference genome.  
+**AliNe** is a pipeline written in Nextflow that aims to efficiently align reads against a reference.  
 
  * Can handle short reads paired or single, pacbio and ont (nanopore) data (see list of aligner in [Table 1](#aligner-and-read-types-accepted)).
  * A QC with FastQC is made at each step if option activated.  
@@ -150,7 +150,7 @@ config:
   theme: neutral
 ---
   graph TD;
-      Genome-->Index;
+      Reference-->Index;
       Index-->Aligner1;
       Index-->Aligner2;
       Annotation[Annotation - optional]--> Aligner1;
@@ -259,14 +259,14 @@ nextflow run Juke34/AliNe -r v1.4.0 -profile singularity,slurm <rest of paramate
 ### Example
 
 A typical command might look like the following.  
-Here, we use the docker container platform, remote read and genome files, specify that we use single-ended short reads, list a number of aligners, enable trimming with fastp and provide specific options for the star aligner.
+Here, we use the docker container platform, remote read and reference files, specify that we use single-ended short reads, list a number of aligners, enable trimming with fastp and provide specific options for the star aligner.
 
 ```bash
 nextflow run Juke34/AliNe \
   -r v1.4.0 \
   -profile docker \
   --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
-  --genome https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
+  --reference https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
   --read_type short_single \
   --aligner bbmap,bowtie2,bwaaln,bwamem,bwasw,graphmap2,hisat2,minimap2,ngmlr,nucmer,star,subread,sublong \
   --trimming_fastp \
@@ -326,7 +326,7 @@ On success you should get a message looking like this:
                                     If a folder is provided, all the files with proper extension are detected.
                                     file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
                                                               for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)       
-        --genome                    path to the genome file
+        --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
@@ -397,12 +397,12 @@ Here the description of typical ouput you will get from AliNe:
     |
     ├── alignment                                             # Folder gathering all alignment output (indicies, sorted bam and logs)
     │   ├── aligner1                                          # Folder gathering data produced by aligner 
-    │   │   ├── indicies                                      # Contains the genome index for the aligner
+    │   │   ├── indicies                                      # Contains the reference index for the aligner
     │   │   │   └── ...                                       #
     │   │   ├── sample1_seqkit_trim_aligner1_sorted.log       # Ccontains the log of the aligner
     │   │   └── sample1_seqkit_trim_aligner1_sorted.bam       # Sorted bam output
     │   └── aligner2                                          # Folder gathering data produced by aligner 
-    │       ├── indicies                                      # Contains the genome index for the aligner
+    │       ├── indicies                                      # Contains the reference index for the aligner
     │       │   └── ...                                       # 
     │       ├── sample1_seqkit_trim_aligner2_sorted.log       # Contains the log of the aligner
     │       └── sample1_seqkit_trim_aligner2_sorted.bam       # Sorted bam output
@@ -466,9 +466,9 @@ Samtools stats produces comprehensive statistics, see [here](http://www.htslib.o
 Among all the produceds metrics, "Error rate", "Non-primary", "Reads mapped", "% Mapped", "Total seqs"" are reported at the top of the `multiqc_report.html` file in a table called `General Statistics` ([see below](#general-statistics)).  
 These fields correspond to the following information : 
 
-  * Error rate - The percentage of mismatches between the aligned reads and the reference genome (mismatches (NM) / bases mapped (CIGAR))
-  * Non-primary - Non-primary alignments is the number of reads that are aligned to multiple locations in the reference genome.
-  * Reads mapped - The number of reads that are successfully aligned to the reference genome.
+  * Error rate - The percentage of mismatches between the aligned reads and the reference (mismatches (NM) / bases mapped (CIGAR))
+  * Non-primary - Non-primary alignments is the number of reads that are aligned to multiple locations in the reference.
+  * Reads mapped - The number of reads that are successfully aligned to the reference.
   * % Mapped - The percentage of total reads that are mapped. Calculated from reads mapped / total sequences
   * Total seqs - The total number of reads in the BAM
 
