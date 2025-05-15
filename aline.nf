@@ -16,7 +16,7 @@ import java.nio.file.*
 
 // Input/output params
 params.reads = "/path/to/reads_{1,2}.fastq.gz"
-params.genome = "/path/to/genome.fa"
+params.reference = "/path/to/reference.fa"
 params.outdir = "alignment_results"
 read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'ont' ]
 params.read_type = "short_paired"
@@ -348,7 +348,7 @@ if(stop_pipeline){
 //*************************************************
 log.info """
 General Parameters
-     genome                     : ${params.genome}
+     reference                  : ${params.reference}
      reads                      : ${params.reads}
      annotation                 : ${params.annotation}
      aligner                    : ${params.aligner}
@@ -528,12 +528,12 @@ workflow {
                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
         }
 
-        Channel.fromPath(params.genome, checkIfExists: true)
-            .ifEmpty { exit 1, "Cannot find genome matching ${params.genome}!\n" }
-            .set{genome_raw}
-        // uncompress it if needed because some aligner need the genome to be uncompressed (e.g. histat2)
-        fasta_uncompress(genome_raw)
-        fasta_uncompress.out.genomeFa.set{genome} // set genome to the output of fasta_uncompress
+        Channel.fromPath(params.reference, checkIfExists: true)
+            .ifEmpty { exit 1, "Cannot find reference matching ${params.reference}!\n" }
+            .set{reference_raw}
+        // uncompress it if needed because some aligner need the reference to be uncompressed (e.g. histat2)
+        fasta_uncompress(reference_raw)
+        fasta_uncompress.out.genomeFa.set{reference} // set reference to the output of fasta_uncompress
 
         if(annotation_file){
             annotation = Channel.fromPath(params.annotation, checkIfExists: true)
@@ -542,7 +542,7 @@ workflow {
             annotation = Channel.of("$baseDir/config/aline_null.gtf") // use the fake file (not used by tools just for the processes to be called)
         }
 
-        align(reads, genome, annotation, aligner_list)
+        align(reads, reference, annotation, aligner_list)
 }
 
 
@@ -554,7 +554,7 @@ workflow align {
 
     take:
         raw_reads
-        genome
+        reference
         annotation
         aligner_list
 
@@ -627,7 +627,7 @@ workflow align {
         // ------------------- set libtype -----------------
         if (params.library_type.contains("auto")){
             // ------------------- guess libtype -------------------
-            salmon_index(genome.collect())
+            salmon_index(reference.collect())
             salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon_libtype")
             salmon_guess_lib.out.tuple_id_libtype.set{tuple_id_lib}
         } else {
@@ -652,9 +652,9 @@ workflow align {
         // ------------------- BBMAP -----------------
         if ("bbmap" in aligner_list ){
             // index
-            bbmap_index(genome.collect(), "alignment/bbmap/indicies")
+            bbmap_index(reference.collect(), "alignment/bbmap/indicies")
             // align
-            bbmap(reads, genome.collect(), bbmap_index.out.collect(), "alignment/bbmap")
+            bbmap(reads, reference.collect(), bbmap_index.out.collect(), "alignment/bbmap")
             logs.concat(bbmap.out.bbmap_summary).set{logs} // save log
             // sort
             samtools_sort_bbmap(bbmap.out.tuple_sample_bam, "alignment/bbmap")
@@ -667,15 +667,15 @@ workflow align {
                 logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_bbmap(bbmap_ali, genome.collect(), "samtools_stats/bbmap", "bbmap")
+                samtools_stats_ali_bbmap(bbmap_ali, reference.collect(), "samtools_stats/bbmap", "bbmap")
                 logs.concat(samtools_stats_ali_bbmap.out).set{logs} // save log
             }
         }
 
         // ------------------- BOWTIE -----------------
         if ( "bowtie" in aligner_list ){ // &&
-            bowtie_index(genome.collect(), "alignment/bowtie/indicies") // index
-            bowtie(reads, genome.collect(), bowtie_index.out.collect(), "alignment/bowtie") // align
+            bowtie_index(reference.collect(), "alignment/bowtie/indicies") // index
+            bowtie(reads, reference.collect(), bowtie_index.out.collect(), "alignment/bowtie") // align
             logs.concat(bowtie.out.bowtie_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bowtie(bowtie.out.tuple_sample_sam)
@@ -690,7 +690,7 @@ workflow align {
                 logs.concat(fastqc_ali_bowtie.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_bowtie(bowtie_ali, genome.collect(), "samtools_stats/bowtie", "bowtie")
+                samtools_stats_ali_bowtie(bowtie_ali, reference.collect(), "samtools_stats/bowtie", "bowtie")
                 logs.concat(samtools_stats_ali_bowtie.out).set{logs} // save log
             }
         }
@@ -698,9 +698,9 @@ workflow align {
         // ------------------- BOWTIE2 -----------------
         if ( "bowtie2" in aligner_list ){ 
             // index
-            bowtie2_index(genome.collect(), "alignment/bowtie2/indicies")
+            bowtie2_index(reference.collect(), "alignment/bowtie2/indicies")
             // align
-            bowtie2(reads, genome.collect(), bowtie2_index.out.collect(), "alignment/bowtie2")
+            bowtie2(reads, reference.collect(), bowtie2_index.out.collect(), "alignment/bowtie2")
             logs.concat(bowtie2.out.bowtie2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bowtie2(bowtie2.out.tuple_sample_sam)
@@ -715,7 +715,7 @@ workflow align {
                 logs.concat(fastqc_ali_bowtie2.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_bowtie2(bowtie2_ali, genome.collect(), "samtools_stats/bowtie2", "bowtie2")
+                samtools_stats_ali_bowtie2(bowtie2_ali, reference.collect(), "samtools_stats/bowtie2", "bowtie2")
                 logs.concat(samtools_stats_ali_bowtie2.out).set{logs} // save log
             }
         }
@@ -723,10 +723,10 @@ workflow align {
         // ------------------- BWA ALN/MEM/SW -----------------
         if ("bwaaln" in aligner_list || "bwamem" in aligner_list || "bwasw" in aligner_list){
             // index
-            bwa_index(genome.collect(), "alignment/bwa/indicies")
+            bwa_index(reference.collect(), "alignment/bwa/indicies")
             if ("bwaaln" in aligner_list){
                 // align
-                bwaaln(reads, genome.collect(), bwa_index.out.collect(), "alignment/bwa/bwaaln") 
+                bwaaln(reads, reference.collect(), bwa_index.out.collect(), "alignment/bwa/bwaaln") 
                 logs.concat(bwaaln.out.bwaaln_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwaaln(bwaaln.out.tuple_sample_sam)
@@ -741,13 +741,13 @@ workflow align {
                     logs.concat(fastqc_ali_bwaaln.out).set{logs} // save log
                 }
                 if(params.samtools_stats){
-                    samtools_stats_ali_bwaaln(bwaaln_ali, genome.collect(), "samtools_stats/bwaaln", "bwaaln")
+                    samtools_stats_ali_bwaaln(bwaaln_ali, reference.collect(), "samtools_stats/bwaaln", "bwaaln")
                     logs.concat(samtools_stats_ali_bwaaln.out).set{logs} // save log
                 }
             }
             if ("bwamem" in aligner_list){
                 // align
-                bwamem(reads, genome.collect(), bwa_index.out.collect(), "alignment/bwa/bwamem")
+                bwamem(reads, reference.collect(), bwa_index.out.collect(), "alignment/bwa/bwamem")
                 logs.concat(bwamem.out.bwamem_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwamem(bwamem.out.tuple_sample_sam)
@@ -762,13 +762,13 @@ workflow align {
                     logs.concat(fastqc_ali_bwamem.out).set{logs} // save log
                 }
                 if(params.samtools_stats){
-                    samtools_stats_ali_bwamem(bwamem_ali, genome.collect(), "samtools_stats/bwamem", "bwamem")
+                    samtools_stats_ali_bwamem(bwamem_ali, reference.collect(), "samtools_stats/bwamem", "bwamem")
                     logs.concat(samtools_stats_ali_bwamem.out).set{logs} // save log
                 }
             }
             if ("bwasw" in aligner_list){
                 // align
-                bwasw(reads, genome.collect(), bwa_index.out.collect(), "alignment/bwa/bwasw") 
+                bwasw(reads, reference.collect(), bwa_index.out.collect(), "alignment/bwa/bwasw") 
                 logs.concat(bwasw.out.bwasw_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwasw(bwasw.out.tuple_sample_sam)
@@ -783,7 +783,7 @@ workflow align {
                     logs.concat(fastqc_ali_bwasw.out).set{logs} // save log
                 }
                 if(params.samtools_stats){
-                    samtools_stats_ali_bwasw(bwasw_ali, genome.collect(), "samtools_stats/bwasw", "bwasw")
+                    samtools_stats_ali_bwasw(bwasw_ali, reference.collect(), "samtools_stats/bwasw", "bwasw")
                     logs.concat(samtools_stats_ali_bwasw.out).set{logs} // save log
                 }
             }
@@ -792,9 +792,9 @@ workflow align {
         // ------------------- BWA MEM2 -----------------
         if ("bwamem2" in aligner_list){
             // index
-            bwamem2_index(genome.collect(), "alignment/bwamem2/indicies")
+            bwamem2_index(reference.collect(), "alignment/bwamem2/indicies")
             // align
-            bwamem2(reads, genome.collect(), bwamem2_index.out.collect(), "alignment/bwamem2/") 
+            bwamem2(reads, reference.collect(), bwamem2_index.out.collect(), "alignment/bwamem2/") 
             logs.concat(bwamem2.out.bwamem2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bwamem2(bwamem2.out.tuple_sample_sam)
@@ -809,7 +809,7 @@ workflow align {
                 logs.concat(fastqc_ali_bwamem2.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_bwamem2(bwamem2_ali, genome.collect(), "samtools_stats/bwamem2", "bwamem2")
+                samtools_stats_ali_bwamem2(bwamem2_ali, reference.collect(), "samtools_stats/bwamem2", "bwamem2")
                 logs.concat(samtools_stats_ali_bwamem2.out).set{logs} // save log
             }
         }
@@ -817,9 +817,9 @@ workflow align {
         // ------------------- GRAPHMAP2 -----------------
         if ("graphmap2" in aligner_list ){
             // index
-            graphmap2_index(genome.collect(), "alignment/graphmap2/indicies")
+            graphmap2_index(reference.collect(), "alignment/graphmap2/indicies")
             // align
-            graphmap2(reads, genome.collect(), graphmap2_index.out.collect(), annotation.collect(), "alignment/graphmap2")
+            graphmap2(reads, reference.collect(), graphmap2_index.out.collect(), annotation.collect(), "alignment/graphmap2")
             logs.concat(graphmap2.out.graphmap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_graphmap2(graphmap2.out.tuple_sample_sam)
@@ -834,7 +834,7 @@ workflow align {
                 logs.concat(fastqc_ali_graphmap2.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_graphmap2(graphmap2_ali, genome.collect(), "samtools_stats/graphmap2", "graphmap2")
+                samtools_stats_ali_graphmap2(graphmap2_ali, reference.collect(), "samtools_stats/graphmap2", "graphmap2")
                 logs.concat(samtools_stats_ali_graphmap2.out).set{logs} // save log
             }
         }
@@ -842,7 +842,7 @@ workflow align {
         // ------------------- HISAT2 -----------------
         if ("hisat2" in aligner_list){
             // index
-            hisat2_index(genome.collect(),  "alignment/hisat2/indicies")
+            hisat2_index(reference.collect(),  "alignment/hisat2/indicies")
             // align
             hisat2(reads, hisat2_index.out.collect(), "alignment/hisat2")
             logs.concat(hisat2.out.hisat2_summary).set{logs} // save log
@@ -859,7 +859,7 @@ workflow align {
                 logs.concat(fastqc_ali_hisat2.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_hisat2(hisat2_ali, genome.collect(), "samtools_stats/hisat2", "hisat2")
+                samtools_stats_ali_hisat2(hisat2_ali, reference.collect(), "samtools_stats/hisat2", "hisat2")
                 logs.concat(samtools_stats_ali_hisat2.out).set{logs} // save log
             }
         }
@@ -867,7 +867,7 @@ workflow align {
         // ------------------- KALLISTO -----------------
         if ("kallisto" in aligner_list){
             // index
-            kallisto_index(genome.collect(),  "alignment/kallisto/indicies")
+            kallisto_index(reference.collect(),  "alignment/kallisto/indicies")
             // align
             kallisto(reads, kallisto_index.out.collect(), "alignment/kallisto")
             logs.concat(kallisto.out.kallisto_summary).set{logs} // save log
@@ -880,7 +880,7 @@ workflow align {
                 logs.concat(fastqc_ali_kallisto.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_kallisto(kallisto_ali, genome.collect(), "samtools_stats/kallisto", "kallisto")
+                samtools_stats_ali_kallisto(kallisto_ali, reference.collect(), "samtools_stats/kallisto", "kallisto")
                 logs.concat(samtools_stats_ali_kallisto.out).set{logs} // save log
             }
         }
@@ -888,9 +888,9 @@ workflow align {
         // --------------------- LAST --------------------
         if ("last" in aligner_list ){
             // index
-            last_index(genome.collect(), "alignment/last/indicies")
+            last_index(reference.collect(), "alignment/last/indicies")
             // align
-            last(reads, genome.collect(), last_index.out.collect(), "alignment/last") 
+            last(reads, reference.collect(), last_index.out.collect(), "alignment/last") 
             logs.concat(last.out.last_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_last(last.out.tuple_sample_sam)
@@ -905,7 +905,7 @@ workflow align {
                 logs.concat(fastqc_ali_last.out).set{logs} // save log
             }
             if (params.samtools_stats){
-                samtools_stats_ali_last(last_ali, genome.collect(), "samtools_stats/last", "last")
+                samtools_stats_ali_last(last_ali, reference.collect(), "samtools_stats/last", "last")
                 logs.concat(samtools_stats_ali_last.out).set{logs} // save log
             }
         }
@@ -913,9 +913,9 @@ workflow align {
         // ------------------- minimap2 -----------------
         if ("minimap2" in aligner_list ){
             // index
-            minimap2_index(genome.collect(), "alignment/minimap2/indicies")
+            minimap2_index(reference.collect(), "alignment/minimap2/indicies")
             // align
-            minimap2(reads, genome.collect(), minimap2_index.out.collect(), "alignment/minimap2")
+            minimap2(reads, reference.collect(), minimap2_index.out.collect(), "alignment/minimap2")
             logs.concat(minimap2.out.minimap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_minimap2(minimap2.out.tuple_sample_sam)
@@ -930,7 +930,7 @@ workflow align {
                 logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_minimap2(minimap2_ali, genome.collect(), "samtools_stats/minimap2", "minimap2")
+                samtools_stats_ali_minimap2(minimap2_ali, reference.collect(), "samtools_stats/minimap2", "minimap2")
                 logs.concat(samtools_stats_ali_minimap2.out).set{logs} // save log
             }
         }
@@ -938,7 +938,7 @@ workflow align {
         // --------------------- NGMLR --------------------
         if ("ngmlr" in aligner_list ){
             // align
-            ngmlr(reads, genome.collect(), "alignment/ngmlr") 
+            ngmlr(reads, reference.collect(), "alignment/ngmlr") 
             logs.concat(ngmlr.out.ngmlr_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_ngmlr(ngmlr.out.tuple_sample_sam)
@@ -953,7 +953,7 @@ workflow align {
                 logs.concat(fastqc_ali_ngmlr.out).set{logs} // save log
             }
             if (params.samtools_stats){
-                samtools_stats_ali_ngmlr(ngmlr_ali, genome.collect(), "samtools_stats/ngmlr", "ngmlr")
+                samtools_stats_ali_ngmlr(ngmlr_ali, reference.collect(), "samtools_stats/ngmlr", "ngmlr")
                 logs.concat(samtools_stats_ali_ngmlr.out).set{logs} // save log
             }
         }
@@ -961,9 +961,9 @@ workflow align {
         // ------------------- novoalign  -----------------
         if ("novoalign" in aligner_list ){
             // index
-            novoalign_index(genome.collect(), "alignment/minimap2/indicies")
+            novoalign_index(reference.collect(), "alignment/minimap2/indicies")
             // align
-            novoalign(reads, genome.collect(), novoalign_index.out.collect(), novoalign_lic, "alignment/novoalign") 
+            novoalign(reads, reference.collect(), novoalign_index.out.collect(), novoalign_lic, "alignment/novoalign") 
             // convert sam to bam
             samtools_sam2bam_novoalign(novoalign.out.tuple_sample_sam)
             // sort
@@ -977,7 +977,7 @@ workflow align {
                 logs.concat(fastqc_ali_novoalign.out).set{logs} // save log
             }
             if (params.samtools_stats){
-                samtools_stats_ali_novoalign(novoalign_ali, genome.collect(), "samtools_stats/novoalign", "novoalign")
+                samtools_stats_ali_novoalign(novoalign_ali, reference.collect(), "samtools_stats/novoalign", "novoalign")
                 logs.concat(samtools_stats_ali_novoalign.out).set{logs} // save log
             }
         }
@@ -985,10 +985,10 @@ workflow align {
         // ------------------- nucmer (mummer4) -----------------
         if ("nucmer" in aligner_list ){
             // align
-            nucmer(reads, genome.collect(), "alignment/nucmer") 
+            nucmer(reads, reference.collect(), "alignment/nucmer") 
             // No summary available. To get one we could run show-coords see https://mummer4.github.io/tutorial/tutorial.html
             // convert sam to bam
-            samtools_sam2bam_nucmer(nucmer.out.tuple_sample_sam, genome.collect())
+            samtools_sam2bam_nucmer(nucmer.out.tuple_sample_sam, reference.collect())
             // sort
             samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, "alignment/nucmer")
             samtools_sort_nucmer.out.tuple_sample_sortedbam.set{nucmer_ali} // set name
@@ -1000,7 +1000,7 @@ workflow align {
                 logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
             }
             if (params.samtools_stats){
-                samtools_stats_ali_nucmer(nucmer_ali, genome.collect(), "samtools_stats/nucmer", "nucmer")
+                samtools_stats_ali_nucmer(nucmer_ali, reference.collect(), "samtools_stats/nucmer", "nucmer")
                 logs.concat(samtools_stats_ali_nucmer.out).set{logs} // save log
             }
         }
@@ -1008,7 +1008,7 @@ workflow align {
         if ("salmon" in aligner_list ){
             // index
             if (! params.library_type.contains("auto")){ // run salmon index only if library type is not provided otherwise it has been already ran
-                salmon_index(genome.collect(), "alignment/salmon/indicies")
+                salmon_index(reference.collect(), "alignment/salmon/indicies")
             }
             // align
             salmon(reads, salmon_index.out.collect(), "alignment/salmon")
@@ -1026,7 +1026,7 @@ workflow align {
                 logs.concat(fastqc_ali_salmon.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_salmon(salmon_ali, genome.collect(), "samtools_stats/salmon", "salmon")
+                samtools_stats_ali_salmon(salmon_ali, reference.collect(), "samtools_stats/salmon", "salmon")
                 logs.concat(samtools_stats_ali_salmon.out).set{logs} // save log
             }
         }
@@ -1037,7 +1037,7 @@ workflow align {
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
             prepare_star_index_options(first_file, annotation.collect())
-            star_index(genome.collect(), prepare_star_index_options.out, annotation, "alignment/star/indicies") // index
+            star_index(reference.collect(), prepare_star_index_options.out, annotation, "alignment/star/indicies") // index
             star(reads, star_index.out.collect(), annotation.collect(), "alignment/star") // align out is bam and sorted
             logs.concat(star.out.star_summary).set{logs} // save log
             star.out.splice_junctions.collect().set{splice_junctions} // save splice junction files
@@ -1057,7 +1057,7 @@ workflow align {
                 logs.concat(fastqc_ali_star.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_star(star_ali, genome.collect(), "samtools_stats/star", "star")
+                samtools_stats_ali_star(star_ali, reference.collect(), "samtools_stats/star", "star")
                 logs.concat(samtools_stats_ali_star.out).set{logs} // save log
             }
         }
@@ -1065,9 +1065,9 @@ workflow align {
         // ---------------- subread -----------------
         if ( "subread" in aligner_list ){
             // index
-            subread_index(genome.collect(), "alignment/subread/indicies")
+            subread_index(reference.collect(), "alignment/subread/indicies")
             // align
-            subread(reads, genome.collect(), subread_index.out.collect(), annotation.collect(), "alignment/subread")
+            subread(reads, reference.collect(), subread_index.out.collect(), annotation.collect(), "alignment/subread")
             subread.out.tuple_sample_bam.set{subread_ali} // set name
             // save aligned reads
             sorted_bam.concat(subread_ali).set{sorted_bam}
@@ -1077,7 +1077,7 @@ workflow align {
                 logs.concat(fastqc_ali_subread.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_subread(subread_ali, genome.collect(), "samtools_stats/subread", "subread")
+                samtools_stats_ali_subread(subread_ali, reference.collect(), "samtools_stats/subread", "subread")
                 logs.concat(samtools_stats_ali_subread.out).set{logs} // save log
             }
         }
@@ -1085,9 +1085,9 @@ workflow align {
         // ---------------- sublong -----------------
         if ( "sublong" in aligner_list ){
             // index
-            sublong_index(genome.collect(), "alignment/sublong/indicies")
+            sublong_index(reference.collect(), "alignment/sublong/indicies")
             // align
-            sublong(reads, genome.collect(), sublong_index.out.collect(), "alignment/sublong")
+            sublong(reads, reference.collect(), sublong_index.out.collect(), "alignment/sublong")
             sublong.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
             // merge bam if paired
             if (params.read_type == "short_paired"){ 
@@ -1105,7 +1105,7 @@ workflow align {
                 logs.concat(fastqc_ali_sublong.out).set{logs} // save log
             }
             if(params.samtools_stats){
-                samtools_stats_ali_sublong(sublong_ali, genome.collect(), "samtools_stats/sublong", "sublong")
+                samtools_stats_ali_sublong(sublong_ali, reference.collect(), "samtools_stats/sublong", "sublong")
                 logs.concat(samtools_stats_ali_sublong.out).set{logs} // save log
             }
         }
@@ -1155,12 +1155,12 @@ def helpMSG() {
     AliNe - Alignment in Nextflow - v${workflow.manifest.version}
 
         Workflow: The input fastq files are standardized to Phred+33 via seqkit, trimmed if the step is activated,  
-        aligned to a reference genome using one or more aligners, the ouput is converted in bam in needed, and finaly 
+        aligned to a reference using one or more aligners, the ouput is converted in bam in needed, and finaly 
         sorted. If the fastqc option is activated, fastqc is run on raw and aligned reads. A multiqc report is generated containing
         fastqc output and supported aligner output.
 
         Usage example:
-        nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --genome /path/to/genome.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc true
+        nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --reference /path/to/reference.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc true
 
         --help                      prints the help section
 
@@ -1168,7 +1168,7 @@ def helpMSG() {
         --reads                     path to the reads file or folder. If a folder is provided, all the files with proper extension in the folder will be used. You can provide remote files (commma separated list).
                                     file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
                                                               for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)         
-        --genome                    path to the genome file
+        --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
@@ -1387,7 +1387,7 @@ Other aligner?
  - bowtie1
  
 Annotation:
-Star: When annotation is provided star will need read length information to index the genome. 
+Star: When annotation is provided star will need read length information to index the reference. 
 If no read length provided by the user and several fastq files are provided, only the first one will be used to get the read length (we perform only one index).
 
 How to add an aliger ?
