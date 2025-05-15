@@ -5,6 +5,7 @@ https://github.com/COMBINE-lab/salmon
  
 process salmon_index {
     label 'salmon'
+    tag "$genome_fasta"
 
     input:
         path genome_fasta
@@ -20,6 +21,7 @@ process salmon_index {
 
 process salmon_guess_lib {
     label 'salmon'
+    tag "$id"
     publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:
@@ -70,6 +72,7 @@ process set_tuple_withUserLib{
 //  Use salmon as aligner - output sorted sam
 process salmon {
     label 'salmon'
+    tag "$sample"
     publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:

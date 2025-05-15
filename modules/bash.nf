@@ -5,6 +5,7 @@ Here are described all processes related to bash
 // A process to compute the mean read length of a FASTQ
 process read_length {
     label 'bash'
+    tag "$id"
     publishDir "${params.outdir}/${outpath}", pattern: "*", mode: 'copy'
 
     input:

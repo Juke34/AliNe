@@ -6,6 +6,7 @@ https://github.com/lh3/seqtk
 // A process for subsampling reads
 process seqtk_sample {
     label 'seqtk'
+    tag "$id"
     
     input:
         tuple val(id), path(fastq)
