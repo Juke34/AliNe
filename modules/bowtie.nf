@@ -19,37 +19,39 @@ process bowtie_index {
 
 process bowtie {
     label 'bowtie'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bowtie.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*bowtie.log",  emit: bowtie_summary
 
     script:
-    
+
+        // options for bowtie
+        def bowtie_options = meta.bowtie_options ?: ""
+        
         def read_orientation=""
         if (! params.bowtie_options.contains("--fr ") && 
             ! params.bowtie_options.contains("--rf ") && 
             ! params.bowtie_options.contains("--ff ") &&
-            params.read_type == "short_paired" && 
-            ! params.skip_libray_usage){ 
-            if (library.contains("I") ){
+              meta.paired && meta.strandedness) { 
+            if (meta.strandedness.contains("I") ){
                 read_orientation = "--fr"
-            } else if (library.contains("O") ){
+            } else if (meta.strandedness.contains("O") ){
                 read_orientation = "--rf"
-            } else if (library.contains("M") ){
+            } else if (meta.strandedness.contains("M") ){
                 read_orientation = "--ff"
             }  
         }
 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
         """
             bowtie ${params.bowtie_options} ${read_orientation}\\
                 -p ${task.cpus} \\

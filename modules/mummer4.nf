@@ -6,19 +6,21 @@
 */
 process nucmer {
     label 'mummer4'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
 
     script:
-        
+        // options for nucmer
+        def nucmer_options = meta.nucmer_options ?: ""
+
         // deal with library type - Not supported 
 
         // extract the file name
@@ -27,7 +29,7 @@ process nucmer {
         reads0 = reads[0].baseName
         genomeReady = genome.baseName.replaceAll(/\.(fasta|fa)$/, '') + "_nucmer.fa"
 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             reads1 = reads[1].baseName
             """
             # Prepare reference
@@ -48,8 +50,8 @@ process nucmer {
                 gzip -c -d ${reads[1]} > ${reads1}
             fi
 
-            nucmer ${params.nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
-            nucmer ${params.nucmer_options} -t ${task.cpus} ${genomeReady} ${reads1}  --sam-long ${reads[1].baseName}_nucmer.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads1}  --sam-long ${reads[1].baseName}_nucmer.sam
 
             # Merge sam
             cat ${fileName}_nucmer.sam > ${fileName}_nucmer_concatR1R2.sam
@@ -72,7 +74,7 @@ process nucmer {
             if [[ \${extension} == "gz" ]];then
                 gzip -c -d ${reads[0]} > ${reads0}
             fi 
-            nucmer ${params.nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
             """
         }
 }

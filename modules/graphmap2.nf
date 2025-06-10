@@ -28,29 +28,32 @@ process graphmap2_index {
 */
 process graphmap2 {
     label 'graphmap2'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*graphmap2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path graphmap2_index_files
         path annotation // needed in case set in the params.graphmap2_options
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam, optional:true
-        tuple val(sample), path ("*.mhap"), emit: tuple_sample_mhap, optional:true
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam, optional:true
+        tuple val(meta), path ("*.mhap"), emit: tuple_sample_mhap, optional:true
         path "*graphmap2.log",  emit: graphmap2_summary
 
     script:
+        // options for graphmap2
+        def graphmap2_options = meta.graphmap2_options ?: ""
+        
         // catch filename
         fileName = reads[0].baseName.replace('.fastq','')
 
         // Check if the owler option is set
         if ( params.graphmap2_options.contains("owler") ){
 
-            if (params.read_type == "short_paired"){
+            if (meta.paired){
                 // For paired-end we concat output 
                 """
                 graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${reads[0]} -d ${reads[0]}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
@@ -74,7 +77,7 @@ process graphmap2 {
             }
 
             // For paired-end we concat output 
-            if (params.read_type == "short_paired"){
+            if (meta.paired){
                 
                 """
                 graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[0]}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log

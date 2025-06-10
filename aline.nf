@@ -19,13 +19,15 @@ params.reads = "/path/to/reads_{1,2}.fastq.gz"
 params.reference = "/path/to/reference.fa"
 params.outdir = "alignment_results"
 read_type_allowed = [ 'short_paired', 'short_single', 'pacbio', 'ont' ]
-params.read_type = "short_paired"
+params.read_type = ""
+data_type_allowed = [ 'DNA', 'RNA' ]
+params.data_type = ""
 params.relax = false // Avoid to automatically set option specific to ready type (e.g minimap, bwa-mem for long reads.).
 
 // Read feature params
-libtype_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR' ]
-params.library_type = "auto" 
-params.skip_libray_usage = false // Avoid to use library type provided by library_type or auto
+strandedness_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR', 'auto' ]
+params.strandedness = "auto"
+params.skip_strandedness = false // Avoid to use library type provided by strandedness or auto
 params.read_length = "" // Use by star to set the sjdbOverhang parameter
 // annotation is used by different aligner (star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
 // If process receive a file wich is not the fake one it includes the file in the command. To append the options of aligner we will use the annotation_file variable
@@ -38,32 +40,32 @@ params.trimming_fastp = false
 // Aligner params
 align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
-params.bbmap_options = ''
-params.bowtie_options = ''
-params.bowtie2_options = ''
-params.bwaaln_options = ''
-params.bwamem_options = ''
-params.bwamem2_options = ''
-params.bwasw_options = ''
-params.graphmap2_options = '' // owler option is possible
-params.hisat2_options = ''
-params.kallisto_options = ''
+params.bbmap_options      = ''
+params.bowtie_options     = ''
+params.bowtie2_options    = ''
+params.bwaaln_options     = ''
+params.bwamem_options     = ''
+params.bwamem2_options    = ''
+params.bwasw_options      = ''
+params.graphmap2_options  = '' // owler option is possible
+params.hisat2_options     = ''
+params.kallisto_options   = ''
 params.kallisto_index_options = '' // e.g. to use --distinguish, --make-unique, etc...
-params.last_options = ''
+params.last_options       = ''
 params.last_index_options = ''
-params.minimap2_options = '' 
+params.minimap2_options   = '' 
 params.minimap2_index_options = '' //  -k, -w, -H and -I
-params.ngmlr_options = ''
-params.novoalign_options = ''
-params.novoalign_license = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
-params.nucmer_options = ''
-params.salmon_options = ''
+params.ngmlr_options      = ''
+params.novoalign_options  = ''
+params.novoalign_license  = '' // license. You can ask for one month free trial license at http://www.novocraft.com/products/novoalign/
+params.nucmer_options     = ''
+params.salmon_options     = ''
 params.salmon_index_options = ''
-params.star_options = ''
+params.star_options       = ''
 params.star_index_options = ''
-params.star_2pass = false
-params.subread_options = '-t 0'// -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data.
-params.sublong_options = '-X'// -X turn on the RNA-seq mode.
+params.star_2pass         = false
+params.subread_options    = ''
+params.sublong_options    = ''
 
 // Report params
 params.fastqc = false
@@ -73,22 +75,29 @@ params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 // other
 params.help = null
 params.seqtk_sample_size = 10000 // number of reads to sample for seqtk - used to determnine the library type
-bbmap_tool = "bbmap.sh"
-star_tool = "STAR"
+//bbmap_tool = "bbmap.sh"
+//star_tool = "STAR"
 params.debug = false
 
 //*************************************************
 // STEP 1 - HELP
 //*************************************************
 
-log.info header()
+println header()
 if (params.help) { exit 0, helpMSG() }
 
 //*************************************************
 // STEP 1 - PARAMS CHECK
 //*************************************************
-def stop_pipeline = false
-log.info """check aligner provided: ${params.aligner} ..."""
+def aline_processed_params = "aline_processed_params"
+def path_reads = params.reads 
+def via_csv = false
+if ( path_reads.endsWith('.csv') ){  
+    via_csv = true
+    println  "Using CSV input file: ${path_reads}"
+}
+
+println """check aligner provided: ${params.aligner} ..."""
 // Check aligner params. Can be a list (comma or space separated)
 def aligner_list=[]
 if( !params.aligner ){
@@ -108,21 +117,70 @@ if( !params.aligner ){
     }
 }
 
-// check read type parameter
-log.info """check read type parameter: ${params.read_type} ..."""
-if( ! params.read_type ){
-    exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}.\n"
-} else {
-    if ( ! (params.read_type.toLowerCase() in read_type_allowed) ){
-        exit 1, "Error: <${params.read_type}> aligner not acepted, please provide a read type among this list ${read_type_allowed}.\n"
+// check read library type parameter
+println """check strandedness parameter: ..."""
+if (params.skip_strandedness){
+    println """    Parameter skip_strandedness activated => strandedness set to null!"""
+    if( via_csv ) {
+        println """    This value will replace any strandedness value found in your csv!"""
+    }
+}
+else {
+    if (params.strandedness instanceof Boolean) {
+        exit 1, "Error: --strandedness parameter needs a value among this list when used (${strandedness_allowed}), currently seen as a boolean <${params.strandedness}>."
+    } else {
+        if ( params.strandedness ){
+            if ( ! (params.strandedness.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
+                exit 1, "Error: <${params.strandedness}> library type is not accepted, please provide a library type among this list ${strandedness_allowed}."
+            } else{
+                println """    strandedness set to : ${params.strandedness}"""
+                if( via_csv ) {
+                    println """    This value will replace any strandedness value found in your csv!"""
+                }
+            }
+        }
     }
 }
 
-// check read library type parameter
-log.info """check readlibrary type parameter: ${params.library_type} ..."""
-if( ! params.library_type.contains("auto") ){
-    if ( ! (params.library_type.toUpperCase() in libtype_allowed) ){
-        exit 1, "Error: <${params.library_type}> library type is not accepted, please provide a library type among this list ${libtype_allowed}.\n"
+// check data type parameter
+println """check read type parameter: ${params.data_type} ..."""
+if( via_csv ) {
+    if( params.data_type ){
+        if ( ! (params.data_type.toLowerCase() in data_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${params.data_type}> data_type not acepted, please provide a data type among this list ${data_type_allowed}."
+        }
+        println """    This value will replace any data_type value found in your csv!"""
+    } else {
+        println """    No data_type provided by --data_type parameter, value will be taken from the csv file."""
+    }
+} else {
+    if( ! params.data_type ){
+        exit 1, "Error: <data_type> parameter is empty, please provide a data type among this list ${data_type_allowed}."
+    } else {
+        if ( ! (params.data_type.toLowerCase() in data_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${params.data_type}> data_type not acepted, please provide a data type among this list ${data_type_allowed}."
+        }
+    }
+}
+
+// check read type parameter
+println """check read type parameter: ${params.read_type} ..."""
+if( via_csv ) {
+    if( params.read_type ){
+        if ( ! (params.read_type.toLowerCase() in read_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${params.read_type}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
+        }
+        println """    This value will replace any read_type value found in your csv!"""
+    } else {
+        println """    No read_type provided by --read_type parameter, value will be taken from the csv file."""
+    }
+} else {
+    if( ! params.read_type ){
+        exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}."
+    } else {
+        if ( ! (params.read_type.toLowerCase() in read_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${params.read_type}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
+        }
     }
 }
 
@@ -135,240 +193,54 @@ if (params.annotation){
     } else {
         File f = new File( "${params.annotation}" );
         if (! f.exists() ){
-            log.error "Warning: Annotation file <${params.annotation}> does not exist.\n"
-            stop_pipeline = true
+            exit 1, "Error: Annotation file <${params.annotation}> does not exist.\n"
         }
         annotation_file = f.getName()
     }
 }
 
-// ----------------------------------------------------------
-// Add annotation file within the tool options if annotation provided
-// Add specific options for aligner according to the read type
-
-log.info """check alinger parameters ..."""
-
-// --- bbmap tool ---
-if ( "bbmap" in aligner_list && !params.relax ){
-    if (params.read_type == "pacbio" || params.read_type == "ont"){
-        bbmap_tool = "mapPacBio.sh"
-        log.warn "Long reads being used, using mapPacBio.sh to align with bbmap!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter to use bbmap.sh anyway."
-        // Function to check and set maxlen in params.bbmap_options when long_reads is set
-        // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
-        if ( !params.bbmap_options.contains("maxlen") ){
-            params.replace("bbmap_options", "${params.bbmap_options} maxlen=5000")
-        }
-    }
-}
-
-// --- bwa aln tool ---
-if ( "bwaaln" in aligner_list ){
-    if ( params.read_type == "pacbio" || params.read_type == "ont"){
-        log.warn "Bwaaln aligner is not recommended to align long reads!\n"
-    }
-}
-
-// --- bwa mem tool ---
-if ( "bwamem" in aligner_list && !params.relax ){
-    if (params.read_type == "pacbio"){
-        if ( !params.bwamem_options.contains(" pacbio") ){
-            params.replace("bwamem_options", "${params.bwamem_options} -x pacbio")
-            log.warn "Pacbio reads being used, setting -x pacbio to bwamem!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-        }
-    }
-    if (params.read_type == "ont"){
-        if ( !params.bwamem_options.contains(" ont2d") ){
-            params.replace("bwamem_options", "${params.bwamem_options} -x ont2d")
-            log.warn "Ont reads being used, setting -x ont2d to bwamem!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-        }
-    }
-}
-
-// --- bwa mem2 tool ---
-if ("bwamem2" in aligner_list && !params.relax){
-    if (params.read_type == "pacbio"){
-        if ( !params.bwamem2_options.contains(" pacbio") ){
-            params.replace("bwamem2_options", "${params.bwamem2_options} -x pacbio")
-            log.warn "Pacbio reads being used, setting -x pacbio to bwamem2!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-        }
-    }
-    if (params.read_type == "ont"){
-        if ( !params.bwamem2_options.contains(" ont2d") ){
-            params.replace("bwamem2_options", "${params.bwamem2_options} -x ont2d")
-            log.warn "Ont reads being used, setting -x ont2d to bwamem2!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-        }
-    }
-}
-
-// --- bwa sw tool ---
-if ( "bwasw" in aligner_list ){
-    if (params.read_type == "pacbio" || params.read_type == "ont"){
-        log.warn "Bwasw aligner is not recommended to align long reads!\n"
-    }
-}
-
-// --- graphmap2 tool ---
-if ( "graphmap2" in aligner_list ){
-    if (! params.read_type == "pacbio" && ! params.read_type == "ont"){
-        log.warn "Graphmap2 aligner is not recommended to align short reads!\n"
-    }
-    if (annotation_file && !params.graphmap2_options.contains("--gtf ") ){
-        params.replace("graphmap2_options", "${params.graphmap2_options} --gtf ${annotation_file}")
-    }
-}
-
-// --- kallisto tool ---
-if ( "kallisto" in aligner_list ){
-    if ( params.read_type == "ont" || params.read_type == "pacbio"){
-        log.warn "Kallisto aligner is not recommended to align long reads!\n"
-    }
-}
-
-// ---- minimap2 tool ---
-// Force -a option to be sure to get sam output
-if ("minimap2" in aligner_list && !params.relax){
-
-    if (params.read_type == "short_single" || params.read_type == "short_paired"){
-        if ( ! params.minimap2_options.contains("--sr ") ){
-            params.replace("minimap2_options", "--sr ${params.minimap2_options}")
-        }
-    }
-    if (params.read_type == "pacbio"){
-        if ( ! params.minimap2_options.contains(" ava-pb") and ! params.minimap2_options.contains(" splice:hq") and 
-            ! params.minimap2_options.contains(" map-hifi") and ! params.minimap2_options.contains(" map-pb") ){
-            log.warn("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for pacbio data. 
-We set the default <map-pb> parameter. If you do not agree, please provide options among this list:
-    ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).
-If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
-            params.replace("minimap2_options", "${params.minimap2_options} -x map-pb")
-        }
-    }
-    if (params.read_type == "ont"){
-        if ( ! params.minimap2_options.contains(" ava-ont") and ! params.minimap2_options.contains(" splice") and 
-            ! params.minimap2_options.contains(" lr:hq") and ! params.minimap2_options.contains(" map-ont") ){
-            log.warn("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for ont data.
-We set the default <map-ont> option. If you do not agree, please provide options among this list:
-    ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).
-If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
-            params.replace("minimap2_options", "${params.minimap2_options} -x map-ont")
-        }
-    }
-}
-// relax or not this option has to be used
-if ( ! params.minimap2_options.contains("-a ") ){
-     params.replace("minimap2_options", "${params.minimap2_options} -a")
-}
-
-// ngmlr tool - check options
-if ("ngmlr" in aligner_list ){
-    if (!params.relax) {
-        // for pacbio reads, set -g 20 and -x 0
-        if (params.read_type == "ont"){
-            if (! params.ngmlr_options.contains("-x ont")){
-                params.replace("ngmlr_options", "${params.ngmlr_options} -x ont")
-                log.warn "Ont reads being used, setting -x ont to ngmlr!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-            }
-        }
-    }
-    if (! params.read_type == "pacbio" && ! params.read_type == "ont"){
-        log.warn "Ngmlr aligner is not recommended to align short reads!\n"
-    }
-}
-
-// novoalign tool - load license into the container
-def novoalign_lic = ""
+// check license file for novoalign
 if ("novoalign" in aligner_list ){
     if( params.novoalign_license ){
         File f = new File( "${params.novoalign_license}" );
         if (! f.exists() ){
-            log.warn ": NovoAlign aligner selected but license file <${params.novoalign_license}> does not exist.\n"
-            stop_pipeline = true
+            exit 1, "Error: NovoAlign aligner selected but license file <${params.novoalign_license}> does not exist.\n"
         }
         license_file = f.getName()
         novoalign_lic = "-v ${params.novoalign_license}:/usr/local/bin/${license_file}"
     } else {
-        log.warn ": NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
-        stop_pipeline = true
+        exit 1, "Error: NovoAlign aligner selected but no license provided. Please provide a license to run novoalign.\n"
     }
-
-    if (!params.relax) {
-        // for pacbio reads, set -g 20 and -x 0
-        if (params.read_type == "pacbio" || params.read_type == "ont"){
-            if (! params.novoalign_options.contains("-g ")){
-                params.replace("novoalign_options", "${params.novoalign_options} -g 20")
-                log.warn "Long reads being used, setting -g 20 to Novoalign!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-            }
-            if (! params.novoalign_options.contains("-x ")){
-                params.replace("novoalign_options", "${params.novoalign_options} -x 0")
-                log.warn "Long reads being used, setting -x 0 to Novoalign!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
-            }
-        }
-    }
-}
-
-// --- salmon tool ---
-if ( "salmon" in aligner_list ){
-    if ( params.read_type == "ont" || params.read_type == "pacbio"){
-        log.warn "Salmon aligner is not recommended to align long reads!\n"
-    }
-}
-
-// --- star tool ---
-if ( "star" in aligner_list ){
-    if (annotation_file && !params.star_options.contains("--sjdbGTFfile ") ){
-         params.replace("star_options", "${params.star_options} --sjdbGTFfile ${annotation_file}")
-    }
-    if (!params.relax){
-        if (params.read_type == "pacbio" || params.read_type == "ont"){
-            star_tool = "STARlong"
-            log.warn "Long reads being used, using STARlong to align with star!\nHowever, if you know what you are doing you can activate the AliNe --relax parameter to use star anyway."
-        }
-    }
-}
-
-// --- subread tool ---
-if ( "subread" in aligner_list ){
-    if (annotation_file && !params.subread_options.contains("-a ") ){
-        params.replace("subread_options", "${params.subread_options} -a ${annotation_file}")
-    }
-}
-
-if ( "sublong" in aligner_list ){
-    if ( params.read_type == "short_single" || params.read_type == "short_paired"){
-        log.warn "Sublong aligner is not recommended to align short reads!\n"
-    }
-}
-
-if(stop_pipeline){
-    exit 1, "Please fix previous issues in order to run the pipeline.\n"
 }
 
 //*************************************************
 // STEP 1 - LOG INFO
 //*************************************************
-log.info """
+println """
 General Parameters
      reference                  : ${params.reference}
      reads                      : ${params.reads}
      annotation                 : ${params.annotation}
      aligner                    : ${params.aligner}
+     data_type                  : ${params.data_type}
      read_type                  : ${params.read_type}
-     library_type               : ${params.library_type}
-     skip_libray_usage          : ${params.skip_libray_usage}
+     strandedness               : ${params.strandedness}
+     skip_strandedness          : ${params.skip_strandedness}
      outdir                     : ${params.outdir}
 
 Report Parameters
-    fastqc                     : ${params.fastqc}
-    samtools_stats             : ${params.samtools_stats}
-    multiqc_config             : ${params.multiqc_config}
+    fastqc                      : ${params.fastqc}
+    samtools_stats              : ${params.samtools_stats}
+    multiqc_config              : ${params.multiqc_config}
 
+Aligner Parameters (provided by user)
 """
-log.info printAlignerOptions(aligner_list, annotation_file, params.star_index_options)
+println printAlignerOptions(aligner_list, aline_processed_params)
 
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
-include {read_length; set_tuple_withUserReadLength} from "$baseDir/modules/bash.nf" 
+include {read_length; check_aligner_params} from "$baseDir/modules/bash.nf" 
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
@@ -391,7 +263,7 @@ include {ngmlr} from "$baseDir/modules/ngmlr.nf"
 include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {fasta_uncompress} from "$baseDir/modules/pigz.nf"
-include {salmon_index; salmon_guess_lib; set_tuple_withUserLib; salmon} from "$baseDir/modules/salmon.nf" 
+include {salmon_index; salmon_guess_lib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
          samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
          samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
@@ -408,8 +280,8 @@ include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_
          samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_last; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
-include {samtools_merge_bam} from "$baseDir/modules/samtools.nf"
-include {seqtk_sample} from "$baseDir/modules/seqtk.nf" 
+include {samtools_merge_bam_if_paired} from "$baseDir/modules/samtools.nf"
+include {seqtk_sample; seqtk_sample as seqtk_sample2} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
 
@@ -419,95 +291,94 @@ include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir
 
 // check profile
 if (
-    workflow.profile.contains('singularity') ||
-    workflow.profile.contains('docker')
-  ) { "executer selected" }
-else { exit 1, "No executer selected: -profile docker/singularity"}
+    workflow.containerEngine == 'singularity' ||
+    workflow.containerEngine == 'docker'
+  ) { println "executer selected" }
+else { exit 1, "No containerEngine selected: you must use a profile that activate a docker or singularity engine (-profile docker/singularity/itrop)"}
 
 // --------- handle read input (file or folder / local or remote / paired or not) --------
 def list_files = []
 def pattern_reads = ""
 def fromFilePairs_input
-def path_reads = params.reads 
-
-// check if paired reads
+def via_URL = false
+def read_list=[]
 def per_pair = false // read the reads per pair
 if (params.read_type == "short_paired") {
         per_pair = true
 }
 
-// Case of remote data 
-def via_URL = false
-def read_list=[]
-// Case of local data
-if( path_reads.indexOf(',') >= 0) {
-    log.info "The input is a list!"
-    via_URL = true
-    // Cut into list with coma separator
-    str_list = path_reads.tokenize(',')
-    // loop over elements
-    str_list.each {
-        str_list2 = it.tokenize(' ')
-        str_list2.each {
-            if (it.startsWith('https:') || it.startsWith('s3:') || it.startsWith('az:') || it.startsWith('gs:') || it.startsWith('ftp:') ) {
-                log.info "This input is an URL: ${it}"
+// Case of csv file
+if( ! via_csv ) {
+    // Case of local data
+    if( path_reads.indexOf(',') >= 0) {
+        println "The input is a list!"
+        via_URL = true
+        // Cut into list with coma separator
+        str_list = path_reads.tokenize(',')
+        // loop over elements
+        str_list.each {
+            str_list2 = it.tokenize(' ')
+            str_list2.each {
+                if (  AlineUtils.is_url(it) ) {
+                    println "This input is an URL: ${it}"
+                }
+                read_list.add(file(it)) // use file insted of File for URL
             }
-            read_list.add(file(it)) // use file insted of File for URL
         }
-    }
-    // check if the list is a paired list
-    if ( read_list.size() % 2 != 0 && params.read_type == "short_paired") {
-        exit 1, "The list has an odd number of elements which is not in line with read type <${params.read_type}>."
-    }
-    fromFilePairs_input = read_list
-}
-else {
-
-    File input_reads = new File(path_reads)
-    if(input_reads.exists()){
-        if ( input_reads.isDirectory()) {
-            // in case of folder provided, add a trailing slash if missing
-            path_reads = "${input_reads}" + "/"
+        // check if the list is a paired list
+        if ( read_list.size() % 2 != 0 && params.read_type == "short_paired") {
+            exit 1, "The list has an odd number of elements which is not in line with read type <${params.read_type}>."
         }
+        fromFilePairs_input = read_list
     }
+    else {
 
-    if (params.read_type == "short_paired") {
-        pattern_reads = "_R?[12](_\\d+)?(\\.fastq|\\.fq)(\\.gz)?\$"
-        fromFilePairs_input = "${path_reads}*_{,R}{1,2}{,_*}.{fastq,fq}{,.gz}"
-    } else{
-        pattern_reads = "(\\.fastq|\\.fq)(\\.gz)?\$"
-        fromFilePairs_input = "${path_reads}*.{fastq,fq}{,.gz}"
-    }
+        File input_reads = new File(path_reads)
+        if(input_reads.exists()){
+            if ( input_reads.isDirectory()) {
+                // in case of folder provided, add a trailing slash if missing
+                path_reads = "${input_reads}" + "/"
+            }
+        }
 
-    if(input_reads.exists()){
-        if ( input_reads.isDirectory()) {
-            log.info "The input ${path_reads} is a folder!\n"
-            input_reads.eachFileRecurse(FILES){
-                if (it.name =~ ~/${pattern_reads}/){
-                    list_files.add(it)
-                    log.info "Found file ${it}"
+        if (params.read_type == "short_paired") {
+            pattern_reads = "_R?[12](_\\d+)?(\\.fastq|\\.fq)(\\.gz)?\$"
+            fromFilePairs_input = "${path_reads}*_{,R}{1,2}{,_*}.{fastq,fq}{,.gz}"
+        } else{
+            pattern_reads = "(\\.fastq|\\.fq)(\\.gz)?\$"
+            fromFilePairs_input = "${path_reads}*.{fastq,fq}{,.gz}"
+        }
+
+        if(input_reads.exists()){
+            if ( input_reads.isDirectory()) {
+                println "The input ${path_reads} is a folder!\n"
+                input_reads.eachFileRecurse(FILES){
+                    if (it.name =~ ~/${pattern_reads}/){
+                        list_files.add(it)
+                        println "Found file ${it}"
+                    }
+                }
+                samples_number = list_files.size()
+                println "${samples_number} files in ${path_reads} with pattern ${pattern_reads}"
+            }
+            else {
+                println "The input ${path_reads} is a file!\n"
+                fromFilePairs_input = "${path_reads}"
+                if (params.read_type == "short_paired") {
+                    println "Providing a file is not authorized for (local) paired data! Please provide a folder path or change <read_type> parameter to <short_single>.\n"
                 }
             }
-            samples_number = list_files.size()
-            log.info "${samples_number} files in ${path_reads} with pattern ${pattern_reads}"
-        }
+        } 
+        else if ( AlineUtils.is_url(path_reads) ) {
+            println "The input is a based on URLs! ${path_reads}\n"
+            via_URL = true
+            read_list = path_reads
+        }   
         else {
-            log.info "The input ${path_reads} is a file!\n"
-            fromFilePairs_input = "${path_reads}"
-            if (params.read_type == "short_paired") {
-                log.error "Providing a file is not authorized for (local) paired data! Please provide a folder path or change <read_type> parameter to <short_single>.\n"
-            }
+            exit 1, "The input ${path_reads} does not exists!\n"
         }
-    } 
-    else if (path_reads.startsWith('https:') || path_reads.startsWith('s3:') || path_reads.startsWith('az:') || path_reads.startsWith('gs:') || path_reads.startsWith('ftp:') ) {
-        log.info "The input is a based on URLs! ${path_reads}\n"
-        via_URL = true
-        read_list = path_reads
-    }   
-    else {
-        exit 1, "The input ${path_reads} does not exists!\n"
-    }
 
+    }
 }
 //*************************************************
 // STEP 4 - Main Workflow
@@ -517,31 +388,202 @@ workflow {
 
     main:
         // In case of URL paired data, we cannot use fromFilePairs because matching pattern impossible. We must recreate manually a structure similar 
-        if (via_URL && per_pair){
+        if (via_csv){
+            File input_csv = new File(path_reads)
+            if(!input_csv.exists()){ 
+                error "The input ${path_reads} file does not exist!\n" 
+            }
+            params.debug && log.info("Using CSV input file: ${path_reads}")
+            reads = Channel.fromPath(path_reads)
+                                .splitCsv(header: true, sep: ',')
+                                .map { row ->
+                                    // Check sample column
+                                    if ( row.sample == null ){ 
+                                            error "The input ${input_csv} file does not contain a 'sample' column!\n" 
+                                    } 
+                                    def sample_id    = row.sample
+                                    
+                                    if(row.input_1 == null && row.fastq_1 == null){ 
+                                            error "The input ${input_csv} file does not contain a 'input_1' or 'fastq_1' column!\n" 
+                                    }
+                                    // Check input_1/fastq_1 column
+                                    def fastq1;
+                                    if(row.input_1) {
+                                        fastq1 = file(row.input_1.trim())
+                                    } else {
+                                        fastq1 = file(row.fastq_1.trim())
+                                    }
+                                    if (! AlineUtils.is_url(fastq1) ) {
+                                                if (! fastq1.exists() ) {
+                                                    error "The input ${fastq1} file does not does not exits!\n"
+                                                }
+                                    } else {
+                                        log.info "This fastq input is an URL: ${fastq1}"
+                                    }
+                                    // Check input_2/fastq_2 column
+                                    def fastq2;
+                                    if(row.input_2) {
+                                        fastq2 = file(row.input_2.trim())
+                                    } else if (row.fastq_2) {
+                                        fastq2 = file(row.fastq_2.trim())
+                                    }
+                                    if (fastq2){
+                                        if ( ! AlineUtils.is_url(fastq2) ) {
+                                            if (! fastq2.exists() ) {
+                                                error "The input ${fastq2} file does not does not exits!\n"
+                                            }
+                                        } else {
+                                            log.info "This fastq input is an URL: ${fastq1}"
+                                        }
+                                    }
+                                    // strandedness
+                                    def libtype = "auto"
+                                    if (! params.skip_strandedness && ! params.strandedness ) { // this two parameters have priority over strand found in the csv
+                                        if (row.strandedness != null) {
+                                            libtype_value = row.strandedness.trim()
+                                            if(libtype_value){
+                                                if ( ! strandedness_allowed.contains(libtype_value)){
+                                                    error "The input ${input_csv} file contains an invalid strandedness value: ${libtype_value}. Please provide one of the following values: ${strandedness_allowed}."
+                                                } else {
+                                                    libtype = libtype_value
+                                                }
+                                            } else {
+                                                log.info "The input ${input_csv} file contains an empty strandedness for sample ${sample_id}! Setting strandedness to <auto> for this sample."
+                                            }
+                                        } else {
+                                            log.info "The input ${input_csv} file does not contain a strandedness column! Seting strandedness to <auto> to all csv samples." 
+                                        }
+                                    }
+                                    // data type
+                                    def data_type = null
+                                    if ( !params.data_type ) {
+                                        if (row.data_type != null) {
+                                            data_type_value = row.data_type.trim().toLowerCase()
+                                            if (data_type_value){
+                                                if ( ! data_type_allowed.contains(data_type_value)){
+                                                    error "The input ${input_csv} file contains an invalid read type value: ${data_type_value}. Please provide one of the following values: ${data_type_allowed}."
+                                                } else {
+                                                    data_type = data_type_value
+                                                }
+                                            } else {
+                                                error "The input ${input_csv} file contains an empty data_type value for sample ${sample_id}!"
+                                                
+                                            }
+                                        } else {
+                                            error """Error: The input file ${input_csv} does not contain a data_type column, and the --data_type parameter was not provided.
+Please specify the read type either by including a data_type column in the input file or by using the --data_type option."""
+                                        }
+                                    } else {
+                                        data_type = params.data_type
+                                    }
+
+                                    // read type
+                                    def read_type = null
+                                    def pair = false
+                                    if ( !params.read_type ) {
+                                        if (row.read_type != null) {
+                                            read_type_value = row.read_type.trim().toLowerCase()
+                                            if (read_type_value){
+                                                if ( ! read_type_allowed.contains(read_type_value)){
+                                                    error "The input ${input_csv} file contains an invalid read type value: ${read_type_value}. Please provide one of the following values: ${read_type_allowed}."
+                                                } else {
+                                                    read_type = read_type_value
+                                                }
+                                            } else {
+                                                error "The input ${input_csv} file contains an empty read_type value for sample ${sample_id}!"
+                                                
+                                            }
+                                        } else {
+                                            error """Error: The input file ${input_csv} does not contain a read_type column, and the --read_type parameter was not provided.
+Please specify the read type either by including a read_type column in the input file or by using the --read_type option."""
+                                        }
+                                    } else {
+                                        read_type = params.read_type
+                                    }
+
+                                    // check its is paired or not
+                                    if ( fastq2 ) {
+                                        if (read_type == "short_paired") {
+                                            pair = true
+                                        } else {
+                                            log.info "The input ${input_csv} file contains a second fastq file for sample ${sample_id} but the read_type is set to <${read_type}>! R2 will not be taken into account! paired set to false."
+                                        }
+                                    } else {
+                                        if (read_type == "short_paired") {
+                                            error "The input ${input_csv} file does not contain a second fastq file for sample ${sample_id} but the read_type is set to <short_paired>!"
+                                        }
+                                    }
+                                    // Create a tuple with metadata and reads
+                                    def meta = [ id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
+                                    def reads = pair ? [fastq1, fastq2] : fastq1
+                                    // Return only if the fastq file(s) extension are valid
+                                    if ( AlineUtils.is_fastq( fastq1.toString() ) and ( ! fastq2 || AlineUtils.is_fastq( fastq2.toString() ) ) ){
+                                        return tuple(meta, reads)
+                                    }
+                                }
+        }
+        else {
+            if (via_URL && per_pair){
             my_samples = Channel.of(read_list)
-            reads = my_samples.flatten().map { it -> [it.name.split('_')[0], it] }
+            reads = my_samples.flatten().map { it -> 
+                                                [it.name.split('_')[0], it] }
                                 .groupTuple()
                                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
-        } else {
-            log.info "Equivalent fromFilePairs regex: ${fromFilePairs_input} \n"
-            reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
-                .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
+            } else {
+                log.info "Equivalent fromFilePairs regex: ${fromFilePairs_input} \n"
+                reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
+                    .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
+            }
+            reads = reads.map { sample, files -> [ [ id: sample ], files ] }
         }
-
+       
+        // ------------------------ deal with reference file ------------------------
         Channel.fromPath(params.reference, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find reference matching ${params.reference}!\n" }
             .set{reference_raw}
         // uncompress it if needed because some aligner need the reference to be uncompressed (e.g. histat2)
         fasta_uncompress(reference_raw)
         fasta_uncompress.out.genomeFa.set{reference} // set reference to the output of fasta_uncompress
-
+       
+        // ------------------------ deal with annotation file ------------------------
+        def annotation_provided = null
         if(annotation_file){
             annotation = Channel.fromPath(params.annotation, checkIfExists: true)
                 .ifEmpty { exit 1, "Cannot find annotation matching ${annotation_file}!\n" }
+            annotation_provided = true
         } else {
             annotation = Channel.of("$baseDir/config/aline_null.gtf") // use the fake file (not used by tools just for the processes to be called)
         }
+        reads = reads.map { meta, files -> [ meta + [ annotation: annotation_provided ], files ] }
+        params.debug && log.info("Set annotation")
+        params.debug && reads.view()
 
+        // ------------------------ data_type ------------------------ 
+        // // By default priority to data_type from --data_type over csv value (the same for all csv params e.g. strandedness, read_type)
+        if (params.data_type) {
+            params.debug && log.info("Set data_type value from parameter: ${params.data_type}")
+            reads = reads.map { meta, files -> [ meta + [ data_type: params.data_type ], files ] }
+            params.debug && reads.view()
+        }
+
+        // ------------------------ read_type ------------------------ 
+        // // By default priority to read_type from --read_type over csv value (the same for all csv params e.g. strandedness, data_type)
+        if (params.read_type) {
+            params.debug && log.info("Set read_type and paired meta value from parameter: ${params.read_type}")
+            reads = reads.map { meta, files -> [ meta + [ read_type: params.read_type ], files ] }
+            def pair = params.read_type == "short_paired" ? true : false
+            reads = reads.map { meta, files -> [ meta + [ paired: pair ], files ] }
+            params.debug && reads.view()
+        }
+
+        // --------------------- set aligner params ----------------------
+        // Add annotation file within the tool options if annotation provided
+        // Add specific options for aligner according to the read type
+        println """check aligner parameters ..."""
+        check_aligner_params( reads, aligner_list, annotation.collect(), aline_processed_params )
+        params.debug && reads.view()
+
+        // call align workflow
         align(reads, reference, annotation, aligner_list)
 }
 
@@ -564,6 +606,8 @@ workflow align {
         Channel.empty().set{logs}
         Channel.empty().set{sorted_bam}
 
+        // extra params
+        salmon_index_done = false // to avoid multiple calls to salmon_index
         // ------------------------------------------------------------------------------------------------
         //                                          PREPROCESSING 
         // ------------------------------------------------------------------------------------------------
@@ -597,58 +641,127 @@ workflow align {
         }
 
         // ------------------------------------------------------------------------------------------------
-        //                              LIBRARY TYPE GUESSING - 
-        // here we subsample and do read length and library type guessing only if needed.
+        //                              - READ LENGTH GUESSING - 
         // ------------------------------------------------------------------------------------------------
-        
-        // In which case I need the mean read length (kallisto, salmon, star)
-        // Need to list here all aligner that need the read length
+        Channel.empty().set{subsampled}
         params.debug && log.info('read_length guessing')
-        def guess_read_length = null
-        if ( (!params.read_length) && 
-           ( ("kallisto" in aligner_list && params.read_type == "short_single" && ( !params.kallisto_options.contains("-l ") || !params.kallisto_options.contains("--fragment-length  ") ) ) || 
-           ( annotation.toString() != "aline_null.gtf" && !params.star_index_options.contains("--sjdbOverhang") ) || 
-           ( "salmon" in aligner_list && params.read_type == "short_single" && !params.salmon.contains("--fldMean ") ) ) ){
-                guess_read_length=1
+       
+        if ( params.read_length ) {
+            // add read length in meta from params
+            params.debug && log.info('read_length provided by parameter')
+            raw_reads_trim.map { meta, files -> [ meta + [ read_length: params.read_length ], files ] }
+                          .set{raw_reads_trim_length}
+            raw_reads_trim.map { meta, files -> [ meta + [ read_length: params.read_length ], files ] }
+                          .set{raw_reads_trim_length}
+        } // STAR case (touch all type of sample) - need to set sjdbOverhang when we do have an annotation
+        else if ( "star" in aligner_list && params.annotation && !params.star_index_options.contains("--sjdbOverhang") ) {
+            params.debug && log.info('read_length star case')
+            subsampled = seqtk_sample(raw_reads_trim)
+            read_length(subsampled, "mean_read_length")
+                
+            // add read length in meta
+            raw_reads_trim.map { meta, fastq -> tuple(meta.id, meta, fastq) }
+                        .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.id, length) })
+                        .map { id, meta, fastq, length ->
+                            def updated_meta = meta + [read_length: length, subsampled: true]
+                            tuple(updated_meta, fastq)
+                        }
+                        .set { raw_reads_trim_length }
+
+        } // kallisto, salmon case that touch only short_single samples
+        else if ( ("kallisto" in aligner_list && ( !params.kallisto_options.contains("-l ") || !params.kallisto_options.contains("--fragment-length  ") ) ) || 
+                   ( "salmon" in aligner_list && !params.salmon_options.contains("--fldMean ") ) 
+                ) {
+                params.debug && log.info('kallisto or salmon case')
+                // For kallisto and salmon, we need to guess the read length only if short_single
+                raw_reads_trim_short_single = raw_reads_trim.filter { meta, reads -> !meta.paired }
+                raw_reads_trim_others = raw_reads_trim.filter { meta, reads -> meta.paired }
+
+                params.debug && log.info('subsample reads for read length guessing')
+                subsampled = seqtk_sample(raw_reads_trim_short_single)
+                read_length(subsampled, "mean_read_length")
+
+                // add read length in meta
+                raw_reads_trim_short_single.map { meta, fastq -> tuple(meta.id, meta, fastq) }
+                                           .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.id, length) })
+                                           .map { id, meta, fastq, length ->
+                                                def updated_meta = meta + [read_length: length, subsampled: true]
+                                                tuple(updated_meta, fastq)
+                                                }
+                                            .set{raw_reads_trim_short_single_length}
+
+                raw_reads_trim_length = raw_reads_trim_short_single_length.concat(raw_reads_trim_others)
         }
-        params.debug && log.info('subsample guessing')
-        // Should I subsample for library type guessing?
-        def subsample_lg = false
-        if (params.library_type.contains("auto")){
-            subsample_lg = true
+        // else we do not add read length in meta
+        else {
+            params.debug && log.info('read_length not needed case')
+            raw_reads_trim_length = raw_reads_trim
         }
 
-        // Subsample if needed (can be for library guessing or read length guessing)
-        if (subsample_lg || guess_read_length){
-            // ------------------- subsample -----------------
-            seqtk_sample(raw_reads_trim)
-        }
+        params.debug && log.info("raw_reads_trim_length channel output: \n")
+        params.debug && raw_reads_trim_length.view()
 
-        // ------------------- set libtype -----------------
-        if (params.library_type.contains("auto")){
-            // ------------------- guess libtype -------------------
-            salmon_index(reference.collect())
-            salmon_guess_lib(seqtk_sample.out.sampled, salmon_index.out.index, "salmon_libtype")
-            salmon_guess_lib.out.tuple_id_libtype.set{tuple_id_lib}
+        // ------------------------------------------------------------------------------------------------
+        //                              - LIBRARY TYPE GUESSING - 
+        // ------------------------------------------------------------------------------------------------
+        params.debug && log.info('library type guessing')
+
+        // If params.skip_strandedness is true, we do not guess strandedness
+        if ( params.skip_strandedness ) {
+            params.debug && log.info('Parameter skip_strandedness activated => strandedness set to null')
+            // add set strandedness to null
+            raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: null ], files ] }
+                                 .set{raw_reads_trim_length_strandedness}
         } else {
-             set_tuple_withUserLib(raw_reads_trim)
-             set_tuple_withUserLib.out.set{tuple_id_lib}
+              if ( strandedness_allowed.contains(params.strandedness)){
+                params.debug && log.info("Parameter strandedness in use => strandedness set to ${params.strandedness}. Use --skip_strandedness to deactivate the strandedness use.")
+                raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: params.strandedness ], files ] }
+                                     .set{raw_reads_trim_length_strandedness}
+              } else {
+                raw_reads_trim_length_strandedness = raw_reads_trim_length
+              }
         }
-        reads = raw_reads_trim.join(tuple_id_lib)
+        // Separate samples to guess strandedness and not guess strandedness
+        sample_to_guess = raw_reads_trim_length_strandedness.filter { meta, reads -> meta.strandedness == 'auto' }
+        sample_to_notguess = raw_reads_trim_length_strandedness.filter { meta, reads -> meta.strandedness != 'auto' }
 
-        // ------------------- set read length -----------------
-        if (guess_read_length){
-            read_length(seqtk_sample.out.sampled, "mean_read_length")
-            read_length.out.tuple_id_readlength.set{tuple_id_readle}
-        }else{
-            set_tuple_withUserReadLength(raw_reads_trim)
-            set_tuple_withUserReadLength.out.set{tuple_id_readle}
+        // catch what is already subsampled
+        sample_to_guess_already_subsampled = sample_to_guess.filter { meta, reads -> meta.subsampled }
+        subsample_sample_to_guess_already_subsampled = sample_to_guess_already_subsampled.map { meta, reads -> tuple(meta.id, meta, reads) }
+                                                                                        .join( subsampled.map { meta2, subreads -> tuple(meta2.id, meta2, subreads) } )
+                                                                                        .map { id, meta, reads, meta2, subreads ->
+                                                                                            tuple(meta2, subreads)
+                                                                                        }
+        // subsample whath has to be subsampled
+        sample_to_guess_to_subsampled = sample_to_guess.filter { meta, reads ->  !meta.subsampled }
+        params.debug && log.info('subsample reads for strandedness guessing')
+        subsampled_sample_to_guess_to_subsampled = seqtk_sample2(sample_to_guess_to_subsampled)
+
+        // Merge all subsampled reads for strandedness guessing
+        all_subsampled_read_guessing = subsample_sample_to_guess_already_subsampled.concat(subsampled_sample_to_guess_to_subsampled)
+
+        // ------------------- guess strandedness -------------------
+        salmon_index_ch = salmon_index(reference.collect(), "alignment/salmon/indicies" )
+        salmon_index_done = true // set to true to avoid multiple calls to salmon_index
+        salmon_guess_lib(all_subsampled_read_guessing, salmon_index_ch, "salmon_strandedness")
+
+        // add strandedness in meta
+        sample_to_guess.map { meta, fastq -> tuple(meta.id, meta, fastq) }
+        .join(salmon_guess_lib.out.tuple_id_libtype.map { meta, libtype -> tuple(meta.id, libtype) })
+        .map { id, meta, fastq, libtype ->
+            def updated_meta = meta + [strandedness: libtype, subsampled: true]
+            tuple(updated_meta, fastq)
         }
-        reads = reads.join(tuple_id_readle)
+        .set { sample_to_guess_done }
+
+        // ------------------- merge sample_to_guess and sample_to_notguess -------------------
+        reads = sample_to_notguess.concat(sample_to_guess_done)
+        params.debug && reads.view()
+
         // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 
         // ------------------------------------------------------------------------------------------------
-
+        params.debug && log.info('library type alignment')
         // ------------------- BBMAP -----------------
         if ("bbmap" in aligner_list ){
             // index
@@ -1007,7 +1120,7 @@ workflow align {
         
         if ("salmon" in aligner_list ){
             // index
-            if (! params.library_type.contains("auto")){ // run salmon index only if library type is not provided otherwise it has been already ran
+            if (! salmon_index_done){ // run salmon index only if not already done when libray type is guessed
                 salmon_index(reference.collect(), "alignment/salmon/indicies")
             }
             // align
@@ -1088,12 +1201,9 @@ workflow align {
             sublong_index(reference.collect(), "alignment/sublong/indicies")
             // align
             sublong(reads, reference.collect(), sublong_index.out.collect(), "alignment/sublong")
-            sublong.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
             // merge bam if paired
-            if (params.read_type == "short_paired"){ 
-                samtools_merge_bam(sublong.out.tuple_sample_bam)
-                samtools_merge_bam.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
-            }
+            samtools_merge_bam_if_paired(sublong.out.tuple_sample_bam)
+            samtools_merge_bam_if_paired.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
             // sort
             samtools_sort_sublong(sublong_ali_tmp, "alignment/sublong")
             samtools_sort_sublong.out.tuple_sample_sortedbam.set{sublong_ali} // set name
@@ -1174,11 +1284,12 @@ def helpMSG() {
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
-        --read_type                 type of reads among this list ${read_type_allowed} (default: short_paired)
-        --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
-                                    If you know the library type you can set it to one of the following: ${libtype_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
+        --data_type                 type of data among this list ${data_type_allowed} (no default)
+        --read_type                 type of reads among this list ${read_type_allowed} (no default)
+        --strandedness              Set the strandedness of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
+                                    If you know the library type you can set it to one of the following: ${strandedness_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
-        --skip_libray_usage         Skip the usage of library type provided by the user or guessed by salmon. 
+        --skip_strandedness         Skip the usage of library type provided by the user or guessed by salmon (not compatible with short_single reads for salmon). 
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
@@ -1216,137 +1327,103 @@ def helpMSG() {
     """
 }
 
-def printAlignerOptions(aligner_list, annotation_file, star_index_options) {
+def printAlignerOptions(aligner_list, aline_processed_params) {
     def sentence = ""
     if ("bbmap" in aligner_list){ 
         sentence += """
     bbmap parameters
-        bbmap_tool                 : ${bbmap_tool}
-        bbmap_options              : ${params.bbmap_options}
+        bbmap_options           : ${params.bbmap_options}
     """} 
     if ("bowtie" in aligner_list){ 
         sentence += """       
     bowtie parameters
-        bowtie_options             : ${params.bowtie_options}
+        bowtie_options          : ${params.bowtie_options}
     """} 
     if ("bowtie2" in aligner_list){ 
         sentence += """       
     bowtie2 parameters
-        bowtie2_options            : ${params.bowtie2_options}
+        bowtie2_options         : ${params.bowtie2_options}
     """} 
     if ("bwaaln" in aligner_list){
         sentence += """
     bwaaln parameters
-        bwa_options                : ${params.bwaaln_options}
+        bwa_options             : ${params.bwaaln_options}
     """} 
     if ("bwamem" in aligner_list){
         sentence += """
     bwamem parameters
-        bwamem_options             : ${params.bwamem_options}
+        bwamem_options          : ${params.bwamem_options}
     """} 
     if ("bwamem2" in aligner_list){
         sentence += """
     bwamem2 parameters
-        bwamem2_options            : ${params.bwamem2_options}
+        bwamem2_options         : ${params.bwamem2_options}
     """} 
     if ("bwasw" in aligner_list){
         sentence += """
     bwasw parameters
-        bwasw_options              : ${params.bwasw_options}
+        bwasw_options           : ${params.bwasw_options}
     """} 
     if ("graphmap2" in aligner_list){
         sentence += """
     graphmap2 parameters
-        graphmap2_options          : ${params.graphmap2_options}
+        graphmap2_options       : ${params.graphmap2_options}
     """} 
     if ("hisat2" in aligner_list){
         sentence += """
     hisat2 parameters
-        hisat2_options             : ${params.hisat2_options}
+        hisat2_options          : ${params.hisat2_options}
     """}
     if ("kallisto" in aligner_list){
-        def new_kallisto_sentence = "${params.kallisto_options}"
-        def extra_info="" 
-        if (!params.kallisto_options.contains("-l ") && !params.kallisto_options.contains("--fragment-length  ")){
-            new_kallisto_sentence += " -l XXX" 
-            extra_info = " xxx computed by AliNe"
-        }
-        if (!params.kallisto_options.contains("-s ")){
-            new_kallisto_sentence += " -s YYY" 
-             extra_info += " yyy computed by AliNe"
-        }
-        if (extra_info){
-            new_kallisto_sentence += " # ${extra_info}"
-        }
         sentence += """
     kallisto parameters
-        kallisto_options           : ${new_kallisto_sentence}
-        kallisto_index_options     : ${params.kallisto_index_options}
+        kallisto_options        : ${params.kallisto_options}
+        kallisto_index_options  : ${params.kallisto_index_options}
     """}
     if ("minimap2" in aligner_list){
         sentence += """
     minimap2 parameters
-        minimap2_options           : ${params.minimap2_options}
-        minimap2_index_options     : ${params.minimap2_index_options}
+        minimap2_options        : ${params.minimap2_options}
+        minimap2_index_options  : ${params.minimap2_index_options}
     """} 
     if ("ngmlr" in aligner_list){
         sentence += """
     ngmlr parameters
-        ngmlr_options              : ${params.ngmlr_options}
+        ngmlr_options           : ${params.ngmlr_options}
     """} 
     if ("novoalign" in aligner_list){
         sentence += """
     novalign parameters
-        novalign_options           : ${params.novoalign_options}
-        novoalign_license          : ${params.novoalign_license}
+        novalign_options        : ${params.novoalign_options}
+        novoalign_license       : ${params.novoalign_license}
     """} 
     if ("nucmer" in aligner_list){
         sentence += """
     nucmer parameters
-        nucmer_options             : ${params.nucmer_options}
+        nucmer_options          : ${params.nucmer_options}
     """}
      if ("salmon" in aligner_list){
-        def new_salmon_sentence = "${params.salmon_options}"
-        def extra_info="" 
-        if ( !params.salmon_options.contains("--fldMean ") ){
-            new_salmon_sentence += " --fldMean XXX" 
-            extra_info = " xxx computed by AliNe"
-        }
-        if (!params.salmon_options.contains("--fldSD ")){
-            new_salmon_sentence += " --fldSD YYY" 
-             extra_info += " yyy computed by AliNe"
-        }
-        if (extra_info){
-            new_salmon_sentence += " # ${extra_info}"
-        }
         sentence += """
     salmon parameters
-        salmon_options             : ${new_salmon_sentence}
-        salmon_index_options       : ${params.salmon_index_options}
+        salmon_index_options    : ${params.salmon_index_options}
+        salmon_options          : ${params.salmon_options}
     """}
     if ("star" in aligner_list){
-        def new_index_sentence = "${star_index_options}"
-        if(annotation_file){      
-            if( !star_index_options.contains("--sjdbGTFfile") ){
-                new_index_sentence += " --sjdbGTFfile ${annotation_file}"
-            }
-            if (!star_index_options.contains("--sjdbOverhang") ){
-                new_index_sentence += " --sjdbOverhang XXX # xxx computed by AliNe" // to be replaced by the read length
-            }
-        }
         sentence += """
     star parameters
-        star_index_options         : ${new_index_sentence}
-        star_tool                  : ${star_tool}
-        star_options               : ${params.star_options}      
-        star_2pass                 : ${params.star_2pass}
+        star_index_options      : ${params.star_index_options}
+        star_options            : ${params.star_options}      
+        star_2pass              : ${params.star_2pass}
     """}
     if ("subread" in aligner_list){
         sentence += """
     subread parameters
-        subread_options            : ${params.subread_options}
+        subread_options         : ${params.subread_options}
     """}
-    
+    sentence += """
+    Aligner parameters processed by Aline can be retrieved in ${params.outdir}/${aline_processed_params} file.
+    """
+
     return sentence
 }
 

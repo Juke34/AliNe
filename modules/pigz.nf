@@ -27,7 +27,7 @@ process fasta_uncompress {
             pigz -dck -p ${task.cpus} ${genome} > ${genomeFa}
         elif [[ "${genome}" != "${genomeFa}" ]];then
             # link
-            ln -s ${genome} ${genomeFa}
+            ln -s \$(realpath ${genome}) ${genomeFa}
         fi
     """
 }

@@ -25,20 +25,23 @@ process kallisto_index {
 // kallisto output sorted bam
 process kallisto {
     label 'kallisto'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "${filename}/*.bam", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path kallisto_index
         val outpath
 
     output:
-        tuple val(sample), path ("${filename}/*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("${filename}/*.bam"), emit: tuple_sample_bam
         path "*.log",  emit: kallisto_summary
 
     script:
-       
+        // options for kallisto
+        def kallisto_options = meta.kallisto_options ?: ""
+
+        
         // catch filename
         filename = reads[0].baseName.replace('.fastq','') + "_kallisto_sorted"
        
@@ -46,17 +49,17 @@ process kallisto {
         def read_orientation=""
         if (! params.kallisto_options.contains("--fr-stranded ") && 
             ! params.kallisto_options.contains("--rf-stranded ") && 
-            params.read_type == "short_paired" && 
-            ! params.skip_libray_usage){ 
-            if (library.contains("I") ){
+            meta.strandedness) { 
+            
+            if (meta.strandedness.contains("I") ){
                 read_orientation = "--fr-stranded"
-            } else if (library.contains("O") ){
+            } else if (meta.strandedness.contains("O") ){
                 read_orientation = "--rf-stranded"
             } 
         }
 
         // For paired-end reads, Kallisto automatically estimates the fragment length distribution from the data and does not require you to specify it manually
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
             kallisto quant  ${read_orientation} ${params.kallisto_options} \
                 -t ${task.cpus} \
@@ -72,13 +75,12 @@ process kallisto {
             
             // Use read length (-l) and sd (-s) from params?
             def l_s_params = ""
-            def read_length_copy = read_length // to avoid error "Variable read_length already defined in the process scope "
             if ( !params.kallisto_options.contains("-l ") ){
-                l_s_params += " -l ${read_length}"
+                l_s_params += " -l ${meta.read_length}"
             }
             if ( !params.kallisto_options.contains("-s ") ){
                 // 10% of read length will be used as Estimated standard deviation of fragment length
-                def tenPercent = (read_length_copy.toInteger() * 10 / 100) as int 
+                def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
                 l_s_params += " -s ${tenPercent}"
             }
 

@@ -6,18 +6,18 @@ https://github.com/lh3/seqtk
 // A process for subsampling reads
 process seqtk_sample {
     label 'seqtk'
-    tag "$id"
+    tag "${meta.id}"
     
     input:
-        tuple val(id), path(fastq)
+        tuple val(meta), path(fastq)
         
     output:
-        tuple val(id), path("*_sampled.fastq.gz"), emit: sampled
+        tuple val(meta), path("*_sampled.fastq.gz"), emit: sampled
 
     script:
 
         // set input/output according to short_paired parameter
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
             seqtk sample -s100 ${fastq[0]} ${params.seqtk_sample_size}\\
                   > ${fastq[0].baseName.replace('.fastq','')}_sampled.fastq.gz

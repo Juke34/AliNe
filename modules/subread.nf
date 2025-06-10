@@ -29,26 +29,28 @@ process subread_index {
 */
 process subread {
     label 'subread'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*subread.vcf", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq), val(library), val(read_length)
+        tuple val(meta), path(fastq)
         path genome
         path index
-        path annotation // needed in case set in the params.graphmap2_options
+        path annotation // needed in case set in the subread_options
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam, optional:true
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam, optional:true
         path "*subread.vcf", emit: subread_vcf, optional:true
         path "*.log", emit: sublong_log
 
     script:
+        // options for subread
+        def subread_options = meta.subread_options ?: ""
 
         // set input according to short_paired parameter
         def input = "-r ${fastq[0]}"
-        if (params.read_type == "short_paired"){
+        if (meta.paired) {
             input =  "-r ${fastq[0]} -R ${fastq[1]}"
         }
 
@@ -60,19 +62,18 @@ process subread {
 
         // deal with library type
         def read_orientation=""
-        if (! params.subread_options.contains("-S ") &&
-            params.read_type == "short_paired" && 
-            ! params.skip_libray_usage){ // only if -S is not set and if we are not skipping library usage
-            if (library.contains("M") ){
+        if (! subread_options.contains("-S ") &&
+            meta.paired && meta.strandedness) { // only if -S is not set and if we are not skipping library usage
+            if (meta.strandedness.contains("M") ){
                 read_orientation = "-S ff"
-            } else if (library.contains("O") ) {
+            } else if (meta.strandedness.contains("O") ) {
                 read_orientation = "-S rf"
-            } else if (library.contains("I") ) {
+            } else if (meta.strandedness.contains("I") ) {
                 read_orientation = "-S fr"
             } 
         }
         """
-        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${params.subread_options} > ${fileName}_subread_sorted.log 
+        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${subread_options} > ${fileName}_subread_sorted.log 
         """
 }
 
@@ -104,20 +105,22 @@ process sublong_index {
 */
 process sublong {
     label 'subread'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path index
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam, optional:true
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam, optional:true
         path "*.log", emit: sublong_log
 
     script:
+        // options for sublong
+        def sublong_options = meta.sublong_options ?: ""
 
         // remove fastq.gz
         def fileName = reads[0].baseName.replace('.fastq','') + "_sublong"
@@ -125,17 +128,15 @@ process sublong {
         // prepare index name
         def index_prefix = genome.baseName + "_index"
 
-
-
         // For paired-end we concat output 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${params.sublong_options} > ${fileName}_sublong.log 
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[1]} -o ${reads[1].baseName}.bam ${params.sublong_options} > ${fileName}_sublong.log 
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${sublong_options} > ${fileName}_sublong.log
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[1]} -o ${reads[1].baseName}.bam ${sublong_options} > ${fileName}_sublong.log
             """
         } else {
             """
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${params.sublong_options} > ${fileName}_sublong.log 
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${sublong_options} > ${fileName}_sublong.log
             """
         }
 }

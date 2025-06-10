@@ -22,23 +22,27 @@ process bwa_index {
 */
 process bwaaln {
     label 'bwa'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path bwa_index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*bwaaln.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*bwaaln.sam"), emit: tuple_sample_sam
         path "*bwaaln_sam.log",  emit: bwaaln_summary
 
     script:
-        fileName = reads[0].baseName.replace('.fastq','')
+        // options for bwa-aln
+        def bwaaln_options = meta.bwaaln_options ?: ""
 
-        if (params.read_type == "short_paired"){
+        // catch filename
+        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+
+        if (meta.paired){
         """
             bwa aln ${params.bwaaln_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} > ${reads[0].baseName}_bwaaln_r1.sai 2> ${reads[0].baseName}_bwaaln_r1_sai.log 
             bwa aln ${params.bwaaln_options} -t ${task.cpus} ${genome.baseName} ${reads[1]} > ${reads[1].baseName}_bwaaln_r2.sai 2> ${reads[1].baseName}_bwaaln_r2_sai.log
@@ -59,23 +63,23 @@ process bwaaln {
 */
 process bwamem {
     label 'bwa'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path bwa_index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*bwamem.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*bwamem.sam"), emit: tuple_sample_sam
         path "*bwamem.log",  emit: bwamem_summary
 
     script:
-        fileName = reads[0].baseName.replace('.fastq','')
+        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
       
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
             bwa mem ${params.bwamem_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem.sam 2> ${fileName}_bwamem.log 
             """
@@ -92,24 +96,24 @@ process bwamem {
 */
 process bwasw {
     label 'bwa'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path bwa_index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*bwasw.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*bwasw.sam"), emit: tuple_sample_sam
         path "*bwasw.log",  emit: bwasw_summary
 
     script:
 
-        fileName = reads[0].baseName.replace('.fastq','')
+        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
             bwa bwasw ${params.bwasw_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwasw.sam 2> ${fileName}_bwasw.log 
             """

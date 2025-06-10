@@ -6,27 +6,30 @@
 */
 process ngmlr {
     label 'ngmlr'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         val outpath
 
     output:
-        tuple val(sample), path ("*ngmlr.sam"), emit: tuple_sample_sam, optional:true
+        tuple val(meta), path ("*ngmlr.sam"), emit: tuple_sample_sam, optional:true
         path "*.log",  emit: ngmlr_summary
 
     script:
+        // options for ngmlr
+        def ngmlr_options = meta.ngmlr_options ?: ""
+
         // catch filename
         fileName = reads[0].baseName.replace('.fastq','')
 
         // For paired-end we concat output 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
-            ngmlr ${params.ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
-            ngmlr ${params.ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[1]} -o ${reads[1].baseName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[1]} -o ${reads[1].baseName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
             
             # Merge sam
             cat ${fileName}_ngmlr.sam > ${fileName}_ngmlr_concatR1R2.sam
@@ -36,7 +39,7 @@ process ngmlr {
             """
         } else {
             """
-            ngmlr ${params.ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
             """
         }
 

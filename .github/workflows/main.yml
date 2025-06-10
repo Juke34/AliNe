@@ -65,5 +65,7 @@ jobs:
         run: nextflow run -ansi-log -profile docker,test_ont aline.nf
       - name: test pacbio
         run: nextflow run -ansi-log -profile docker,test_pacbio aline.nf
+      - name: test csv
+        run: nextflow run -ansi-log -profile docker,test_csv aline.nf
       - name: test remote
         run: nextflow run -ansi-log -profile docker,test_remote aline.nf

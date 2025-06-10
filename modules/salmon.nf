@@ -6,9 +6,11 @@ https://github.com/COMBINE-lab/salmon
 process salmon_index {
     label 'salmon'
     tag "$genome_fasta"
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         path genome_fasta
+        val outpath
 
     output:
         path "salmon_index", emit: index
@@ -21,23 +23,23 @@ process salmon_index {
 
 process salmon_guess_lib {
     label 'salmon'
-    tag "$id"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:
-        tuple val(id), path(fastq)
+        tuple val(meta), path(fastq)
         path salmon_index
         val outpath
 
     output:
-        tuple val(id), env(LIBTYPE), emit: tuple_id_libtype
+        tuple val(meta), env(LIBTYPE), emit: tuple_id_libtype
         path "*/*lib_format_counts.json"
    
     script:
 
         // set input according to read_type parameter
         def input =  "-r ${fastq[0]}"
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
         def output = "${fastq[0].baseName.replace('.fastq','')}"
@@ -47,65 +49,50 @@ process salmon_guess_lib {
             # extract the result
             LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
             # change output name
-            mv ${output}/lib_format_counts.json ${output}/${id}_lib_format_counts.json
+            mv ${output}/lib_format_counts.json ${output}/${meta.id}_lib_format_counts.json
         """
 
-}
-
-// Process not related to the tool but to the library guessing step made with salmon
-process set_tuple_withUserLib{
-    label 'salmon'
-   
-    input:
-        tuple val(id), path(fastq)
-
-    output:
-        tuple val(id), val(params.library_type), emit: tuple_id_libtype
-
-   
-    script:
-
-        """
-        """
 }
 
 //  Use salmon as aligner - output sorted sam
 process salmon {
     label 'salmon'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:
-        tuple val(sample), path(fastq), val(library), val(read_length)
+        tuple val(meta), path(fastq)
         path salmon_index
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*.log",  emit: salmon_summary
    
     script:
+        // options for Salmon
+        def salmon_options = meta.salmon_options ?: ""
 
         // set input according to read_type parameter
         def input =  "-r ${fastq[0]}"
-        if (params.read_type == "short_paired"){
+        if ( meta.paired ){
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
 
         // deal with library type 
         def read_orientation=""
-        if (! params.salmon_options.contains("-l ") && ! params.salmon_options.contains("--libType ") &&
-            ! params.skip_libray_usage){ 
-                read_orientation = "-l ${library}"
+        if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") &&
+              meta.strandedness){ 
+                read_orientation = "-l ${meta.strandedness}"
         }
 
         // catch filename
         def filename = "${fastq[0].baseName.replace('.fastq','')}_salmon"
        
         // Salmon automatically estimates the fragment length distribution for paired-end reads (like Kallisto)
-        if (params.read_type == "short_paired"){
+        if ( meta.paired ){
             """
-                salmon quant -i ${salmon_index} ${params.salmon_options} \
+                salmon quant -i ${salmon_index} ${salmon_options} \
                     ${read_orientation} \
                     ${input} \
                     --thread ${task.cpus} \
@@ -113,21 +100,19 @@ process salmon {
                     --output ${filename} > ${filename}.sam 2> ${filename}.log
             """
         } else {
-            
             // Use read length (--fldMean) and sd (--fldSD) from params?
             def l_s_params = ""
-            def read_length_copy = read_length // to avoid error "Variable read_length already defined in the process scope "
-            if ( !params.salmon_options.contains("--fldMean ") ){
-                l_s_params += " --fldMean ${read_length}"
+            if ( !salmon_options.contains("--fldMean ") ){
+                l_s_params += " --fldMean ${meta.read_length}"
             }
-            if ( !params.salmon_options.contains("--fldSD ") ){
+            if ( !salmon_options.contains("--fldSD ") ){
                 // 10% of read length will be used as Estimated standard deviation of fragment length
-                def tenPercent = (read_length_copy.toInteger() * 10 / 100) as int 
+                def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
                 l_s_params += " --fldSD ${tenPercent}"
             }
 
             """
-                salmon quant -i ${salmon_index} ${params.salmon_options} \
+                salmon quant -i ${salmon_index} ${salmon_options} \
                     ${l_s_params} \
                     ${read_orientation} \
                     ${input} \
