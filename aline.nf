@@ -293,7 +293,7 @@ include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir
 if (
     workflow.containerEngine == 'singularity' ||
     workflow.containerEngine == 'docker'
-  ) { println "executer selected" }
+  ) { println "executer selected: ${workflow.containerEngine}" }
 else { exit 1, "No containerEngine selected: you must use a profile that activate a docker or singularity engine (-profile docker/singularity/itrop)"}
 
 // --------- handle read input (file or folder / local or remote / paired or not) --------
@@ -351,7 +351,7 @@ if( ! via_csv ) {
 
         if(input_reads.exists()){
             if ( input_reads.isDirectory()) {
-                println "The input ${path_reads} is a folder!\n"
+                println "The input ${path_reads} is a folder!"
                 input_reads.eachFileRecurse(FILES){
                     if (it.name =~ ~/${pattern_reads}/){
                         list_files.add(it)

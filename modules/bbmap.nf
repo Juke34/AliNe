@@ -89,7 +89,7 @@ process bbmap {
             ${lib_strand} \\
             ${read_orientation} \\
             out=${fileName}.bam \\
-            ${params.bbmap_options} \\
+            ${meta.bbmap_options} \\
             threads=${task.cpus} \\
             bhist=${fileName}_bhist.txt qhist=${fileName}_qhist.txt aqhist=${fileName}_aqhist.txt lhist=${fileName}_lhist.txt ihist=${fileName}_ihist.txt \\
             ehist=${fileName}_ehist.txt qahist=${fileName}_qahist.txt indelhist=${fileName}_indelhist.txt mhist=${fileName}_mhist.txt \\

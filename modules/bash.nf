@@ -76,7 +76,7 @@ process check_aligner_params{
         if ( "bwaaln" in aligner_list ){
             def bwaaln_options = params.bwaaln_options ?: ""
             if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "Bwaaln aligner is not recommended to align long reads!\n"
+                log.info "Bwaaln aligner is not recommended to align long reads!"
             }
             meta.bwaaln_options = bwaaln_options
         }
@@ -127,7 +127,7 @@ process check_aligner_params{
         if ( "bwasw" in aligner_list ){
             def bwasw_options = params.bwasw_options ?: ""
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "Bwasw aligner is not recommended to align long reads!\n"
+                log.info "Bwasw aligner is not recommended to align long reads!"
             }
             meta.bwasw_options = bwasw_options
         }
@@ -136,7 +136,7 @@ process check_aligner_params{
         if ( "graphmap2" in aligner_list ){
             def graphmap2_options = params.graphmap2_options ?: ""
             if (! meta.read_type == "pacbio" && ! meta.read_type == "ont"){
-                log.info "Graphmap2 aligner is not recommended to align short reads!\n"
+                log.info "Graphmap2 aligner is not recommended to align short reads!"
             }
             if (meta.annotation && !params.graphmap2_options.contains("--gtf ") ){
                 graphmap2_options = graphmap2_options + " --gtf ${annotation}"
@@ -154,7 +154,7 @@ process check_aligner_params{
         if ( "kallisto" in aligner_list ){
             def kallisto_options = params.kallisto_options ?: ""
             if ( meta.read_type == "ont" || meta.read_type == "pacbio"){
-                log.info "Kallisto aligner is not recommended to align long reads!\n"
+                log.info "Kallisto aligner is not recommended to align long reads!"
             }
             meta.kallisto_options = kallisto_options
         }
@@ -181,7 +181,7 @@ process check_aligner_params{
                         log.info("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for pacbio data. 
             We set the default <map-pb> parameter. If you do not agree, please provide options among this list:
                 ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).
-            If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
+            If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.""")
                         minimap2_options = minimap2_options + " -x map-pb"
                     }
                 }
@@ -191,7 +191,7 @@ process check_aligner_params{
                         log.info("""Warn: <${params.minimap2_options}> minimap2 options missing or not accepted for ont data.
             We set the default <map-ont> option. If you do not agree, please provide options among this list:
                 ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).
-            If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.\n""")
+            If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.""")
                         minimap2_options = minimap2_options + " -x map-ont"
                     }
                 }
@@ -252,7 +252,7 @@ process check_aligner_params{
         if ( "salmon" in aligner_list ){
             def salmon_options = params.salmon_options ?: ""
             if ( meta.read_type == "ont" || meta.read_type == "pacbio"){
-                log.info "Salmon aligner is not recommended to align long reads!\n"
+                log.info "Salmon aligner is not recommended to align long reads!"
             }
             meta.salmon_options = salmon_options
         }
