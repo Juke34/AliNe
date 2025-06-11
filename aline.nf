@@ -26,8 +26,7 @@ params.relax = false // Avoid to automatically set option specific to ready type
 
 // Read feature params
 strandedness_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR', 'auto' ]
-params.strandedness = "auto"
-params.skip_strandedness = false // Avoid to use library type provided by strandedness or auto
+params.strandedness = ""
 params.read_length = "" // Use by star to set the sjdbOverhang parameter
 // annotation is used by different aligner (star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
 // If process receive a file wich is not the fake one it includes the file in the command. To append the options of aligner we will use the annotation_file variable
@@ -119,8 +118,8 @@ if( !params.aligner ){
 
 // check read library type parameter
 println """check strandedness parameter: ..."""
-if (params.skip_strandedness){
-    println """    Parameter skip_strandedness activated => strandedness set to null!"""
+if (! params.strandedness ){
+    println """    No value provided, strandedness set to null! (equivalent to unstranded)"""
     if( via_csv ) {
         println """    This value will replace any strandedness value found in your csv!"""
     }
@@ -225,7 +224,6 @@ General Parameters
      data_type                  : ${params.data_type}
      read_type                  : ${params.read_type}
      strandedness               : ${params.strandedness}
-     skip_strandedness          : ${params.skip_strandedness}
      outdir                     : ${params.outdir}
 
 Report Parameters
@@ -438,11 +436,11 @@ workflow {
                                     }
                                     // strandedness
                                     def libtype = "auto"
-                                    if (! params.skip_strandedness && ! params.strandedness ) { // this two parameters have priority over strand found in the csv
+                                    if ( ! params.strandedness ) { // this two parameters have priority over strand found in the csv
                                         if (row.strandedness != null) {
-                                            libtype_value = row.strandedness.trim()
+                                            libtype_value = row.strandedness.trim().toUpperCase()
                                             if(libtype_value){
-                                                if ( ! strandedness_allowed.contains(libtype_value)){
+                                                if ( ! ( libtype_value in strandedness_allowed*.toUpperCase()) ){
                                                     error "The input ${input_csv} file contains an invalid strandedness value: ${libtype_value}. Please provide one of the following values: ${strandedness_allowed}."
                                                 } else {
                                                     libtype = libtype_value
@@ -458,16 +456,15 @@ workflow {
                                     def data_type = null
                                     if ( !params.data_type ) {
                                         if (row.data_type != null) {
-                                            data_type_value = row.data_type.trim().toLowerCase()
+                                            data_type_value = row.data_type.trim().toUpperCase()
                                             if (data_type_value){
-                                                if ( ! data_type_allowed.contains(data_type_value)){
-                                                    error "The input ${input_csv} file contains an invalid read type value: ${data_type_value}. Please provide one of the following values: ${data_type_allowed}."
+                                                if ( ! ( data_type_value in data_type_allowed*.toUpperCase()) ){
+                                                    error "The input ${input_csv} file contains an invalid data type value: ${data_type_value}. Please provide one of the following values: ${data_type_allowed}."
                                                 } else {
                                                     data_type = data_type_value
                                                 }
                                             } else {
                                                 error "The input ${input_csv} file contains an empty data_type value for sample ${sample_id}!"
-                                                
                                             }
                                         } else {
                                             error """Error: The input file ${input_csv} does not contain a data_type column, and the --data_type parameter was not provided.
@@ -484,14 +481,13 @@ Please specify the read type either by including a data_type column in the input
                                         if (row.read_type != null) {
                                             read_type_value = row.read_type.trim().toLowerCase()
                                             if (read_type_value){
-                                                if ( ! read_type_allowed.contains(read_type_value)){
+                                                if ( ! ( read_type_value in read_type_allowed*.toLowerCase()) ){
                                                     error "The input ${input_csv} file contains an invalid read type value: ${read_type_value}. Please provide one of the following values: ${read_type_allowed}."
                                                 } else {
                                                     read_type = read_type_value
                                                 }
                                             } else {
                                                 error "The input ${input_csv} file contains an empty read_type value for sample ${sample_id}!"
-                                                
                                             }
                                         } else {
                                             error """Error: The input file ${input_csv} does not contain a read_type column, and the --read_type parameter was not provided.
@@ -677,7 +673,7 @@ workflow align {
                 raw_reads_trim_short_single = raw_reads_trim.filter { meta, reads -> !meta.paired }
                 raw_reads_trim_others = raw_reads_trim.filter { meta, reads -> meta.paired }
 
-                params.debug && log.info('subsample reads for read length guessing')
+                params.debug && log.info('subsample short_single reads for read length guessing')
                 subsampled = seqtk_sample(raw_reads_trim_short_single)
                 read_length(subsampled, "mean_read_length")
 
@@ -706,15 +702,18 @@ workflow align {
         // ------------------------------------------------------------------------------------------------
         params.debug && log.info('library type guessing')
 
-        // If params.skip_strandedness is true, we do not guess strandedness
-        if ( params.skip_strandedness ) {
-            params.debug && log.info('Parameter skip_strandedness activated => strandedness set to null')
-            // add set strandedness to null
-            raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: null ], files ] }
+        // If params.strandedness is empty, we do not guess strandedness
+        if ( ! params.strandedness ) {
+            params.debug && log.info('No value provided for strandedness parameter => strandedness set to null')
+            // add set strandedness to null only if not already set (e.g. specific case of salmon short_single reads)
+            raw_reads_trim_length.map { meta, files ->
+                                        def updated_meta = meta.containsKey('strandedness') ? meta : meta + [ strandedness: null ]
+                                        [ updated_meta, files ]
+                                    }
                                  .set{raw_reads_trim_length_strandedness}
         } else {
               if ( strandedness_allowed.contains(params.strandedness)){
-                params.debug && log.info("Parameter strandedness in use => strandedness set to ${params.strandedness}. Use --skip_strandedness to deactivate the strandedness use.")
+                params.debug && log.info("Parameter strandedness in use => strandedness set to ${params.strandedness}.")
                 raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: params.strandedness ], files ] }
                                      .set{raw_reads_trim_length_strandedness}
               } else {
@@ -1286,11 +1285,9 @@ def helpMSG() {
     Type of input reads
         --data_type                 type of data among this list ${data_type_allowed} (no default)
         --read_type                 type of reads among this list ${read_type_allowed} (no default)
-        --strandedness              Set the strandedness of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
+        --strandedness              Set the strandedness of your reads (no default). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: ${strandedness_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
-        --skip_strandedness         Skip the usage of library type provided by the user or guessed by salmon (not compatible with short_single reads for salmon). 
-
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false)
