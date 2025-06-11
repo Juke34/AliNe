@@ -52,7 +52,7 @@ process bowtie2 {
         }
         
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','') + "_bowtie2"
+        def filename = AlineUtils.getCleanName(reads) + "_bowtie2"
 
         if (meta.paired){
         """

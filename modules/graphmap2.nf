@@ -46,9 +46,9 @@ process graphmap2 {
     script:
         // options for graphmap2
         def graphmap2_options = meta.graphmap2_options ?: ""
-        
+
         // catch filename
-        fileName = reads[0].baseName.replace('.fastq','')
+        def fileName = AlineUtils.getCleanName(reads)
 
         // Check if the owler option is set
         if ( params.graphmap2_options.contains("owler") ){

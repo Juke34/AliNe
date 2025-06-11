@@ -44,7 +44,7 @@ process minimap2 {
         // options for minimap2
         def minimap2_options = meta.minimap2_options ?: ""
         // catch filename
-        fileName = AlineUtils.getCleanName(reads)
+        def fileName = AlineUtils.getCleanName(reads)
         output_format = "paf"
         if ( minimap2_options.contains("-a") ){
             output_format = "sam"

@@ -43,7 +43,7 @@ process kallisto {
 
         
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','') + "_kallisto_sorted"
+        def filename = AlineUtils.getCleanName(reads) + "_kallisto_sorted"
        
         // deal with library type 
         def read_orientation=""

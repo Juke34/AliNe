@@ -42,7 +42,8 @@ process salmon_guess_lib {
         if (meta.paired){
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
-        def output = "${fastq[0].baseName.replace('.fastq','')}"
+        // remove the extension from fastq file name
+        def output = AlineUtils.getCleanName(fastq)
 
         """
             salmon quant -i ${salmon_index} -l A ${input} --thread ${task.cpus} -o ${output} --minAssignedFrags 2 

@@ -40,7 +40,7 @@ process bwaaln {
         def bwaaln_options = meta.bwaaln_options ?: ""
 
         // catch filename
-        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        def fileName =  AlineUtils.getCleanName(reads)
 
         if (meta.paired){
         """
@@ -77,7 +77,8 @@ process bwamem {
         path "*bwamem.log",  emit: bwamem_summary
 
     script:
-        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        // catch filename
+        def fileName =  AlineUtils.getCleanName(reads)
       
         if (meta.paired){
             """
@@ -111,7 +112,8 @@ process bwasw {
 
     script:
 
-        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        // catch filename
+        def fileName =  AlineUtils.getCleanName(reads)
 
         if (meta.paired){
             """

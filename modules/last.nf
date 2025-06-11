@@ -40,7 +40,8 @@ process last {
         def last_options = meta.last_options ?: ""
 
         // catch filename
-        fileName = reads[0].baseName.replace('.fastq','')
+        def fileName = AlineUtils.getCleanName(reads)
+        log.info("Using LAST options: ${fileName}")
 
         // For paired-end we concat output 
         if (meta.paired){

@@ -79,7 +79,7 @@ process bbmap {
         }
 
         // set fileName
-        def fileName = fastq[0].baseName.replace('.fastq','') + "_bbmap"
+        def fileName = AlineUtils.getCleanName(fastq) + "_bbmap"
 
         // alignement
         """

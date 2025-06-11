@@ -23,14 +23,15 @@ process nucmer {
 
         // deal with library type - Not supported 
 
-        // extract the file name
-        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        // catch filename
+        def fileName = AlineUtils.getCleanName(reads[0])
+
         // Name input
-        reads0 = reads[0].baseName
-        genomeReady = genome.baseName.replaceAll(/\.(fasta|fa)$/, '') + "_nucmer.fa"
+        reads0 = AlineUtils.getCleanName(reads[0])
+        genomeReady = AlineUtils.getCleanName(genome) + "_nucmer.fa"
 
         if (meta.paired){
-            reads1 = reads[1].baseName
+            reads1 = AlineUtils.getCleanName(reads[1])
             """
             # Prepare reference
             extension=\$(echo ${genome} | awk -F . '{print \$NF}')

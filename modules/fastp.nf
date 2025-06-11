@@ -22,10 +22,12 @@ process fastp {
 
         // set input/output according to short_paired parameter
         def input = "-i ${fastq[0]}" 
-        def output = "-o ${fastq[0].baseName.replaceAll(/\.(fastq|fq)$/, '')}_trim.fastq.gz" 
+        def fastqBase0 = AlineUtils.getCleanName(fastq[0])
+        def output = "-o ${fastqBase0}_trim.fastq.gz" 
         if ( meta.paired ){
+            def fastqBase1 = AlineUtils.getCleanName(fastq[1])
             input = "-i ${fastq[0]} -I ${fastq[1]}"
-            output = "-o ${fastq[0].baseName.replaceAll(/\.(fastq|fq)$/, '')}_trim.fastq.gz -O ${fastq[1].baseName.replace('.fastq','')}_trim.fastq.gz"
+            output = "-o ${fastqBase0}_trim.fastq.gz -O ${fastqBase1}_trim.fastq.gz"
         }
 
         """

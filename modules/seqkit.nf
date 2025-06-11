@@ -16,11 +16,11 @@ process seqkit_convert {
         path("*result.txt")
 
     script: 
-        filebase0 = sample[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        def filebase0 = AlineUtils.getCleanName(sample[0])
         fileout = "${meta.id}_result.txt"
 
     if (meta.paired){
-        filebase1 = sample[1].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        def filebase1 = AlineUtils.getCleanName(sample[1])
     """
         # run seqkit convert
         seqkit convert -d ${sample[0]} 2> ${fileout}

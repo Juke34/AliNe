@@ -90,6 +90,9 @@ process star {
         // options for STAR
         def star_options = meta.star_options
 
+        // defiine the output name prefix
+        def output = AlineUtils.getCleanName(reads)
+
         // deal with library type - Not supported 
 
         // alignment
@@ -104,7 +107,7 @@ process star {
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${meta.star_tool}_sorted \\
+                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -118,7 +121,7 @@ process star {
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${meta.star_tool}_sorted \\
+                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """

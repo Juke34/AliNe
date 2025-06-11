@@ -52,7 +52,7 @@ process novoalign {
         // deal with library type - Not supported
 
         // set fileName
-        def fileName = fastq[0].baseName.replace('.fastq','')
+        def fileName = AlineUtils.getCleanName(fastq[0])
         """
         novoalign ${novoalign_options} \\
             -d ${genome_index} \\

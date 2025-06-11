@@ -123,7 +123,7 @@ process sublong {
         def sublong_options = meta.sublong_options ?: ""
 
         // remove fastq.gz
-        def fileName = reads[0].baseName.replace('.fastq','') + "_sublong"
+        def fileName = AlineUtils.getCleanName(reads) + "_sublong"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"

@@ -40,12 +40,12 @@ process hisat2 {
     script:
         // options for hisat2
         def hisat2_options = meta.hisat2_options ?: ""
-        
+
         // catch index basename
         index_basename = hisat2_index_files[0].toString() - ~/.\d.ht2l?/
         
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','') + "_hisat2"
+        def filename = AlineUtils.getCleanName(reads) + "_hisat2"
        
         // deal with library type - default is unstranded.
         def lib_strand=""

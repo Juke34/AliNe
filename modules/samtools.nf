@@ -52,15 +52,18 @@ process samtools_merge_bam_if_paired {
         tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
 
     script:
+        // define the output file name
+        def output = AlineUtils.getCleanName(bam[0]) + "_concatR1R2.bam"
+
         if (meta.paired) {
             """
-                samtools merge -@ ${task.cpus} ${bam[0].baseName}_concatR1R2.bam *.bam
+                samtools merge -@ ${task.cpus} ${output} *.bam
             """
         }
         // For single-end reads, we just link the bam file. The name is misleading but we need to pass the file to next process
         else {
             """
-                ln -s \$(realpath ${bam}) ${bam.baseName}_concatR1R2.bam
+                ln -s \$(realpath ${bam}) ${output}
             """
         }
 }

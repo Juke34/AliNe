@@ -23,7 +23,7 @@ process ngmlr {
         def ngmlr_options = meta.ngmlr_options ?: ""
 
         // catch filename
-        fileName = reads[0].baseName.replace('.fastq','')
+        def fileName = AlineUtils.getCleanName(reads)
 
         // For paired-end we concat output 
         if (meta.paired){

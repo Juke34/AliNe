@@ -53,7 +53,7 @@ process bwamem2 {
         def bwamem2_options = meta.bwamem2_options ?: ""
 
         // catch filename
-        fileName = reads[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        def fileName =  AlineUtils.getCleanName(reads)
       
         if (meta.paired){
             """
