@@ -254,10 +254,6 @@ process check_aligner_params{
             if ( meta.read_type == "ont" || meta.read_type == "pacbio"){
                 log.info "${meta.id} => Salmon aligner is not recommended to align long reads!"
             }
-            if ( ! meta.strandedness && meta.read_type == "short_single"){
-                log.info "${meta.id} => Salmon aligner requires strandedness information for single-end reads. None provided we set it to unstranded (U)."
-                meta.strandedness = "U"
-            }
             meta.salmon_options = salmon_options
         }
 
