@@ -41,7 +41,6 @@ process last {
 
         // catch filename
         def fileName = AlineUtils.getCleanName(reads)
-        log.info("Using LAST options: ${fileName}")
 
         // For paired-end we concat output 
         if (meta.paired){
