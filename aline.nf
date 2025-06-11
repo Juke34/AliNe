@@ -385,6 +385,11 @@ if( ! via_csv ) {
 workflow {
 
     main:
+
+        // ------------------------------------------------------------------------------------------------
+        //                                  HANDEL INPUT DATA (FILE AND PARAMETERS)
+        // ------------------------------------------------------------------------------------------------
+
         // In case of URL paired data, we cannot use fromFilePairs because matching pattern impossible. We must recreate manually a structure similar 
         if (via_csv){
             File input_csv = new File(path_reads)
@@ -392,7 +397,7 @@ workflow {
                 error "The input ${path_reads} file does not exist!\n" 
             }
             params.debug && log.info("Using CSV input file: ${path_reads}")
-            reads = Channel.fromPath(path_reads)
+            raw_reads = Channel.fromPath(path_reads)
                                 .splitCsv(header: true, sep: ',')
                                 .map { row ->
                                     // Check sample column
@@ -521,16 +526,16 @@ Please specify the read type either by including a read_type column in the input
         else {
             if (via_URL && per_pair){
             my_samples = Channel.of(read_list)
-            reads = my_samples.flatten().map { it -> 
+            raw_reads = my_samples.flatten().map { it -> 
                                                 [it.name.split('_')[0], it] }
                                 .groupTuple()
                                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
             } else {
                 log.info "Equivalent fromFilePairs regex: ${fromFilePairs_input} \n"
-                reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
+                raw_reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
                     .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
             }
-            reads = reads.map { sample, files -> [ [ id: sample ], files ] }
+            raw_reads = raw_reads.map { sample, files -> [ [ id: sample ], files ] }
         }
        
         // ------------------------ deal with reference file ------------------------
@@ -550,53 +555,34 @@ Please specify the read type either by including a read_type column in the input
         } else {
             annotation = Channel.of("$baseDir/config/aline_null.gtf") // use the fake file (not used by tools just for the processes to be called)
         }
-        reads = reads.map { meta, files -> [ meta + [ annotation: annotation_provided ], files ] }
+        raw_reads = raw_reads.map { meta, files -> [ meta + [ annotation: annotation_provided ], files ] }
         params.debug && log.info("Set annotation")
-        params.debug && reads.view()
+        params.debug && raw_reads.view()
 
         // ------------------------ data_type ------------------------ 
         // // By default priority to data_type from --data_type over csv value (the same for all csv params e.g. strandedness, read_type)
         if (params.data_type) {
             params.debug && log.info("Set data_type value from parameter: ${params.data_type}")
-            reads = reads.map { meta, files -> [ meta + [ data_type: params.data_type ], files ] }
-            params.debug && reads.view()
+            raw_reads = raw_reads.map { meta, files -> [ meta + [ data_type: params.data_type ], files ] }
+            params.debug && raw_reads.view()
         }
 
         // ------------------------ read_type ------------------------ 
         // // By default priority to read_type from --read_type over csv value (the same for all csv params e.g. strandedness, data_type)
         if (params.read_type) {
             params.debug && log.info("Set read_type and paired meta value from parameter: ${params.read_type}")
-            reads = reads.map { meta, files -> [ meta + [ read_type: params.read_type ], files ] }
+            raw_reads = raw_reads.map { meta, files -> [ meta + [ read_type: params.read_type ], files ] }
             def pair = params.read_type == "short_paired" ? true : false
-            reads = reads.map { meta, files -> [ meta + [ paired: pair ], files ] }
-            params.debug && reads.view()
+            raw_reads = raw_reads.map { meta, files -> [ meta + [ paired: pair ], files ] }
+            params.debug && raw_reads.view()
         }
 
         // --------------------- set aligner params ----------------------
         // Add annotation file within the tool options if annotation provided
         // Add specific options for aligner according to the read type
         println """check aligner parameters ..."""
-        check_aligner_params( reads, aligner_list, annotation.collect(), aline_processed_params )
-        params.debug && reads.view()
-
-        // call align workflow
-        align(reads, reference, annotation, aligner_list)
-}
-
-
-//*************************************************
-// STEP 4 -  Workflow align
-//*************************************************
-
-workflow align {
-
-    take:
-        raw_reads
-        reference
-        annotation
-        aligner_list
-
-    main:
+        check_aligner_params( raw_reads, aligner_list, annotation.collect(), aline_processed_params )
+        params.debug && raw_reads.view()
 
         // Initialize channels
         Channel.empty().set{logs}
