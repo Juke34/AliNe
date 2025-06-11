@@ -52,7 +52,7 @@ process seqkit_convert {
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
             echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s realpath(${sample}) ${sample.baseName.replace('.fastq','')}_seqkit.fastq.gz 
+            ln -s \$(realpath ${sample}) ${sample.baseName.replace('.fastq','')}_seqkit.fastq.gz 
         else
             echo -e "\n converted by seqkit" >> ${fileout}
             seqkit convert ${sample} | gzip > ${sample[0].baseName.replace('.fastq','')}_seqkit.fastq.gz
