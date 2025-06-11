@@ -41,9 +41,8 @@ process kallisto {
         // options for kallisto
         def kallisto_options = meta.kallisto_options ?: ""
 
-        
         // catch filename
-        def filename = AlineUtils.getCleanName(reads) + "_kallisto_sorted"
+        filename = AlineUtils.getCleanName(reads) + "_kallisto_sorted"
        
         // deal with library type 
         def read_orientation=""
