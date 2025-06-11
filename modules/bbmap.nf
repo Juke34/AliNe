@@ -73,8 +73,9 @@ process bbmap {
         if (! params.bbmap_options.contains(" rcs=") &&
             ! params.bbmap_options.contains(" requirecorrectstrand=") && 
             meta.paired &&
-            ! meta.strandedness.contains("I") && 
-            meta.strandedness){ 
+             meta.strandedness &&
+            ! meta.strandedness.contains("I") 
+           ){ 
         read_orientation="rcs=f"
         }
 
