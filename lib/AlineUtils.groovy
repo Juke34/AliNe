@@ -24,6 +24,9 @@ class AlineUtils {
 
     // Function to extract the basename of a file
     public static String getCleanName(file) {
-        return file[0].baseName.replaceAll(/\.(fastq|fq)$/, '')
+        def fileClean = file[0].baseName.replaceAll(/\.(gz)$/, '') // remove .gz
+        fileClean = fileClean.replaceAll(/\.(fasta|fa)$/, '') // remove .fasta or .fa
+        fileClean = fileClean.replaceAll(/\.(fastq|fq)$/, '') // remove .fastq or .fq
+        return fileClean
     }
 }
