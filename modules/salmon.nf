@@ -82,9 +82,12 @@ process salmon {
 
         // deal with library type 
         def read_orientation=""
-        if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") &&
-              meta.strandedness){ 
+        if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") ){
+            if (meta.strandedness){ 
                 read_orientation = "-l ${meta.strandedness}"
+            } else {
+                read_orientation = "-l A" // A for automatic
+            }
         }
 
         // catch filename
