@@ -32,8 +32,8 @@ process seqkit_convert {
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
             echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s realpath(${sample[0]}) ${filebase0}_seqkit.fastq.gz
-            ln -s realpath(${sample[1]}) ${filebase1}_seqkit.fastq.gz
+            ln -s \$(realpath ${sample[0]}) ${filebase0}_seqkit.fastq.gz
+            ln -s \$(realpath ${sample[1]}) ${filebase1}_seqkit.fastq.gz
         else
             echo -e "\n converted by seqkit" >> ${fileout}
             seqkit convert ${sample[0]} | gzip > ${filebase0}_seqkit.fastq.gz
