@@ -27,35 +27,37 @@ process novoalign_index {
 
 process novoalign {
     label 'novoalign'
-    tag "$sample"
+    tag "${meta.id}"
     containerOptions "${novoalign_lic}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq), val(library), val(read_length)
+        tuple val(meta), path(fastq), val(library), val(read_length)
         path genome
         path genome_index
         val novoalign_lic
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*.txt",  emit: novoalign_log
 
     script:
-    
-    // set input according to short_paired parameter
-    def input = params.read_type == "short_paired"  ? "${fastq[0]} ${fastq[1]}" : "${fastq}" // if short reads check paired or not
+        // options for novoalign
+        def novoalign_options = meta.novoalign_options ?: ""
 
-    // deal with library type - Not supported
+        // set input according to short_paired parameter
+        def input = meta.paired ? "${fastq[0]} ${fastq[1]}" : "${fastq}" // if short reads check paired or not
 
-    // set fileName
-    def fileName = fastq[0].baseName.replace('.fastq','')
-    """
-    novoalign \\
-        -d ${genome_index} \\
-        -f ${input} \\
-        -o SAM > ${fileName}.sam 2> log.txt
+        // deal with library type - Not supported
 
-    """
+        // set fileName
+        def fileName = AlineUtils.getCleanName(fastq[0])
+        """
+        novoalign ${novoalign_options} \\
+            -d ${genome_index} \\
+            -f ${input} \\
+            -o SAM > ${fileName}.sam 2> log.txt
+
+        """
 }

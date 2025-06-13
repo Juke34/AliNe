@@ -39,25 +39,29 @@ process bwamem2 {
     publishDir "${params.outdir}/${outpath}", pattern: "*bwamem2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(readtype), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path bwa_index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*bwamem2.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*bwamem2.sam"), emit: tuple_sample_sam
         path "*bwamem2.log",  emit: bwamem2_summary
 
     script:
-        fileName = reads[0].baseName.replace('.fastq','')
+        // options for bwa-mem2
+        def bwamem2_options = meta.bwamem2_options ?: ""
+
+        // catch filename
+        def fileName =  AlineUtils.getCleanName(reads)
       
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
-            bwa-mem2 mem ${params.bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
             """
         } else {
             """
-            bwa-mem2 mem ${params.bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
             """
         }
 }

@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,strandedness,read_type,data_type
+test1,test/illumina/yeast_illumina1.5.fastq.gz,,ISR,short_single,rna
+test2,test/illumina/yeast_R1.fastq.gz,test/illumina/yeast_R2.fastq.gz,auto,short_paired,rna
+test3,test/nanopore/nanopore_yeast.fastq.gz,,U,ont,rna
+test4,test/pacbio/pacbio_yeast.fastq.gz,,auto,pacbio,rna

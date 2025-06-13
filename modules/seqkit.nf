@@ -4,58 +4,57 @@
 
 process seqkit_convert {
     label 'seqkit'
-    tag "$sample_id"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}",  pattern: "*result.txt", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(sample)
+    tuple val(meta), path(sample)
     val outpath
 
     output:
-        tuple val(sample_id), path("*.fastq.gz"), emit: trimmed
+        tuple val(meta), path("*.fastq.gz"), emit: trimmed
         path("*result.txt")
 
     script: 
+        def filebase0 = AlineUtils.getCleanName(sample[0])
+        fileout = "${meta.id}_result.txt"
 
-    if (params.read_type == "short_paired"){
+    if (meta.paired){
+        def filebase1 = AlineUtils.getCleanName(sample[1])
     """
-        fileout=${sample[0].baseName.replace('.fastq','')}.result.txt
-    
         # run seqkit convert
-        seqkit convert -d ${sample[0]} 2> \$fileout
+        seqkit convert -d ${sample[0]} 2> ${fileout}
         
         # get the result from las column of second row
-        scoring=\$(awk  ' NR==2 { print \$( NF )  } ' \$fileout)
+        scoring=\$(awk  ' NR==2 { print \$( NF )  } ' ${fileout})
 
         # \${scoring,,} converts to lowercase
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
-            echo -e "\n keep intact" >> \$fileout
+            echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s ${sample[0]} ${sample[0].baseName.replace('.fastq','')}_seqkit.fastq.gz
-            ln -s ${sample[1]} ${sample[1].baseName.replace('.fastq','')}_seqkit.fastq.gz
+            ln -s \$(realpath ${sample[0]}) ${filebase0}_seqkit.fastq.gz
+            ln -s \$(realpath ${sample[1]}) ${filebase1}_seqkit.fastq.gz
         else
-            echo -e "\n converted by seqkit" >> \$fileout
-            seqkit convert ${sample[0]} | gzip > ${sample[0].baseName.replace('.fastq','')}_seqkit.fastq.gz
-            seqkit convert ${sample[1]} | gzip > ${sample[1].baseName.replace('.fastq','')}_seqkit.fastq.gz
+            echo -e "\n converted by seqkit" >> ${fileout}
+            seqkit convert ${sample[0]} | gzip > ${filebase0}_seqkit.fastq.gz
+            seqkit convert ${sample[1]} | gzip > ${filebase1}_seqkit.fastq.gz
         fi
         """
     } else {
     """
-        fileout=${sample[0].baseName.replace('.fastq','')}.result.txt
-    
         # run seqkit convert
-        seqkit convert -d ${sample[0]} 2> \$fileout
+        seqkit convert -d ${sample[0]} 2> ${fileout}
         
         # get the result from las column of second row
-        scoring=\$(awk  ' NR==2 { print \$( NF )  } ' \$fileout)
+        scoring=\$(awk  ' NR==2 { print \$( NF )  } ' ${fileout})
         
         # \${scoring,,} converts to lowercase
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
-            echo -e "\n keep intact" >> \$fileout
+            echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s ${sample} ${sample.baseName.replace('.fastq','')}_seqkit.fastq.gz 
+            ln -s \$(realpath ${sample}) ${sample.baseName.replace('.fastq','')}_seqkit.fastq.gz 
         else
-            echo -e "\n converted by seqkit" >> \$fileout
+            echo -e "\n converted by seqkit" >> ${fileout}
             seqkit convert ${sample} | gzip > ${sample[0].baseName.replace('.fastq','')}_seqkit.fastq.gz
         fi
         """

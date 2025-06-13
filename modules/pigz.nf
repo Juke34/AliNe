@@ -14,12 +14,12 @@ process fasta_uncompress {
         path genomeFa, emit: genomeFa
 
     script:
-        genomeReady = genome.baseName.replaceAll(/\.(gz)$/, '') // remove .gz
-        genomeReady = genomeReady.replaceAll(/\.(fasta|fa)$/, '') // remove .fasta or .fa
+    
+        // remove the extension from the genome file name
+        genomeReady = AlineUtils.getCleanName(genome)
         genomeFa = genomeReady + ".fa"
-    """
-        
 
+    """
         # DEALING WITH GZIPPED FILES to uncompress if needed
         extension=\$(echo ${genome} | awk -F . '{print \$NF}')
 
@@ -27,7 +27,7 @@ process fasta_uncompress {
             pigz -dck -p ${task.cpus} ${genome} > ${genomeFa}
         elif [[ "${genome}" != "${genomeFa}" ]];then
             # link
-            ln -s ${genome} ${genomeFa}
+            ln -s \$(realpath ${genome}) ${genomeFa}
         fi
     """
 }

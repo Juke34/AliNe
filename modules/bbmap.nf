@@ -30,73 +30,47 @@ process bbmap_index {
 
 process bbmap {
     label 'bbmap'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
-        tuple val(sample), path(fastq), val(library), val(read_length)
+        tuple val(meta), path(fastq)
         path genome_index
         path hisat2_index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
         path "*.txt",  emit: bbmap_summary
 
     script:
+        // options for bbmap
+        def bbmap_options = meta.bbmap_options ?: ""
 
-    // set memory to 4GB if not specified
-    def avail_mem = task.memory ? task.memory.toGiga() : 4 
-    
-    // set tool according to read length
-    def tool = "bbmap.sh"
-    if (params.read_type == "pacbio" || params.read_type == "ont"){
-        tool = "mapPacBio.sh"
-    }
+        // set memory to 4GB if not specified
+        def avail_mem = task.memory ? task.memory.toGiga() : 4 
 
-    // set input according to read_type parameter
-    def input =  "in=${fastq[0]}"
-    if (params.read_type == "short_paired"){
-        input =  "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
-    }
+        // set input according to read_type parameter
+        def input =  "in=${fastq[0]}"
+        if (meta.paired){
+            input =  "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
+        }
 
-    def lib_strand=""
-    if (! params.bbmap_options.contains(" xs=") && 
-        params.read_type == "short_paired" && 
-        ! params.skip_libray_usage){ 
-        if (library.contains("U") ){ // this test must be before the others
-            lib_strand = "-xs=us"
-        }  
-        else if (library.contains("I") ){
-            lib_strand = "xs=fr"
-        } else if (library.contains("O") ){
-            lib_strand = "xs=ss"
-        } 
-    }
-    def read_orientation=""
-    if (! params.bbmap_options.contains(" rcs=") &&
-        ! params.bbmap_options.contains(" requirecorrectstrand=") && 
-        params.read_type == "short_paired" &&
-        ! library.contains("I") && 
-        ! params.skip_libray_usage){ 
-      read_orientation="rcs=f"
-    }
+        // set fileName
+        def fileName = AlineUtils.getCleanName(fastq) + "_bbmap"
 
-    // set fileName
-    def fileName = fastq[0].baseName.replace('.fastq','') + "_bbmap"
-    """
-    ${tool} \\
-        ref=${genome_index} \\
-        ${input} \\
-        ${lib_strand} \\
-        ${read_orientation} \\
-        out=${fileName}.bam \\
-        ${params.bbmap_options} \\
-        threads=${task.cpus} \\
-        bhist=${fileName}_bhist.txt qhist=${fileName}_qhist.txt aqhist=${fileName}_aqhist.txt lhist=${fileName}_lhist.txt ihist=${fileName}_ihist.txt \\
-        ehist=${fileName}_ehist.txt qahist=${fileName}_qahist.txt indelhist=${fileName}_indelhist.txt mhist=${fileName}_mhist.txt \\
-        gchist=${fileName}_gchist.txt idhist=${fileName}_idhist.txt scafstats=${fileName}_scafstats.txt \\
-        -Xmx${avail_mem}g &> ${fileName}.bbmap.log.txt
+        // alignement
+        """
+        ${meta.bbmap_tool} \\
+            ref=${genome_index} \\
+            ${input} \\
+            out=${fileName}.bam \\
+            ${bbmap_options} \\
+            threads=${task.cpus} \\
+            bhist=${fileName}_bhist.txt qhist=${fileName}_qhist.txt aqhist=${fileName}_aqhist.txt lhist=${fileName}_lhist.txt ihist=${fileName}_ihist.txt \\
+            ehist=${fileName}_ehist.txt qahist=${fileName}_qahist.txt indelhist=${fileName}_indelhist.txt mhist=${fileName}_mhist.txt \\
+            gchist=${fileName}_gchist.txt idhist=${fileName}_idhist.txt scafstats=${fileName}_scafstats.txt \\
+            -Xmx${avail_mem}g &> ${fileName}.bbmap.log.txt
 
-    """
+        """
 }

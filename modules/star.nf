@@ -3,8 +3,8 @@ process prepare_star_index_options {
     label 'bash'
 
     input:
-    tuple val(sample), path(reads), val(library), val(read_length)
-    path annotation
+        tuple val(meta), path(reads)
+        path annotation
 
     output:
         stdout()
@@ -12,14 +12,14 @@ process prepare_star_index_options {
     script:
         star_index_options = "${params.star_index_options}"
 
-        if ( annotation.toString() != "aline_null.gtf" ){
+        if ( meta.annotation ){
             // Deal with --sjdbGTFfile option
             if( !star_index_options.contains("--sjdbGTFfile") ){
                 star_index_options += " --sjdbGTFfile ${annotation}"
             }
             // Deal with --sjdbOverhang option
-            if (read_length && !star_index_options.contains("--sjdbOverhang") ){
-               star_index_options += " --sjdbOverhang " + (read_length.toInteger() - 1)
+            if (meta.read_length && !star_index_options.contains("--sjdbOverhang") ){
+               star_index_options += " --sjdbOverhang " + (meta.read_length.toInteger() - 1)
                 """
                 echo -n "${star_index_options}"
                 """
@@ -31,7 +31,7 @@ process prepare_star_index_options {
                 // Some bash commands as head or grep -q can interrupt another one, which return an error 141. To avoid the problem we unset pipefail
                 """
                 #!/bin/bash
-                echo -n ${star_index_options} --sjdbOverhang ${read_length}
+                echo -n ${star_index_options} --sjdbOverhang ${meta.read_length}
                 """
             }  
         } 
@@ -72,42 +72,42 @@ process star_index {
 
 process star {
     label 'star'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path star_index
         path annotation
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
         path "*.out",  emit: star_summary
         path "*SJ.out.tab", emit: splice_junctions
 
     script:
+        // options for STAR
+        def star_options = meta.star_options ?: ""
 
-        // set tool according to read length
-        def star_tool = "STAR"
-        if (params.read_type == "pacbio" || params.read_type == "ont"){
-            star_tool = "STARlong"
-        }
+        // defiine the output name prefix
+        def output = AlineUtils.getCleanName(reads)
 
         // deal with library type - Not supported 
 
-        if (params.read_type == "short_paired"){
+        // alignment
+        if (meta.paired) {
         """
             mkfifo pipedRead1
             zcat < ${reads[0]} > pipedRead1 &
             mkfifo pipedRead2
             zcat < ${reads[1]} > pipedRead2 &
 
-            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
+            ${meta.star_tool} ${star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${star_tool}_sorted \\
+                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -117,11 +117,11 @@ process star {
             mkfifo pipedRead
             zcat < ${reads} > pipedRead &
 
-            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
+            ${meta.star_tool} ${star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${star_tool}_sorted \\
+                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -136,31 +136,28 @@ For a study with multiple samples, it is recommended to collect 1st pass junctio
 */
 process star2pass{
     label 'star'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path star_index
         path splice_junctions
         path annotation
         val outpath
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
         path "*.out",  emit: star_summary
 
     script:
-
-        // set tool according to read length
-        def star_tool = "STAR"
-        if (params.read_type == "pacbio" || params.read_type == "ont"){
-            star_tool = "STARlong"
-        }
+        // options for STAR
+        def star_options = meta.star_options ?: ""
 
         // deal with library type - Not supported in STAR
 
-        if (params.read_type == "short_paired"){
+        // alignment
+        if (meta.paired){
         """
             mkfifo pipedRead1
             zcat < ${reads[0]} > pipedRead1 &
@@ -168,11 +165,11 @@ process star2pass{
             zcat < ${reads[1]} > pipedRead2 &
 
             # run STAR
-            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
+            ${meta.star_tool} ${star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead1 pipedRead2  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${star_tool}_2pass_sorted \\
+                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${meta.star_tool}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab
@@ -191,11 +188,11 @@ process star2pass{
             command < ${reads} > pipedRead &
 
             # run STAR
-            ${star_tool} ${params.star_options} --genomeDir ${star_index} \\
+            ${meta.star_tool} ${star_options} --genomeDir ${star_index} \\
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${star_tool}_2pass_sorted \\
+                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${meta.star_tool}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab

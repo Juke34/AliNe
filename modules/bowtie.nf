@@ -19,50 +19,41 @@ process bowtie_index {
 
 process bowtie {
     label 'bowtie'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bowtie.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*bowtie.log",  emit: bowtie_summary
 
     script:
-    
-        def read_orientation=""
-        if (! params.bowtie_options.contains("--fr ") && 
-            ! params.bowtie_options.contains("--rf ") && 
-            ! params.bowtie_options.contains("--ff ") &&
-            params.read_type == "short_paired" && 
-            ! params.skip_libray_usage){ 
-            if (library.contains("I") ){
-                read_orientation = "--fr"
-            } else if (library.contains("O") ){
-                read_orientation = "--rf"
-            } else if (library.contains("M") ){
-                read_orientation = "--ff"
-            }  
-        }
 
-        if (params.read_type == "short_paired"){
+        // options for bowtie
+        def bowtie_options = meta.bowtie_options ?: ""
+
+        // catch filename
+        def outBaseName = AlineUtils.getCleanName(reads) + "_bowtie"
+
+        if (meta.paired){
         """
-            bowtie ${params.bowtie_options} ${read_orientation}\\
+            bowtie ${bowtie_options} \\
                 -p ${task.cpus} \\
                 -x ${genome.baseName} \\
-                -S ${reads[0].baseName.replace('.fastq','')}_bowtie.sam \\
-                -1 ${reads[0]} -2 ${reads[1]}  2> ${reads[0].baseName.replace('.fastq','')}_bowtie.log
+                -S ${outBaseName}.sam \\
+                -1 ${reads[0]} -2 ${reads[1]}  2> ${outBaseName}.log
         """
         } else {
         """
-            bowtie ${params.bowtie_options} ${read_orientation}\\
+            bowtie ${bowtie_options} \\
                     -p ${task.cpus} \\
                     -x ${genome.baseName} \\
-                    -S ${reads} > ${reads.baseName.replace('.fastq','')}_bowtie.sam 2> ${reads.baseName}_bowtie.log
+                    -S ${reads} > ${outBaseName}.sam 2> ${outBaseName}.log
         """
         }
 

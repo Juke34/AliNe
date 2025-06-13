@@ -22,29 +22,31 @@ process last_index {
 
 process last {
     label 'last'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*last.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*.log",  emit: last_summary
 
     script:
-    
+        // options for last
+        def last_options = meta.last_options ?: ""
+
         // catch filename
-        fileName = reads[0].baseName.replace('.fastq','')
+        def fileName = AlineUtils.getCleanName(reads)
 
         // For paired-end we concat output 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
             """
-            lastal ${params.last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[0]} > ${fileName}_last.maf 2> ${fileName}_last.log
-            lastal ${params.last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[1]} > ${reads[1].baseName}_last.maf 2> ${fileName}_last.log
+            lastal ${last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[0]} > ${fileName}_last.maf 2> ${fileName}_last.log
+            lastal ${last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[1]} > ${reads[1].baseName}_last.maf 2> ${fileName}_last.log
             
             # convert to sam
             maf-convert -d sam ${fileName}_last.maf > ${fileName}_last.sam
@@ -58,7 +60,7 @@ process last {
             """
         } else {
             """
-            lastal ${params.last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[0]} > ${fileName}_last.maf 2> ${fileName}_last.log
+            lastal ${last_options} -Q 1 -P ${task.cpus} ${genome.baseName} ${reads[0]} > ${fileName}_last.maf 2> ${fileName}_last.log
 
             # convert to sam
             maf-convert -d sam ${fileName}_last.maf > ${fileName}_last.sam

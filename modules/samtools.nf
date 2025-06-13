@@ -3,14 +3,14 @@ Here a special process to override this problem
 */
 process samtools_sam2bam_nucmer {
     label 'samtools'
-    tag "$sample"
+    tag "${meta.id}"
 
     input:
-        tuple val(sample), file(sam)
+        tuple val(meta), file(sam)
         path genome
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_bam
 
     script:
 
@@ -26,13 +26,13 @@ process samtools_sam2bam_nucmer {
 
 process samtools_sam2bam {
     label 'samtools'
-    tag "$sample"
+    tag "${meta.id}"
 
     input:
-        tuple val(sample), path(sam)
+        tuple val(meta), path(sam)
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
 
     script:
 
@@ -41,22 +41,31 @@ process samtools_sam2bam {
         """
 
 }
-process samtools_merge_bam {
+process samtools_merge_bam_if_paired {
     label 'samtools'
-    tag "$sample"
+    tag "${meta.id}"
 
     input:
-        tuple val(sample), path(bam)
+        tuple val(meta), path(bam)
 
     output:
-        tuple val(sample), path ("*.bam"), emit: tuple_sample_bam
+        tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
 
     script:
+        // define the output file name
+        def output = AlineUtils.getCleanName(bam[0]) + "_concatR1R2.bam"
 
-        """
-            samtools merge -@ ${task.cpus} ${bam[0].baseName}_concatR1R2.bam *.bam
-        """
-
+        if (meta.paired) {
+            """
+                samtools merge -@ ${task.cpus} ${output} *.bam
+            """
+        }
+        // For single-end reads, we just link the bam file. The name is misleading but we need to pass the file to next process
+        else {
+            """
+                ln -s \$(realpath ${bam}) ${output}
+            """
+        }
 }
 /*
 http://www.htslib.org/doc/samtools-sort.html
@@ -64,15 +73,15 @@ Sort alignments by leftmost coordinates
 */
 process samtools_sort {
     label 'samtools'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(sample), path(bam)
+        tuple val(meta), path(bam)
         val outpath
 
     output:
-        tuple val(sample), path ("*_sorted.bam"), emit: tuple_sample_sortedbam
+        tuple val(meta), path ("*_sorted.bam"), emit: tuple_sample_sortedbam
 
     script:
 
@@ -88,11 +97,11 @@ Produces comprehensive statistics from alignment file
 */
 process samtools_stats {
     label 'samtools'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(sample), path(bam)
+        tuple val(meta), path(bam)
         path(genome_fasta)
         val outpath
         val suffix
@@ -103,6 +112,6 @@ process samtools_stats {
     script:
 
         """
-            samtools stats  --reference ${genome_fasta} ${bam} > ${bam.baseName}.txt
+            samtools stats --reference ${genome_fasta} ${bam} > ${bam.baseName}.txt
         """
 }

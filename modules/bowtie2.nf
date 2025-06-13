@@ -19,42 +19,29 @@ process bowtie2_index {
 
 process bowtie2 {
     label 'bowtie2'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bowtie2.log", mode: 'copy'
 
     input:
-        tuple val(sample), path(reads), val(library), val(read_length)
+        tuple val(meta), path(reads)
         path genome
         path index_files
         val outpath
 
     output:
-        tuple val(sample), path ("*.sam"), emit: tuple_sample_sam
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
         path "*.log",  emit: bowtie2_summary
 
     script:
-    
-        def read_orientation=""
-        if (! params.bowtie2_options.contains("--fr ") && 
-            ! params.bowtie2_options.contains("--rf ") && 
-            ! params.bowtie2_options.contains("--ff ") &&
-            params.read_type == "short_paired" && 
-            ! params.skip_libray_usage){ 
-            if (library.contains("I") ){
-                read_orientation = "--fr"
-            } else if (library.contains("O") ){
-                read_orientation = "--rf"
-            } else if (library.contains("M") ){
-                read_orientation = "--ff"
-            }  
-        }
+        // options for bowtie2
+        def bowtie2_options = meta.bowtie2_options ?: ""
         
         // catch filename
-        filename = reads[0].baseName.replace('.fastq','') + "_bowtie2"
+        def filename = AlineUtils.getCleanName(reads) + "_bowtie2"
 
-        if (params.read_type == "short_paired"){
+        if (meta.paired){
         """
-            bowtie2 ${params.bowtie2_options} ${read_orientation}\\
+            bowtie2 ${bowtie2_options} \\
                 -p ${task.cpus} \\
                 -x ${genome.baseName} \\
                 -S ${filename}.sam \\
@@ -62,7 +49,7 @@ process bowtie2 {
         """
         } else {
         """
-            bowtie2 ${params.bowtie2_options} ${read_orientation}\\
+            bowtie2 ${bowtie2_options} \\
                     -p ${task.cpus} \\
                     -x ${genome.baseName} \\
                     -S ${filename}.sam \\
