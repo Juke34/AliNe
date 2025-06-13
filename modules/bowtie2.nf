@@ -36,27 +36,12 @@ process bowtie2 {
         // options for bowtie2
         def bowtie2_options = meta.bowtie2_options ?: ""
         
-        def read_orientation=""
-        if (! params.bowtie2_options.contains("--fr ") && 
-            ! params.bowtie2_options.contains("--rf ") && 
-            ! params.bowtie2_options.contains("--ff ") &&
-              meta.paired && 
-            meta.strandedness){ 
-            if (meta.strandedness.contains("I") ){
-                read_orientation = "--fr"
-            } else if (meta.strandedness.contains("O") ){
-                read_orientation = "--rf"
-            } else if (meta.strandedness.contains("M") ){
-                read_orientation = "--ff"
-            }  
-        }
-        
         // catch filename
         def filename = AlineUtils.getCleanName(reads) + "_bowtie2"
 
         if (meta.paired){
         """
-            bowtie2 ${params.bowtie2_options} ${read_orientation}\\
+            bowtie2 ${bowtie2_options} \\
                 -p ${task.cpus} \\
                 -x ${genome.baseName} \\
                 -S ${filename}.sam \\
@@ -64,7 +49,7 @@ process bowtie2 {
         """
         } else {
         """
-            bowtie2 ${params.bowtie2_options} ${read_orientation}\\
+            bowtie2 ${bowtie2_options} \\
                     -p ${task.cpus} \\
                     -x ${genome.baseName} \\
                     -S ${filename}.sam \\

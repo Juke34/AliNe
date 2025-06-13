@@ -35,7 +35,7 @@ process graphmap2 {
         tuple val(meta), path(reads)
         path genome
         path graphmap2_index_files
-        path annotation // needed in case set in the params.graphmap2_options
+        path annotation // needed in case set in the graphmap2_options
         val outpath
 
     output:
@@ -51,13 +51,13 @@ process graphmap2 {
         def fileName = AlineUtils.getCleanName(reads)
 
         // Check if the owler option is set
-        if ( params.graphmap2_options.contains("owler") ){
+        if ( meta.graphmap2_options.contains("owler") ){
 
             if (meta.paired){
                 // For paired-end we concat output 
                 """
-                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${reads[0]} -d ${reads[0]}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
-                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${reads[1]} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.mhap 2> ${reads[1].baseName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -t ${task.cpus} -r ${reads[0]} -d ${reads[0]}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -t ${task.cpus} -r ${reads[1]} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.mhap 2> ${reads[1].baseName}_graphmap2.log
                 cat ${fileName}_graphmap2.mhap > ${fileName}_graphmap2_concatR1R2.mhap
                 rm ${fileName}_graphmap2.mhap
                 cat ${reads[1].baseName}_graphmap2.mhap >> ${fileName}_graphmap2_concatR1R2.mhap
@@ -65,15 +65,15 @@ process graphmap2 {
                 """
             } else {
                 """
-                graphmap2 ${params.graphmap2_options} -t ${task.cpus} -r ${reads[0]} -d ${reads[0]}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -t ${task.cpus} -r ${reads[0]} -d ${reads[0]}  -o ${fileName}_graphmap2.mhap 2> ${fileName}_graphmap2.log
                 """
             }
         }
         // Align case
         else {
             // add align if absent from the command line
-            if (! params.graphmap2_options.contains("align") ){
-                graphmap2_options = "align ${params.graphmap2_options}"
+            if (! meta.graphmap2_options.contains("align") ){
+                graphmap2_options = "align ${graphmap2_options}"
             }
 
             // For paired-end we concat output 

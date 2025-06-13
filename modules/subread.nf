@@ -60,20 +60,8 @@ process subread {
         // prepare index name
         def index_prefix = genome.baseName + "_index"
 
-        // deal with library type
-        def read_orientation=""
-        if (! subread_options.contains("-S ") &&
-            meta.paired && meta.strandedness) { // only if -S is not set and if we are not skipping library usage
-            if (meta.strandedness.contains("M") ){
-                read_orientation = "-S ff"
-            } else if (meta.strandedness.contains("O") ) {
-                read_orientation = "-S rf"
-            } else if (meta.strandedness.contains("I") ) {
-                read_orientation = "-S fr"
-            } 
-        }
         """
-        subread-align -T ${task.cpus} ${read_orientation} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${subread_options} > ${fileName}_subread_sorted.log 
+        subread-align -T ${task.cpus} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${subread_options} > ${fileName}_subread_sorted.log 
         """
 }
 
@@ -101,7 +89,6 @@ process sublong_index {
 
 /*
 * To align with sublong
- add  -X to turn on the RNA-seq mode.
 */
 process sublong {
     label 'subread'

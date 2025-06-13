@@ -56,29 +56,6 @@ process bbmap {
             input =  "in=${fastq[0]} in2=${fastq[1]}" // if short reads check paired or not
         }
 
-        def lib_strand=""
-        if (! params.bbmap_options.contains(" xs=") && 
-            meta.paired && 
-            meta.strandedness){ 
-            if (meta.strandedness.contains("U") ){ // this test must be before the others
-                lib_strand = "-xs=us"
-            }  
-            else if (meta.strandedness.contains("I") ){
-                lib_strand = "xs=fr"
-            } else if (meta.strandedness.contains("O") ){
-                lib_strand = "xs=ss"
-            } 
-        }
-        def read_orientation=""
-        if (! params.bbmap_options.contains(" rcs=") &&
-            ! params.bbmap_options.contains(" requirecorrectstrand=") && 
-            meta.paired &&
-             meta.strandedness &&
-            ! meta.strandedness.contains("I") 
-           ){ 
-        read_orientation="rcs=f"
-        }
-
         // set fileName
         def fileName = AlineUtils.getCleanName(fastq) + "_bbmap"
 
@@ -87,10 +64,8 @@ process bbmap {
         ${meta.bbmap_tool} \\
             ref=${genome_index} \\
             ${input} \\
-            ${lib_strand} \\
-            ${read_orientation} \\
             out=${fileName}.bam \\
-            ${meta.bbmap_options} \\
+            ${bbmap_options} \\
             threads=${task.cpus} \\
             bhist=${fileName}_bhist.txt qhist=${fileName}_qhist.txt aqhist=${fileName}_aqhist.txt lhist=${fileName}_lhist.txt ihist=${fileName}_ihist.txt \\
             ehist=${fileName}_ehist.txt qahist=${fileName}_qahist.txt indelhist=${fileName}_indelhist.txt mhist=${fileName}_mhist.txt \\

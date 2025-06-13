@@ -43,24 +43,11 @@ process kallisto {
 
         // catch filename
         filename = AlineUtils.getCleanName(reads) + "_kallisto_sorted"
-       
-        // deal with library type 
-        def read_orientation=""
-        if (! params.kallisto_options.contains("--fr-stranded ") && 
-            ! params.kallisto_options.contains("--rf-stranded ") && 
-            meta.strandedness) { 
-            
-            if (meta.strandedness.contains("I") ){
-                read_orientation = "--fr-stranded"
-            } else if (meta.strandedness.contains("O") ){
-                read_orientation = "--rf-stranded"
-            } 
-        }
 
         // For paired-end reads, Kallisto automatically estimates the fragment length distribution from the data and does not require you to specify it manually
         if (meta.paired){
             """
-            kallisto quant  ${read_orientation} ${params.kallisto_options} \
+            kallisto quant ${kallisto_options} \
                 -t ${task.cpus} \
                 --pseudobam \
                 -i ${kallisto_index} \
@@ -71,21 +58,9 @@ process kallisto {
             sed -i 's/${reads[0]}/${filename}.fastq.gz/' ${filename}.log
             """
         } else {
-            
-            // Use read length (-l) and sd (-s) from params?
-            def l_s_params = ""
-            if ( !params.kallisto_options.contains("-l ") ){
-                l_s_params += " -l ${meta.read_length}"
-            }
-            if ( !params.kallisto_options.contains("-s ") ){
-                // 10% of read length will be used as Estimated standard deviation of fragment length
-                def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
-                l_s_params += " -s ${tenPercent}"
-            }
 
             """
-            kallisto quant  ${read_orientation} ${params.kallisto_options} \
-                ${l_s_params} \
+            kallisto quant ${kallisto_options} \
                 -t ${task.cpus} \
                 --pseudobam \
                 -i ${kallisto_index} \

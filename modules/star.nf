@@ -88,7 +88,7 @@ process star {
 
     script:
         // options for STAR
-        def star_options = meta.star_options
+        def star_options = meta.star_options ?: ""
 
         // defiine the output name prefix
         def output = AlineUtils.getCleanName(reads)

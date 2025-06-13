@@ -7,6 +7,9 @@ AliNe (Alignment in Nextflow) - RNAseq DNAseq
 
 AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference using the tools of your choice.  
 
+Input: file, list of file, folder or csv  
+Output: Coordinate sorted BAM file. 
+
 ## Table of Contents
 
    * [Foreword](#foreword)
@@ -45,7 +48,7 @@ You can choose to run one or several aligner in parallel.
 
 | Tool	| Single End (short reads) | Paired end (short reads) | Pacbio | ONT |
 | --- | --- | --- |  --- | --- |
-| bbmap | ✅ | ✅ | ⚠️ | ⚠️ |
+| bbmap | ✅ | ✅ | ✅ use mapPacBio.sh  | ✅ use mapPacBio.sh |
 | bowtie | ✅ | ✅ | ⚠️ | ⚠️ |
 | bowtie2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | bwaaln | ✅ | ✅ R1 and R2 independently aligned then merged with bwa sampe | ⚠️ | ⚠️ |
@@ -56,7 +59,7 @@ You can choose to run one or several aligner in parallel.
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
 | kallisto | ✅ | ✅ | ⚠️ | ⚠️ |
 | last | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with maf-convert | ✅ | ✅ |
-| minimap2 | ⚠️ | ⚠️ | ✅ | ✅ |
+| minimap2 | ✅ | ✅ | ✅ | ✅ |
 | ngmlr | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | novoalign | ✅ | ✅ | ✅ | ⚠️ |
 | nucmer | ✅ | ✅ R1 and R2 independently aligned then merged with cat | ⚠️ | ⚠️ |
@@ -322,21 +325,26 @@ On success you should get a message looking like this:
         --help                      prints the help section
 
     General Parameters
-        --reads                     path to the reads folder or (remote) file (commma separated list of remote file accepted).
-                                    If a folder is provided, all the files with proper extension are detected.
+        --reads                     path to the reads file, folder or csv. If a folder is provided, all the files with proper extension in the folder   will be used. You can provide remote files (commma separated list).
                                     file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
-                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)       
+                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)
+                                    csv input expects 6 columns: sample, fastq_1, fastq_2, strandedness, read_type and data_type. 
+                                    fastq_2 is optional and can be empty. Strandedness, read_type and data_type expect same values as corresponding AliNe parameters; If a value is provided via AliNe parameter, it will override the value in the csv file.
+                                    Example of csv file:
+                                        sample,fastq_1,fastq_2,strandedness,read_type,data_type
+                                        control1,path/to/data1.fastq.gz,,auto,short_single,rna
+                                        control2,path/to/data2_R1.fastq.gz,path/to/data2_R2.fastq.gz,auto,short_paired,rna
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
+        --data_type                 type of data among this list [DNA, RNA] (no default)
         --read_type                 type of reads among this list [short_paired, short_single, pacbio, ont] (default: short_paired)
-        --library_type              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
+        --strandedness              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: [U, IU, MU, OU, ISF, ISR, MSF, MSR, OSF, OSR]. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
-        --skip_libray_usage         Skip the usage of library type provided by the user or guessed by salmon. 
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
@@ -392,8 +400,11 @@ Here the description of typical ouput you will get from AliNe:
     ├── mean_read_length                                      # Folder with mean read length computed in bash (optional - done if selected aligners need the info and no value provided by the user)
     │   └── sample1_seqkit_trim_sampled_read_length.txt       # Mean read length for sample1
     │
-    ├── salmon_libtype                                        # Librairy information (read orientation and strand information) detected via Salmon
-    │       └── sample1_lib_format_counts.json                # Librairy information detectected for sample1
+    ├── salmon_libtype                                        # Library information (read orientation and strand information) detected via Salmon
+    │       └── sample1_lib_format_counts.json                # Library information detectected for sample1
+    |
+    ├── aline_updated_params
+    |       └── sample1.txt                                   # File resuming the parameters automatically set by AliNe
     |
     ├── alignment                                             # Folder gathering all alignment output (indicies, sorted bam and logs)
     │   ├── aligner1                                          # Folder gathering data produced by aligner 

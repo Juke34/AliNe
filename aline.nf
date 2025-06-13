@@ -88,7 +88,7 @@ if (params.help) { exit 0, helpMSG() }
 //*************************************************
 // STEP 1 - PARAMS CHECK
 //*************************************************
-def aline_processed_params = "aline_processed_params"
+def aline_processed_params = "aline_updated_params"
 def path_reads = params.reads 
 def via_csv = false
 if ( path_reads.endsWith('.csv') ){  
@@ -119,9 +119,9 @@ if( !params.aligner ){
 // check read library type parameter
 println """check strandedness parameter: ..."""
 if (! params.strandedness ){
-    println """    No value provided, strandedness set to null! (equivalent to unstranded)"""
+    println """    No value provided by --strandedness"""
     if( via_csv ) {
-        println """    This value will replace any strandedness value found in your csv!"""
+        println """    value will be taken from the csv file."""
     }
 }
 else {
@@ -233,12 +233,15 @@ Report Parameters
 
 Aligner Parameters (provided by user)
 """
-println printAlignerOptions(aligner_list, aline_processed_params)
-
+println printAlignerOptions(aligner_list)
+println """
+Aligner parameters (updated by Aline)
+    Available at                : ${params.outdir}/${aline_processed_params}
+"""
 //*************************************************
 // STEP 2 - Include needed modules
 //*************************************************
-include {read_length; check_aligner_params} from "$baseDir/modules/bash.nf" 
+include {read_length; check_aligner; check_aligner_params} from "$baseDir/modules/bash.nf" 
 include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
@@ -577,17 +580,13 @@ Please specify the read type either by including a read_type column in the input
             params.debug && raw_reads.view()
         }
 
-        // --------------------- set aligner params ----------------------
-        // Add annotation file within the tool options if annotation provided
-        // Add specific options for aligner according to the read type
-        println """check aligner parameters ..."""
-        check_aligner_params( raw_reads, aligner_list, annotation.collect(), aline_processed_params )
-        params.debug && raw_reads.view()
+        // -------------- Warning aligner read_type usage ---------------
+        log.info """Check aligner ..."""
+        check_aligner( raw_reads, aligner_list )
 
         // Initialize channels
         Channel.empty().set{logs}
-        Channel.empty().set{sorted_bam}
-
+       
         // extra params
         salmon_index_done = false // to avoid multiple calls to salmon_index
         // ------------------------------------------------------------------------------------------------
@@ -744,8 +743,18 @@ Please specify the read type either by including a read_type column in the input
         params.debug && reads.view()
 
         // ------------------------------------------------------------------------------------------------
+        //                                          ADAPT ALIGNER PARAMETERS 
+        // ------------------------------------------------------------------------------------------------
+        log.info """Adapt aligner parameters ..."""
+        check_aligner_params( raw_reads, aligner_list, annotation.collect(), aline_processed_params )
+        params.debug && raw_reads.view()
+
+        // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 
         // ------------------------------------------------------------------------------------------------
+        // Initialize sorted_bam channel
+        Channel.empty().set{sorted_bam}
+        
         params.debug && log.info('library type alignment')
         // ------------------- BBMAP -----------------
         if ("bbmap" in aligner_list ){
@@ -1260,9 +1269,15 @@ def helpMSG() {
         --help                      prints the help section
 
     General Parameters
-        --reads                     path to the reads file or folder. If a folder is provided, all the files with proper extension in the folder will be used. You can provide remote files (commma separated list).
+        --reads                     path to the reads file, folder or csv. If a folder is provided, all the files with proper extension in the folder will be used. You can provide remote files (commma separated list).
                                     file extension expected : <.fastq.gz>, <.fq.gz>, <.fastq> or <.fq> 
-                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)         
+                                                              for paired reads extra <_R1_001> or <_R2_001> is expected where <R> and <_001> are optional. e.g. <sample_id_1.fastq.gz>, <sample_id_R1.fastq.gz>, <sample_id_R1_001.fastq.gz>)
+                                    csv input expects 6 columns: sample, fastq_1, fastq_2, strandedness, read_type and data_type. 
+                                    fastq_2 is optional and can be empty. Strandedness, read_type and data_type expect same values as corresponding AliNe parameters; If a value is provided via AliNe paramter, it will override the value in the csv file.
+                                    Example of csv file:
+                                        sample,fastq_1,fastq_2,strandedness,read_type,data_type
+                                        control1,path/to/data1.fastq.gz,,auto,short_single,rna
+                                        control2,path/to/data2_R1.fastq.gz,path/to/data2_R2.fastq.gz,auto,short_paired,rna
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
@@ -1310,7 +1325,7 @@ def helpMSG() {
     """
 }
 
-def printAlignerOptions(aligner_list, aline_processed_params) {
+def printAlignerOptions(aligner_list) {
     def sentence = ""
     if ("bbmap" in aligner_list){ 
         sentence += """
@@ -1403,10 +1418,6 @@ def printAlignerOptions(aligner_list, aline_processed_params) {
     subread parameters
         subread_options         : ${params.subread_options}
     """}
-    sentence += """
-    Aligner parameters processed by Aline can be retrieved in ${params.outdir}/${aline_processed_params} file.
-    """
-
     return sentence
 }
 

@@ -57,11 +57,11 @@ process bwamem2 {
       
         if (meta.paired){
             """
-            bwa-mem2 mem ${params.bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
             """
         } else {
             """
-            bwa-mem2 mem ${params.bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
             """
         }
 }

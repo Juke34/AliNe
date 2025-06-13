@@ -80,16 +80,6 @@ process salmon {
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
 
-        // deal with library type 
-        def read_orientation=""
-        if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") ){
-            if (meta.strandedness){ 
-                read_orientation = "-l ${meta.strandedness}"
-            } else {
-                read_orientation = "-l A" // A for automatic
-            }
-        }
-
         // catch filename
         def filename = "${fastq[0].baseName.replace('.fastq','')}_salmon"
        
@@ -104,17 +94,6 @@ process salmon {
                     --output ${filename} > ${filename}.sam 2> ${filename}.log
             """
         } else {
-            // Use read length (--fldMean) and sd (--fldSD) from params?
-            def l_s_params = ""
-            if ( !salmon_options.contains("--fldMean ") ){
-                l_s_params += " --fldMean ${meta.read_length}"
-            }
-            if ( !salmon_options.contains("--fldSD ") ){
-                // 10% of read length will be used as Estimated standard deviation of fragment length
-                def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
-                l_s_params += " --fldSD ${tenPercent}"
-            }
-
             """
                 salmon quant -i ${salmon_index} ${salmon_options} \
                     ${l_s_params} \
