@@ -87,7 +87,6 @@ process salmon {
         if ( meta.paired ){
             """
                 salmon quant -i ${salmon_index} ${salmon_options} \
-                    ${read_orientation} \
                     ${input} \
                     --thread ${task.cpus} \
                     --writeMappings \
@@ -96,8 +95,6 @@ process salmon {
         } else {
             """
                 salmon quant -i ${salmon_index} ${salmon_options} \
-                    ${l_s_params} \
-                    ${read_orientation} \
                     ${input} \
                     --thread ${task.cpus} \
                     --writeMappings \

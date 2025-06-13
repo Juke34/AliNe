@@ -739,15 +739,16 @@ Please specify the read type either by including a read_type column in the input
         .set { sample_to_guess_done }
 
         // ------------------- merge sample_to_guess and sample_to_notguess -------------------
-        reads = sample_to_notguess.concat(sample_to_guess_done)
-        params.debug && reads.view()
+        raw_reads_trim_length_lib = sample_to_notguess.concat(sample_to_guess_done)
+        params.debug && raw_reads_trim_length_lib.view()
 
         // ------------------------------------------------------------------------------------------------
         //                                          ADAPT ALIGNER PARAMETERS 
         // ------------------------------------------------------------------------------------------------
         log.info """Adapt aligner parameters ..."""
-        check_aligner_params( raw_reads, aligner_list, annotation.collect(), aline_processed_params )
-        params.debug && raw_reads.view()
+        check_aligner_params( raw_reads_trim_length_lib, aligner_list, annotation.collect(), aline_processed_params )
+        reads = check_aligner_params.out[0]
+        params.debug && reads.view()
 
         // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 

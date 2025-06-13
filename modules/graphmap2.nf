@@ -51,7 +51,7 @@ process graphmap2 {
         def fileName = AlineUtils.getCleanName(reads)
 
         // Check if the owler option is set
-        if ( meta.graphmap2_options.contains("owler") ){
+        if ( graphmap2_options.contains("owler") ){
 
             if (meta.paired){
                 // For paired-end we concat output 
@@ -72,7 +72,7 @@ process graphmap2 {
         // Align case
         else {
             // add align if absent from the command line
-            if (! meta.graphmap2_options.contains("align") ){
+            if (! graphmap2_options.contains("align") ){
                 graphmap2_options = "align ${graphmap2_options}"
             }
 
