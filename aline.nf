@@ -1454,24 +1454,19 @@ workflow.onComplete {
 /*
 Other aligner?
  - to map ont?
- - Check salmon can be used as aligner?
  - dragmap 
- - bowtie1
- 
-Annotation:
-Star: When annotation is provided star will need read length information to index the reference. 
-If no read length provided by the user and several fastq files are provided, only the first one will be used to get the read length (we perform only one index).
 
 How to add an aliger ?
+-----------------------
 Add a module,
 In aline.nf 
     Add the aligner in the aligner_list
     Import module here
-    If behaves differently depending sequencing techniology add condition in the PARAMS CHECK section
+    If behaves differently depending sequencing techniology add condition in the PARAMS CHECK sections (module bash.nf)
     If tool need read length guessing add it in the LIBRARY TYPE GUESSING to activate the guessing if read length not provided by user.
     Add in help
     Add in printAlignerOptions
-    Add process in the workflow align
+    Add aligner process in the main workflow 
     Think to convert sam to bam if necessary
     Think to sort bam output if necessary 
 Add info in README.md
