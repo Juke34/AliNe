@@ -234,7 +234,7 @@ Please follow the instructions at the [Singularity website](https://docs.sylabs.
 You can first check the available options and parameters by running:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.4.0 --help
+nextflow run Juke34/AliNe -r v1.5.0 --help
 ```
 
 ### Profile
@@ -246,7 +246,7 @@ To run the workflow you must select a profile according to the container platfor
 The command will look like that: 
 
 ```bash
-nextflow run Juke34/AliNe -r v1.4.0 -profile docker <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.5.0 -profile docker <rest of paramaters>
 ```
 
 Another profile is available (/!\\ actually not yet implemented):
@@ -256,7 +256,7 @@ Another profile is available (/!\\ actually not yet implemented):
 The use of the `slurm` profile  will give a command like this one:
 
 ```bash
-nextflow run Juke34/AliNe -r v1.4.0 -profile singularity,slurm <rest of paramaters>
+nextflow run Juke34/AliNe -r v1.5.0 -profile singularity,slurm <rest of paramaters>
 ```
 
 ### Example
@@ -266,7 +266,7 @@ Here, we use the docker container platform, remote read and reference files, spe
 
 ```bash
 nextflow run Juke34/AliNe \
-  -r v1.4.0 \
+  -r v1.5.0 \
   -profile docker \
   --reads https://github.com/Juke34/AliNe/raw/refs/heads/main/test/illumina/yeast_R1.fastq.gz \
   --reference https://raw.githubusercontent.com/Juke34/AliNe/refs/heads/main/test/yeast.fa \
@@ -285,25 +285,25 @@ Test data are included in the AliNe repository in the `test` folder.
 Test with short single reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.4.0
+nextflow run -profile docker,test_illumina_single Juke34/AliNe -r v1.5.0
 ```
 
 Test with short paired reads:
 
 ```bash
-nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.4.0
+nextflow run -profile docker,test_illumina_paired Juke34/AliNe -r v1.5.0
 ```
 
 Test with ont reads:
 
 ```bash
-nextflow run -profile docker,test_ont Juke34/AliNe -r v1.4.0
+nextflow run -profile docker,test_ont Juke34/AliNe -r v1.5.0
 ```
 
 Test with pacbio reads:
 
 ```bash
-nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.4.0
+nextflow run -profile docker,test_pacbio Juke34/AliNe -r v1.5.0
 ```
 
 On success you should get a message looking like this:
