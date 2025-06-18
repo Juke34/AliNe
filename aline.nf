@@ -118,21 +118,24 @@ if( !params.aligner ){
 
 // check read library type parameter
 println """check strandedness parameter: ..."""
-if (! params.strandedness ){
+def strandednessp = params.strandedness
+// params.strandedness can be a string "null" when coming from daisy chaining. To be really null it must be set to null here. It is why we transfer the params.strandedness into strandednessp (p for prameter)
+if (! strandednessp || strandednessp == "null" ) {
+    strandednessp = null
     println """    No value provided by --strandedness"""
     if( via_csv ) {
         println """    value will be taken from the csv file."""
     }
 }
 else {
-    if (params.strandedness instanceof Boolean) {
-        exit 1, "Error: --strandedness parameter needs a value among this list when used (${strandedness_allowed}), currently seen as a boolean <${params.strandedness}>."
+    if (strandednessp instanceof Boolean) {
+        exit 1, "Error: --strandedness parameter needs a value among this list when used (${strandedness_allowed}), currently seen as a boolean <${strandednessp}>."
     } else {
-        if ( params.strandedness ){
-            if ( ! (params.strandedness.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
-                exit 1, "Error: <${params.strandedness}> library type is not accepted, please provide a library type among this list ${strandedness_allowed}."
+        if ( strandednessp ){
+            if ( ! (strandednessp.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
+                exit 1, "Error: <${strandednessp}> strandedness is not accepted, please provide a strandedness among this list ${strandedness_allowed}."
             } else{
-                println """    strandedness set to : ${params.strandedness}"""
+                println """    strandedness set to : ${strandednessp}"""
                 if( via_csv ) {
                     println """    This value will replace any strandedness value found in your csv!"""
                 }
@@ -223,7 +226,7 @@ General Parameters
      aligner                    : ${params.aligner}
      data_type                  : ${params.data_type}
      read_type                  : ${params.read_type}
-     strandedness               : ${params.strandedness}
+     strandedness               : ${strandednessp}
      outdir                     : ${params.outdir}
 
 Report Parameters
@@ -444,7 +447,7 @@ workflow {
                                     }
                                     // strandedness
                                     def libtype = "auto"
-                                    if ( ! params.strandedness ) { // this two parameters have priority over strand found in the csv
+                                    if ( ! strandednessp ) { // this two parameters have priority over strand found in the csv
                                         if (row.strandedness != null) {
                                             libtype_value = row.strandedness.trim().toUpperCase()
                                             if(libtype_value){
@@ -687,8 +690,8 @@ Please specify the read type either by including a read_type column in the input
         // ------------------------------------------------------------------------------------------------
         params.debug && log.info('library type guessing')
 
-        // If params.strandedness is empty, we do not guess strandedness
-        if ( ! params.strandedness ) {
+        // If strandednessp is empty, we do not guess strandedness
+        if ( ! strandednessp ) {
             params.debug && log.info('No value provided for strandedness parameter => strandedness set to null')
             // add set strandedness to null only if not already set (e.g. specific case of salmon short_single reads)
             raw_reads_trim_length.map { meta, files ->
@@ -697,9 +700,9 @@ Please specify the read type either by including a read_type column in the input
                                     }
                                  .set{raw_reads_trim_length_strandedness}
         } else {
-              if ( strandedness_allowed.contains(params.strandedness)){
-                params.debug && log.info("Parameter strandedness in use => strandedness set to ${params.strandedness}.")
-                raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: params.strandedness ], files ] }
+              if ( strandedness_allowed.contains(strandednessp)){
+                params.debug && log.info("Parameter strandedness in use => strandedness set to ${strandednessp}.")
+                raw_reads_trim_length.map { meta, files -> [ meta + [ strandedness: strandednessp ], files ] }
                                      .set{raw_reads_trim_length_strandedness}
               } else {
                 raw_reads_trim_length_strandedness = raw_reads_trim_length
@@ -718,7 +721,6 @@ Please specify the read type either by including a read_type column in the input
                                                                                         }
         // subsample whath has to be subsampled
         sample_to_guess_to_subsampled = sample_to_guess.filter { meta, reads ->  !meta.subsampled }
-        params.debug && log.info('subsample reads for strandedness guessing')
         subsampled_sample_to_guess_to_subsampled = seqtk_sample2(sample_to_guess_to_subsampled)
 
         // Merge all subsampled reads for strandedness guessing
