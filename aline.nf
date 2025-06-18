@@ -450,9 +450,9 @@ workflow {
                                     def libtype = "auto"
                                     if ( ! strandednessp ) { // this two parameters have priority over strand found in the csv
                                         if (row.strandedness != null) {
-                                            libtype_value = row.strandedness.trim().toUpperCase()
+                                            libtype_value = row.strandedness.trim()
                                             if(libtype_value){
-                                                if ( ! ( libtype_value in strandedness_allowed*.toUpperCase()) ){
+                                                if ( ! ( libtype_value.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
                                                     error "The input ${input_csv} file contains an invalid strandedness value: ${libtype_value}. Please provide one of the following values: ${strandedness_allowed}."
                                                 } else {
                                                     libtype = libtype_value
