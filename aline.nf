@@ -423,7 +423,7 @@ workflow {
                                     } else {
                                         fastq1 = file(row.fastq_1.trim())
                                     }
-                                    if(! fastq1.endsWith('bam')) {
+                                    if(! fastq1.toString().endsWith('bam')) {
                                         if (! AlineUtils.is_url(fastq1) ) {
                                                     if (! fastq1.exists() ) {
                                                         error "The input ${fastq1} file does not does not exits!\n"
@@ -530,7 +530,7 @@ workflow {
                                             return tuple(meta, reads)
                                         }
                                     } else {
-                                        log.info "The input file for ${sample_id} sample is a BAM file! Discarded from AliNe alignment..."
+                                         log.info "The input file for ${sample_id} sample is a BAM file! Discarded from AliNe alignment..."
                                     }
                                 }
         }
