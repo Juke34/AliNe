@@ -118,10 +118,9 @@ if( !params.aligner ){
 
 // check read library type parameter
 println """check strandedness parameter: ..."""
-def strandednessp = params.strandedness
+def strandednessp = params.strandedness == "null" ? null : params.strandedness // if read_type is "null" it will be set to null, otherwise it will be the value of params.strandedness
 // params.strandedness can be a string "null" when coming from daisy chaining. To be really null it must be set to null here. It is why we transfer the params.strandedness into strandednessp (p for prameter)
-if (! strandednessp || strandednessp == "null" ) {
-    strandednessp = null
+if (! strandednessp ) {
     println """    No value provided by --strandedness"""
     if( via_csv ) {
         println """    value will be taken from the csv file."""
@@ -167,21 +166,23 @@ if( via_csv ) {
 
 // check read type parameter
 println """check read type parameter: ${params.read_type} ..."""
+def read_typep = params.read_type == "null" ? null : params.read_type // if read_type is "null" it will be set to null, otherwise it will be the value of params.read_type
+
 if( via_csv ) {
-    if( params.read_type ){
-        if ( ! (params.read_type.toLowerCase() in read_type_allowed*.toLowerCase()) ){
-            exit 1, "Error: <${params.read_type}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
+    if( read_typep ){
+        if ( ! (read_typep.toLowerCase() in read_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${read_typep}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
         }
         println """    This value will replace any read_type value found in your csv!"""
     } else {
         println """    No read_type provided by --read_type parameter, value will be taken from the csv file."""
     }
 } else {
-    if( ! params.read_type ){
-        exit 1, "Error: <read_type> parameter is empty, please provide a read type among this list ${read_type_allowed}."
+    if( ! read_typep ){
+        exit 1, "Error: <read_type> parameter is empty it is allowed only when CSV provided as input. Please provide a read type among this list ${read_type_allowed}."
     } else {
-        if ( ! (params.read_type.toLowerCase() in read_type_allowed*.toLowerCase()) ){
-            exit 1, "Error: <${params.read_type}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
+        if ( ! (read_typep.toLowerCase() in read_type_allowed*.toLowerCase()) ){
+            exit 1, "Error: <${read_typep}> read_type not acepted, please provide a read type among this list ${read_type_allowed}."
         }
     }
 }
@@ -225,7 +226,7 @@ General Parameters
      annotation                 : ${params.annotation}
      aligner                    : ${params.aligner}
      data_type                  : ${params.data_type}
-     read_type                  : ${params.read_type}
+     read_type                  : ${read_typep}
      strandedness               : ${strandednessp}
      outdir                     : ${params.outdir}
 
@@ -307,7 +308,7 @@ def fromFilePairs_input
 def via_URL = false
 def read_list=[]
 def per_pair = false // read the reads per pair
-if (params.read_type == "short_paired") {
+if (read_typep == "short_paired") {
         per_pair = true
 }
 
@@ -330,8 +331,8 @@ if( ! via_csv ) {
             }
         }
         // check if the list is a paired list
-        if ( read_list.size() % 2 != 0 && params.read_type == "short_paired") {
-            exit 1, "The list has an odd number of elements which is not in line with read type <${params.read_type}>."
+        if ( read_list.size() % 2 != 0 && read_typep == "short_paired") {
+            exit 1, "The list has an odd number of elements which is not in line with read type <${read_typep}>."
         }
         fromFilePairs_input = read_list
     }
@@ -345,7 +346,7 @@ if( ! via_csv ) {
             }
         }
 
-        if (params.read_type == "short_paired") {
+        if (read_typep == "short_paired") {
             pattern_reads = "_R?[12](_\\d+)?(\\.fastq|\\.fq)(\\.gz)?\$"
             fromFilePairs_input = "${path_reads}*_{,R}{1,2}{,_*}.{fastq,fq}{,.gz}"
         } else{
@@ -368,7 +369,7 @@ if( ! via_csv ) {
             else {
                 println "The input ${path_reads} is a file!\n"
                 fromFilePairs_input = "${path_reads}"
-                if (params.read_type == "short_paired") {
+                if (read_typep == "short_paired") {
                     println "Providing a file is not authorized for (local) paired data! Please provide a folder path or change <read_type> parameter to <short_single>.\n"
                 }
             }
@@ -488,7 +489,7 @@ Please specify the read type either by including a data_type column in the input
                                     // read type
                                     def read_type = null
                                     def pair = false
-                                    if ( !params.read_type ) {
+                                    if ( !read_typep ) {
                                         if (row.read_type != null) {
                                             read_type_value = row.read_type.trim().toLowerCase()
                                             if (read_type_value){
@@ -505,7 +506,7 @@ Please specify the read type either by including a data_type column in the input
 Please specify the read type either by including a read_type column in the input file or by using the --read_type option."""
                                         }
                                     } else {
-                                        read_type = params.read_type
+                                        read_type = read_typep
                                     }
 
                                     // check its is paired or not
@@ -575,10 +576,10 @@ Please specify the read type either by including a read_type column in the input
 
         // ------------------------ read_type ------------------------ 
         // // By default priority to read_type from --read_type over csv value (the same for all csv params e.g. strandedness, data_type)
-        if (params.read_type) {
-            params.debug && log.info("Set read_type and paired meta value from parameter: ${params.read_type}")
-            raw_reads = raw_reads.map { meta, files -> [ meta + [ read_type: params.read_type ], files ] }
-            def pair = params.read_type == "short_paired" ? true : false
+        if (read_typep) {
+            params.debug && log.info("Set read_type and paired meta value from parameter: ${read_typep}")
+            raw_reads = raw_reads.map { meta, files -> [ meta + [ read_type: read_typep ], files ] }
+            pair = (read_typep == "short_paired") ? true : false
             raw_reads = raw_reads.map { meta, files -> [ meta + [ paired: pair ], files ] }
             params.debug && raw_reads.view()
         }
