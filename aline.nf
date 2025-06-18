@@ -423,110 +423,114 @@ workflow {
                                     } else {
                                         fastq1 = file(row.fastq_1.trim())
                                     }
-                                    if (! AlineUtils.is_url(fastq1) ) {
-                                                if (! fastq1.exists() ) {
-                                                    error "The input ${fastq1} file does not does not exits!\n"
-                                                }
-                                    } else {
-                                        log.info "This fastq input is an URL: ${fastq1}"
-                                    }
-                                    // Check input_2/fastq_2 column
-                                    def fastq2;
-                                    if(row.input_2) {
-                                        fastq2 = file(row.input_2.trim())
-                                    } else if (row.fastq_2) {
-                                        fastq2 = file(row.fastq_2.trim())
-                                    }
-                                    if (fastq2){
-                                        if ( ! AlineUtils.is_url(fastq2) ) {
-                                            if (! fastq2.exists() ) {
-                                                error "The input ${fastq2} file does not does not exits!\n"
-                                            }
+                                    if(! fastq1.endsWith('bam')) {
+                                        if (! AlineUtils.is_url(fastq1) ) {
+                                                    if (! fastq1.exists() ) {
+                                                        error "The input ${fastq1} file does not does not exits!\n"
+                                                    }
                                         } else {
                                             log.info "This fastq input is an URL: ${fastq1}"
                                         }
-                                    }
-                                    // strandedness
-                                    def libtype = "auto"
-                                    if ( ! strandednessp ) { // this two parameters have priority over strand found in the csv
-                                        if (row.strandedness != null) {
-                                            libtype_value = row.strandedness.trim()
-                                            if(libtype_value){
-                                                if ( ! ( libtype_value.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
-                                                    error "The input ${input_csv} file contains an invalid strandedness value: ${libtype_value}. Please provide one of the following values: ${strandedness_allowed}."
-                                                } else {
-                                                    libtype = libtype_value
+                                        // Check input_2/fastq_2 column
+                                        def fastq2;
+                                        if(row.input_2) {
+                                            fastq2 = file(row.input_2.trim())
+                                        } else if (row.fastq_2) {
+                                            fastq2 = file(row.fastq_2.trim())
+                                        }
+                                        if (fastq2){
+                                            if ( ! AlineUtils.is_url(fastq2) ) {
+                                                if (! fastq2.exists() ) {
+                                                    error "The input ${fastq2} file does not does not exits!\n"
                                                 }
                                             } else {
-                                                log.info "The input ${input_csv} file contains an empty strandedness for sample ${sample_id}! Setting strandedness to <auto> for this sample."
+                                                log.info "This fastq input is an URL: ${fastq1}"
                                             }
-                                        } else {
-                                            log.info "The input ${input_csv} file does not contain a strandedness column! Seting strandedness to <auto> to all csv samples." 
                                         }
-                                    }
-                                    // data type
-                                    def data_type = null
-                                    if ( !params.data_type ) {
-                                        if (row.data_type != null) {
-                                            data_type_value = row.data_type.trim().toUpperCase()
-                                            if (data_type_value){
-                                                if ( ! ( data_type_value in data_type_allowed*.toUpperCase()) ){
-                                                    error "The input ${input_csv} file contains an invalid data type value: ${data_type_value}. Please provide one of the following values: ${data_type_allowed}."
+                                        // strandedness
+                                        def libtype = "auto"
+                                        if ( ! strandednessp ) { // this two parameters have priority over strand found in the csv
+                                            if (row.strandedness != null) {
+                                                libtype_value = row.strandedness.trim()
+                                                if(libtype_value){
+                                                    if ( ! ( libtype_value.toUpperCase() in strandedness_allowed*.toUpperCase()) ){
+                                                        error "The input ${input_csv} file contains an invalid strandedness value: ${libtype_value}. Please provide one of the following values: ${strandedness_allowed}."
+                                                    } else {
+                                                        libtype = libtype_value
+                                                    }
                                                 } else {
-                                                    data_type = data_type_value
+                                                    log.info "The input ${input_csv} file contains an empty strandedness for sample ${sample_id}! Setting strandedness to <auto> for this sample."
                                                 }
                                             } else {
-                                                error "The input ${input_csv} file contains an empty data_type value for sample ${sample_id}!"
+                                                log.info "The input ${input_csv} file does not contain a strandedness column! Seting strandedness to <auto> to all csv samples." 
+                                            }
+                                        }
+                                        // data type
+                                        def data_type = null
+                                        if ( !params.data_type ) {
+                                            if (row.data_type != null) {
+                                                data_type_value = row.data_type.trim().toUpperCase()
+                                                if (data_type_value){
+                                                    if ( ! ( data_type_value in data_type_allowed*.toUpperCase()) ){
+                                                        error "The input ${input_csv} file contains an invalid data type value: ${data_type_value}. Please provide one of the following values: ${data_type_allowed}."
+                                                    } else {
+                                                        data_type = data_type_value
+                                                    }
+                                                } else {
+                                                    error "The input ${input_csv} file contains an empty data_type value for sample ${sample_id}!"
+                                                }
+                                            } else {
+                                                error """Error: The input file ${input_csv} does not contain a data_type column, and the --data_type parameter was not provided.
+    Please specify the read type either by including a data_type column in the input file or by using the --data_type option."""
                                             }
                                         } else {
-                                            error """Error: The input file ${input_csv} does not contain a data_type column, and the --data_type parameter was not provided.
-Please specify the read type either by including a data_type column in the input file or by using the --data_type option."""
+                                            data_type = params.data_type
                                         }
-                                    } else {
-                                        data_type = params.data_type
-                                    }
 
-                                    // read type
-                                    def read_type = null
-                                    def pair = false
-                                    if ( !read_typep ) {
-                                        if (row.read_type != null) {
-                                            read_type_value = row.read_type.trim().toLowerCase()
-                                            if (read_type_value){
-                                                if ( ! ( read_type_value in read_type_allowed*.toLowerCase()) ){
-                                                    error "The input ${input_csv} file contains an invalid read type value: ${read_type_value}. Please provide one of the following values: ${read_type_allowed}."
+                                        // read type
+                                        def read_type = null
+                                        def pair = false
+                                        if ( !read_typep ) {
+                                            if (row.read_type != null) {
+                                                read_type_value = row.read_type.trim().toLowerCase()
+                                                if (read_type_value){
+                                                    if ( ! ( read_type_value in read_type_allowed*.toLowerCase()) ){
+                                                        error "The input ${input_csv} file contains an invalid read type value: ${read_type_value}. Please provide one of the following values: ${read_type_allowed}."
+                                                    } else {
+                                                        read_type = read_type_value
+                                                    }
                                                 } else {
-                                                    read_type = read_type_value
+                                                    error "The input ${input_csv} file contains an empty read_type value for sample ${sample_id}!"
                                                 }
                                             } else {
-                                                error "The input ${input_csv} file contains an empty read_type value for sample ${sample_id}!"
+                                                error """Error: The input file ${input_csv} does not contain a read_type column, and the --read_type parameter was not provided.
+    Please specify the read type either by including a read_type column in the input file or by using the --read_type option."""
                                             }
                                         } else {
-                                            error """Error: The input file ${input_csv} does not contain a read_type column, and the --read_type parameter was not provided.
-Please specify the read type either by including a read_type column in the input file or by using the --read_type option."""
+                                            read_type = read_typep
                                         }
-                                    } else {
-                                        read_type = read_typep
-                                    }
 
-                                    // check its is paired or not
-                                    if ( fastq2 ) {
-                                        if (read_type == "short_paired") {
-                                            pair = true
+                                        // check its is paired or not
+                                        if ( fastq2 ) {
+                                            if (read_type == "short_paired") {
+                                                pair = true
+                                            } else {
+                                                log.info "The input ${input_csv} file contains a second fastq file for sample ${sample_id} but the read_type is set to <${read_type}>! R2 will not be taken into account! paired set to false."
+                                            }
                                         } else {
-                                            log.info "The input ${input_csv} file contains a second fastq file for sample ${sample_id} but the read_type is set to <${read_type}>! R2 will not be taken into account! paired set to false."
+                                            if (read_type == "short_paired") {
+                                                error "The input ${input_csv} file does not contain a second fastq file for sample ${sample_id} but the read_type is set to <short_paired>!"
+                                            }
+                                        }
+                                        // Create a tuple with metadata and reads
+                                        def meta = [ id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
+                                        def reads = pair ? [fastq1, fastq2] : fastq1
+                                        // Return only if the fastq file(s) extension are valid
+                                        if ( AlineUtils.is_fastq( fastq1.toString() ) and ( ! fastq2 || AlineUtils.is_fastq( fastq2.toString() ) ) ){
+                                            return tuple(meta, reads)
                                         }
                                     } else {
-                                        if (read_type == "short_paired") {
-                                            error "The input ${input_csv} file does not contain a second fastq file for sample ${sample_id} but the read_type is set to <short_paired>!"
-                                        }
-                                    }
-                                    // Create a tuple with metadata and reads
-                                    def meta = [ id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
-                                    def reads = pair ? [fastq1, fastq2] : fastq1
-                                    // Return only if the fastq file(s) extension are valid
-                                    if ( AlineUtils.is_fastq( fastq1.toString() ) and ( ! fastq2 || AlineUtils.is_fastq( fastq2.toString() ) ) ){
-                                        return tuple(meta, reads)
+                                        log.info "The input file for ${sample_id} sample is a BAM file! Discarded from AliNe alignment..."
                                     }
                                 }
         }
