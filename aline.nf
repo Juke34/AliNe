@@ -1152,7 +1152,7 @@ workflow {
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
             prepare_star_index_options(first_file, annotation.collect())
-            star_index(reference.collect(), prepare_star_index_options.out, annotation, "alignment/star/indicies") // index
+            star_index(reference.collect(), prepare_star_index_options.out, annotation.collect(), "alignment/star/indicies") // index
             star(reads, star_index.out.collect(), annotation.collect(), "alignment/star") // align out is bam and sorted
             logs.concat(star.out.star_summary).set{logs} // save log
             star.out.splice_junctions.collect().set{splice_junctions} // save splice junction files
