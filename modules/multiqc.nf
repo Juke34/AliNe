@@ -12,6 +12,6 @@ process multiqc {
 
     script:
         """
-        multiqc -p . -c ${multiqc_config}
+        multiqc . -c ${multiqc_config}
         """
 }
