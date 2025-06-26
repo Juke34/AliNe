@@ -74,8 +74,6 @@ params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 // other
 params.help = null
 params.seqtk_sample_size = 10000 // number of reads to sample for seqtk - used to determnine the library type
-//bbmap_tool = "bbmap.sh"
-//star_tool = "STAR"
 params.debug = false
 
 //*************************************************
