@@ -183,7 +183,7 @@ process check_aligner_params{
     input:
         tuple val(meta), path(fastq)
         val aligner_list
-        val annotation
+        path annotation
         val outpath
 
     output:
