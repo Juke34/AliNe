@@ -27,7 +27,7 @@ params.relax = false // Avoid to automatically set option specific to ready type
 // Read feature params
 strandedness_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR', 'auto' ]
 params.strandedness = ""
-params.read_length = "" // Use by star to set the sjdbOverhang parameter
+params.read_length = "" // Used by star to set the sjdbOverhang parameter but also by some other aligners
 // annotation is used by different aligner (star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
 // If process receive a file wich is not the fake one it includes the file in the command. To append the options of aligner we will use the annotation_file variable
 // While the processes will be called sending the "annotation" channel created by the prepare_annotation process.
@@ -228,9 +228,17 @@ General Parameters
      strandedness               : ${strandednessp}
      outdir                     : ${params.outdir}
 
-Report Parameters
+Optional Parameters
+     seqtk_sample_size          : ${params.seqtk_sample_size}
+     read_length                : ${params.read_length}
+     relax                      : ${params.relax}
+
+Extra step paramesters
+    trimming_fastp              : ${params.trimming_fastp}
     fastqc                      : ${params.fastqc}
     samtools_stats              : ${params.samtools_stats}
+
+Report Parameters
     multiqc_config              : ${params.multiqc_config}
 
 Aligner Parameters (provided by user)
@@ -1295,6 +1303,10 @@ def helpMSG() {
         --strandedness              Set the strandedness of your reads (no default). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: ${strandedness_allowed}. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
+        --read_length               Length of the reads, if none provided it is automatically deduced. [Optional, used by STAR, Salmon, Kallisto]
+        --seqtk_sample_size         Number of reads to sample from the input reads (default: 10000). The subsamples are used to guess strandedness and read_length. 
+                                    Note that this step is not needed if the library type and strandedness are provided via AliNe parameters.
+
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false)
@@ -1324,9 +1336,12 @@ def helpMSG() {
         --star_options              additional options for star
         --star_index_options        additional options for star index
         --star_2pass                set to true to run STAR in 2pass mode (default: false)
-        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
+
+    Other
+        --monochrome_logs           set to true to disable color in logs (default: false)
+        --relax                     set to true to disable aligner parameter changes made by AliNe (default: false) 
 
     """
 }

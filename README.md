@@ -345,6 +345,9 @@ On success you should get a message looking like this:
         --strandedness              Set the library_type of your reads (default: auto). In auto mode salmon will guess the library type for each sample.
                                     If you know the library type you can set it to one of the following: [U, IU, MU, OU, ISF, ISR, MSF, MSR, OSF, OSR]. See https://salmon.readthedocs.io/en/latest/library_type.html for more information.
                                     In such case the sample library type will be used for all the samples.
+        --read_length               Length of the reads, if none provided it is automatically deduced. [Optional, used by STAR, Salmon, Kallisto]
+        --seqtk_sample_size         Number of reads to sample from the input reads (default: 10000). The subsamples are used to guess strandedness and read_length. 
+                                    Note that this step is not needed if the library type and strandedness are provided via AliNe parameters.
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
@@ -375,9 +378,13 @@ On success you should get a message looking like this:
         --star_options              additional options for star
         --star_index_options        additional options for star index
         --star_2pass                set to true to run STAR in 2pass mode (default: false)
-        --read_length               [Optional][used by STAR] length of the reads, if none provided it is automatically deduced
         --subread_options           additional options for subread
         --sublong_options           additional options for sublong
+
+    Other
+        --monochrome_logs           set to true to disable color in logs (default: false)
+        --relax                     set to true to disable aligner parameter changes made by AliNe (default: false) 
+
 ```
 
 ## Output
