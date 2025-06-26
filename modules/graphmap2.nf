@@ -77,22 +77,21 @@ process graphmap2 {
             }
 
             // For paired-end we concat output 
-            if (meta.paired){
-                
+            if (meta.paired){    
                 """
                 graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[0]}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
                 graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[1]}  -o ${reads[1].baseName}_graphmap2.sam 2> ${reads[1].baseName}_graphmap2.log
                 
-                # Merge sam
-                cat ${fileName}_graphmap2.sam > ${fileName}_graphmap2_concatR1R2.sam
+                # Merge sam - and remove duplicates @SQ when using annotation
+                awk -F'\t' '/^@SQ/ { split(\$2, sn, ":"); if (++seen[sn[2]] > 1) next } 1' ${fileName}_graphmap2.sam > ${fileName}_graphmap2_concatR1R2.sam
                 rm ${fileName}_graphmap2.sam
                 awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}_graphmap2.sam >> ${fileName}_graphmap2_concatR1R2.sam
                 rm ${reads[1].baseName}_graphmap2.sam
                 """
             } else {
                 """
-                
-                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[0]}  -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
+                graphmap2 ${graphmap2_options} -i ${graphmap2_index_files} -t ${task.cpus} -r ${genome} -d ${reads[0]} -o ${fileName}_graphmap2.sam 2> ${fileName}_graphmap2.log
+                sed -i '\$!N; /^\\(.*\\)\\n\\1\$/!P; D' ${fileName}_graphmap2.sam
                 """
             }
         }
