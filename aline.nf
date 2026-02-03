@@ -450,7 +450,7 @@ workflow {
                                                     error "The input ${fastq2} file does not does not exits!\n"
                                                 }
                                             } else {
-                                                log.info "This fastq input is an URL: ${fastq1}"
+                                                log.info "This fastq input is an URL: ${fastq2}"
                                             }
                                         }
                                         // strandedness
