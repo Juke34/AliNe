@@ -26,11 +26,12 @@ process subread_index {
 
 /*
 * To align with subread
+* Particularity it is directly sorted by coordinates
 */
 process subread {
     label 'subread'
     tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*subread.vcf", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         tuple val(meta), path(fastq)
@@ -41,8 +42,9 @@ process subread {
 
     output:
         tuple val(meta), path ("*.bam"), emit: tuple_sample_bam, optional:true
+        path "*.bai", emit: subread_bai
         path "*subread.vcf", emit: subread_vcf, optional:true
-        path "*.log", emit: sublong_log
+        path "*.log", emit: subread_log
 
     script:
         // options for subread
