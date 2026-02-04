@@ -73,7 +73,7 @@ process star_index {
 process star {
     label 'star'
     tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
         tuple val(meta), path(reads)
@@ -137,7 +137,7 @@ For a study with multiple samples, it is recommended to collect 1st pass junctio
 process star2pass{
     label 'star'
     tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
         tuple val(meta), path(reads)
@@ -149,6 +149,8 @@ process star2pass{
     output:
         tuple val(meta), path ("*.bam"), emit: tuple_sample_bam
         path "*.out",  emit: star_summary
+        path "*SJ.out.tab", emit: splice_junctions
+
 
     script:
         // options for STAR

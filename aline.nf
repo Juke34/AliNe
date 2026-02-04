@@ -70,6 +70,7 @@ params.sublong_options    = ''
 params.fastqc = false
 params.samtools_stats = false
 params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
+params.cram = false
 
 // other
 params.help = null
@@ -214,6 +215,15 @@ if ("novoalign" in aligner_list ){
     }
 }
 
+// check fastqc and cram compatibility
+if (params.fastqc && params.cram) {
+    println """
+    WARNING: FastQC cannot process CRAM files directly. 
+    Since --cram is enabled, --fastqc will be automatically disabled for alignment output files.
+    FastQC will only run on raw and trimmed FASTQ files (if applicable).
+    """
+}
+
 //*************************************************
 // STEP 1 - LOG INFO
 //*************************************************
@@ -240,6 +250,7 @@ Extra step paramesters
 
 Report Parameters
     multiqc_config              : ${params.multiqc_config}
+    cram                        : ${params.cram}
 
 Aligner Parameters (provided by user)
 """
@@ -257,14 +268,15 @@ include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {bwamem2_index; bwamem2} from "$baseDir/modules/bwamem2.nf"
-include {seqkit_convert} from "$baseDir/modules/seqkit.nf"
+include {seqkit_convert; seqkit_clean_fasta_headers} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
-include {fastqc as fastqc_raw; fastqc as fastqc_fastp; fastqc as fastqc_ali_bbmap; fastqc as fastqc_ali_bowtie ; fastqc as fastqc_ali_bowtie2 ; 
-         fastqc as fastqc_ali_bwaaln; fastqc as fastqc_ali_bwamem; fastqc as fastqc_ali_bwamem2; fastqc as fastqc_ali_bwasw; fastqc as fastqc_ali_graphmap2 ; 
-         fastqc as fastqc_ali_hisat2; fastqc as fastqc_ali_kallisto; fastqc as fastqc_ali_last; fastqc as fastqc_ali_minimap2; fastqc as fastqc_ali_ngmlr; 
-         fastqc as fastqc_ali_novoalign ; fastqc as fastqc_ali_nucmer;  fastqc as fastqc_ali_salmon; fastqc as fastqc_ali_star; fastqc as fastqc_ali_subread ; 
-         fastqc as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
+include {fastqc as fastqc_raw; fastqc as fastqc_fastp} from "$baseDir/modules/fastqc.nf"
+include {fastqc_ali as fastqc_ali_bbmap; fastqc_ali as fastqc_ali_bowtie ; fastqc_ali as fastqc_ali_bowtie2 ; 
+    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_graphmap2 ; 
+    fastqc_ali as fastqc_ali_hisat2; fastqc_ali as fastqc_ali_kallisto; fastqc_ali as fastqc_ali_last; fastqc_ali as fastqc_ali_minimap2; fastqc_ali as fastqc_ali_ngmlr; 
+    fastqc_ali as fastqc_ali_novoalign ; fastqc_ali as fastqc_ali_nucmer;  fastqc_ali as fastqc_ali_salmon; fastqc_ali as fastqc_ali_star; fastqc_ali as fastqc_ali_subread ; 
+    fastqc_ali as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
 include {hisat2_index; hisat2} from "$baseDir/modules/hisat2.nf"
 include {kallisto_index; kallisto} from "$baseDir/modules/kallisto.nf"
 include {last_index; last} from "$baseDir/modules/last.nf"
@@ -280,9 +292,10 @@ include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; s
          samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
          samtools_sam2bam as samtools_sam2bam_last; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign; samtools_sam2bam as samtools_sam2bam_salmon } from "$baseDir/modules/samtools.nf"
+include {samtools_bam2cram as samtools_bam2cram_star; samtools_bam2cram as samtools_bam2cram_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
          samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
-         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
+         samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_kallisto; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
          samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie; samtools_stats as samtools_stats_ali_bowtie2 ;
@@ -292,6 +305,11 @@ include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_merge_bam_if_paired} from "$baseDir/modules/samtools.nf"
+include {samtools_index as samtools_index_bbmap; samtools_index as samtools_index_bowtie; samtools_index as samtools_index_bowtie2; samtools_index as samtools_index_bwaaln;
+         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_graphmap2;
+         samtools_index as samtools_index_hisat2; samtools_index as samtools_index_kallisto; samtools_index as samtools_index_last; samtools_index as samtools_index_minimap2;
+         samtools_index as samtools_index_ngmlr; samtools_index as samtools_index_novoalign; samtools_index as samtools_index_nucmer; samtools_index as samtools_index_salmon;
+         samtools_index as samtools_index_star; samtools_index as samtools_index_subread; samtools_index as samtools_index_sublong} from "$baseDir/modules/samtools.nf"
 include {seqtk_sample; seqtk_sample as seqtk_sample2} from "$baseDir/modules/seqtk.nf" 
 include {subread_index; subread; sublong_index; sublong} from "$baseDir/modules/subread.nf"
 include {prepare_star_index_options; star_index; star; star2pass} from "$baseDir/modules/star.nf"
@@ -561,7 +579,9 @@ workflow {
             .set{reference_raw}
         // uncompress it if needed because some aligner need the reference to be uncompressed (e.g. histat2)
         fasta_uncompress(reference_raw)
-        fasta_uncompress.out.genomeFa.set{reference} // set reference to the output of fasta_uncompress
+        // clean fasta headers to avoid issues with CRAM and other tools
+        seqkit_clean_fasta_headers(fasta_uncompress.out.genomeFa, "reference")
+        seqkit_clean_fasta_headers.out.clean_fasta.set{reference} // set reference to the cleaned fasta
        
         // ------------------------ deal with annotation file ------------------------
         def annotation_provided = null
@@ -766,8 +786,8 @@ workflow {
         // ------------------------------------------------------------------------------------------------
         //                                          ALIGNEMENT 
         // ------------------------------------------------------------------------------------------------
-        // Initialize sorted_bam channel
-        Channel.empty().set{sorted_bam}
+        // Initialize sorted_ali channel
+        Channel.empty().set{sorted_ali}
         
         params.debug && log.info('library type alignment')
         // ------------------- BBMAP -----------------
@@ -777,13 +797,15 @@ workflow {
             // align
             bbmap(reads, reference.collect(), bbmap_index.out.collect(), "alignment/bbmap")
             logs.concat(bbmap.out.bbmap_summary).set{logs} // save log
-            // sort
-            samtools_sort_bbmap(bbmap.out.tuple_sample_bam, "alignment/bbmap")
-            samtools_sort_bbmap.out.tuple_sample_sortedbam.set{bbmap_ali} // set name
+            // sort and convert to cram
+            samtools_sort_bbmap(bbmap.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_bbmap(samtools_sort_bbmap.out, "alignment/bbmap")
+            samtools_index_bbmap.out.tuple_sample_ali.set{bbmap_ali} // set name
             // save aligned reads
-            sorted_bam.concat(bbmap_ali).set{sorted_bam} 
+            sorted_ali.concat(bbmap_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_bbmap(bbmap_ali, "fastqc/bbmap", "bbmap")
                 logs.concat(fastqc_ali_bbmap.out).set{logs} // save log
             }
@@ -800,13 +822,15 @@ workflow {
             logs.concat(bowtie.out.bowtie_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bowtie(bowtie.out.tuple_sample_sam)
-            // sort
-            samtools_sort_bowtie(samtools_sam2bam_bowtie.out.tuple_sample_bam, "alignment/bowtie")
-            samtools_sort_bowtie.out.tuple_sample_sortedbam.set{bowtie_ali} // set name
+            // sort and convert to cram
+            samtools_sort_bowtie(samtools_sam2bam_bowtie.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_bowtie(samtools_sort_bowtie.out, "alignment/bowtie")
+            samtools_index_bowtie.out.tuple_sample_ali.set{bowtie_ali} // set name
             // save aligned reads
-            sorted_bam.concat(bowtie_ali).set{sorted_bam}
+            sorted_ali.concat(bowtie_ali).set{sorted_ali}
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_bowtie(bowtie_ali, "fastqc/bowtie", "bowtie")
                 logs.concat(fastqc_ali_bowtie.out).set{logs} // save log
             }
@@ -825,13 +849,15 @@ workflow {
             logs.concat(bowtie2.out.bowtie2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bowtie2(bowtie2.out.tuple_sample_sam)
-            // sort
-            samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, "alignment/bowtie2")
-            samtools_sort_bowtie2.out.tuple_sample_sortedbam.set{bowtie2_ali} // set name
+            // sort and convert to cram
+            samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_bowtie2(samtools_sort_bowtie2.out, "alignment/bowtie2")
+            samtools_index_bowtie2.out.tuple_sample_ali.set{bowtie2_ali} // set name
             // save aligned reads
-            sorted_bam.concat(bowtie2_ali).set{sorted_bam} 
+            sorted_ali.concat(bowtie2_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_bowtie2(bowtie2_ali, "fastqc/bowtie2", "bowtie2")
                 logs.concat(fastqc_ali_bowtie2.out).set{logs} // save log
             }
@@ -851,13 +877,15 @@ workflow {
                 logs.concat(bwaaln.out.bwaaln_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwaaln(bwaaln.out.tuple_sample_sam)
-                // sort
-                samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, "alignment/bwa/bwaaln")
-                samtools_sort_bwaaln.out.tuple_sample_sortedbam.set{bwaaln_ali} // set name
+                // sort and convert to cram
+                samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwaaln(samtools_sort_bwaaln.out, "alignment/bwa/bwaaln")
+                samtools_index_bwaaln.out.tuple_sample_ali.set{bwaaln_ali} // set name
                 // save aligned reads
-                sorted_bam.concat(bwaaln_ali).set{sorted_bam} 
+                sorted_ali.concat(bwaaln_ali).set{sorted_ali} 
                 // stat on aligned reads
-                if(params.fastqc){
+                if(params.fastqc && !params.cram){
                     fastqc_ali_bwaaln(bwaaln_ali, "fastqc/bwaaln", "bwaaln")
                     logs.concat(fastqc_ali_bwaaln.out).set{logs} // save log
                 }
@@ -872,13 +900,15 @@ workflow {
                 logs.concat(bwamem.out.bwamem_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwamem(bwamem.out.tuple_sample_sam)
-                // sort
-                samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, "alignment/bwa/bwamem")
-                samtools_sort_bwamem.out.tuple_sample_sortedbam.set{bwamem_ali} // set name
+                // sort and convert to cram
+                samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwamem(samtools_sort_bwamem.out, "alignment/bwa/bwamem")
+                samtools_index_bwamem.out.tuple_sample_ali.set{bwamem_ali} // set name
                 // save aligned reads
-                sorted_bam.concat(bwamem_ali).set{sorted_bam} 
+                sorted_ali.concat(bwamem_ali).set{sorted_ali} 
                 // stat on aligned reads
-                if(params.fastqc){
+                if(params.fastqc && !params.cram){
                     fastqc_ali_bwamem(bwamem_ali, "fastqc/bwamem", "bwamem")
                     logs.concat(fastqc_ali_bwamem.out).set{logs} // save log
                 }
@@ -893,13 +923,15 @@ workflow {
                 logs.concat(bwasw.out.bwasw_summary).set{logs} // save log
                 // convert sam to bam
                 samtools_sam2bam_bwasw(bwasw.out.tuple_sample_sam)
-                // sort
-                samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, "alignment/bwa/bwasw")
-                samtools_sort_bwasw.out.tuple_sample_sortedbam.set{bwasw_ali} // set name
+                // sort and convert to cram
+                samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwasw(samtools_sort_bwasw.out, "alignment/bwa/bwasw")
+                samtools_index_bwasw.out.tuple_sample_ali.set{bwasw_ali} // set name
                 // save aligned reads
-                sorted_bam.concat(bwasw_ali).set{sorted_bam} 
+                sorted_ali.concat(bwasw_ali).set{sorted_ali} 
                 // stat on aligned reads
-                if(params.fastqc){
+                if(params.fastqc && !params.cram){
                     fastqc_ali_bwasw(bwasw_ali, "fastqc/bwasw", "bwasw")
                     logs.concat(fastqc_ali_bwasw.out).set{logs} // save log
                 }
@@ -919,13 +951,15 @@ workflow {
             logs.concat(bwamem2.out.bwamem2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_bwamem2(bwamem2.out.tuple_sample_sam)
-            // sort
-            samtools_sort_bwamem2(samtools_sam2bam_bwamem2.out.tuple_sample_bam, "alignment/bwamem2/")
-            samtools_sort_bwamem2.out.tuple_sample_sortedbam.set{bwamem2_ali} // set name
+            // sort and convert to cram
+            samtools_sort_bwamem2(samtools_sam2bam_bwamem2.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_bwamem2(samtools_sort_bwamem2.out, "alignment/bwamem2/")
+            samtools_index_bwamem2.out.tuple_sample_ali.set{bwamem2_ali} // set name
             // save aligned reads
-            sorted_bam.concat(bwamem2_ali).set{sorted_bam} 
+            sorted_ali.concat(bwamem2_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_bwamem2(bwamem2_ali, "fastqc/bwamem2", "bwamem2")
                 logs.concat(fastqc_ali_bwamem2.out).set{logs} // save log
             }
@@ -944,13 +978,15 @@ workflow {
             logs.concat(graphmap2.out.graphmap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_graphmap2(graphmap2.out.tuple_sample_sam)
-            // sort
-            samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, "alignment/graphmap2")
-            samtools_sort_graphmap2.out.tuple_sample_sortedbam.set{graphmap2_ali} // set name
+            // sort and convert to cram
+            samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_graphmap2(samtools_sort_graphmap2.out, "alignment/graphmap2")
+            samtools_index_graphmap2.out.tuple_sample_ali.set{graphmap2_ali} // set name
             // save aligned reads
-            sorted_bam.concat(graphmap2_ali).set{sorted_bam} 
+            sorted_ali.concat(graphmap2_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_graphmap2(graphmap2_ali, "fastqc/graphmap2", "graphmap2")
                 logs.concat(fastqc_ali_graphmap2.out).set{logs} // save log
             }
@@ -969,13 +1005,15 @@ workflow {
             logs.concat(hisat2.out.hisat2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_hisat2(hisat2.out.tuple_sample_sam)
-            // sort
-            samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, "alignment/hisat2")
-            samtools_sort_hisat2.out.tuple_sample_sortedbam.set{hisat2_ali} // set name
+            // sort and convert to cram
+            samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_hisat2(samtools_sort_hisat2.out, "alignment/hisat2")
+            samtools_index_hisat2.out.tuple_sample_ali.set{hisat2_ali} // set name
             // save aligned reads
-            sorted_bam.concat(hisat2_ali).set{sorted_bam} 
+            sorted_ali.concat(hisat2_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_hisat2(hisat2_ali, "fastqc/hisat2", "hisat2")
                 logs.concat(fastqc_ali_hisat2.out).set{logs} // save log
             }
@@ -985,18 +1023,22 @@ workflow {
             }
         }
 
-        // ------------------- KALLISTO -----------------
+        // ------------------- KALLISTO ----------------- output is bam but not sorted and bai missing
         if ("kallisto" in aligner_list){
             // index
             kallisto_index(reference.collect(),  "alignment/kallisto/indicies")
             // align
             kallisto(reads, kallisto_index.out.collect(), "alignment/kallisto")
             logs.concat(kallisto.out.kallisto_summary).set{logs} // save log
-            kallisto.out.tuple_sample_bam.set{kallisto_ali} // set name
+            // sort and convert to cram
+            samtools_sort_kallisto(kallisto.out.tuple_sample_bam, reference.collect())
+            // index bam/cram files
+            samtools_index_kallisto(samtools_sort_kallisto.out, "alignment/kallisto")
+            samtools_index_kallisto.out.tuple_sample_ali.set{kallisto_ali} // set name
             // save aligned reads
-            sorted_bam.concat(kallisto_ali).set{sorted_bam} 
+            sorted_ali.concat(kallisto_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_kallisto(kallisto_ali, "fastqc/kallisto", "kallisto")
                 logs.concat(fastqc_ali_kallisto.out).set{logs} // save log
             }
@@ -1015,13 +1057,15 @@ workflow {
             logs.concat(last.out.last_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_last(last.out.tuple_sample_sam)
-            // sort
-            samtools_sort_last(samtools_sam2bam_last.out.tuple_sample_bam, "alignment/last")
-            samtools_sort_last.out.tuple_sample_sortedbam.set{last_ali} // set name
+            // sort and convert to cram
+            samtools_sort_last(samtools_sam2bam_last.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_last(samtools_sort_last.out, "alignment/last")
+            samtools_index_last.out.tuple_sample_ali.set{last_ali} // set name
             // save aligned reads
-            sorted_bam.concat(last_ali).set{sorted_bam} 
+            sorted_ali.concat(last_ali).set{sorted_ali} 
             // stat on aligned reads
-            if (params.fastqc){
+            if (params.fastqc && !params.cram){
                 fastqc_ali_last(last_ali, "fastqc/last", "last")
                 logs.concat(fastqc_ali_last.out).set{logs} // save log
             }
@@ -1040,13 +1084,15 @@ workflow {
             logs.concat(minimap2.out.minimap2_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_minimap2(minimap2.out.tuple_sample_sam)
-            // sort
-            samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, "alignment/minimap2")
-            samtools_sort_minimap2.out.tuple_sample_sortedbam.set{minimap2_ali} // set name
+            // sort and convert to cram
+            samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_minimap2(samtools_sort_minimap2.out, "alignment/minimap2")
+            samtools_index_minimap2.out.tuple_sample_ali.set{minimap2_ali} // set name
             // save aligned reads
-            sorted_bam.concat(minimap2_ali).set{sorted_bam} 
+            sorted_ali.concat(minimap2_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_minimap2(minimap2_ali, "fastqc/minimap2", "minimap2")
                 logs.concat(fastqc_ali_minimap2.out).set{logs} // save log
             }
@@ -1063,13 +1109,15 @@ workflow {
             logs.concat(ngmlr.out.ngmlr_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_ngmlr(ngmlr.out.tuple_sample_sam)
-            // sort
-            samtools_sort_ngmlr(samtools_sam2bam_ngmlr.out.tuple_sample_bam, "alignment/ngmlr")
-            samtools_sort_ngmlr.out.tuple_sample_sortedbam.set{ngmlr_ali} // set name
+            // sort and convert to cram
+            samtools_sort_ngmlr(samtools_sam2bam_ngmlr.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_ngmlr(samtools_sort_ngmlr.out, "alignment/ngmlr")
+            samtools_index_ngmlr.out.tuple_sample_ali.set{ngmlr_ali} // set name
             // save aligned reads
-            sorted_bam.concat(ngmlr_ali).set{sorted_bam} 
+            sorted_ali.concat(ngmlr_ali).set{sorted_ali} 
             // stat on aligned reads
-            if (params.fastqc){
+            if (params.fastqc && !params.cram){
                 fastqc_ali_ngmlr(ngmlr_ali, "fastqc/ngmlr", "ngmlr")
                 logs.concat(fastqc_ali_ngmlr.out).set{logs} // save log
             }
@@ -1087,13 +1135,15 @@ workflow {
             novoalign(reads, reference.collect(), novoalign_index.out.collect(), novoalign_lic, "alignment/novoalign") 
             // convert sam to bam
             samtools_sam2bam_novoalign(novoalign.out.tuple_sample_sam)
-            // sort
-            samtools_sort_novoalign(samtools_sam2bam_novoalign.out.tuple_sample_bam, "alignment/novoalign")
-            samtools_sort_novoalign.out.tuple_sample_sortedbam.set{novoalign_ali} // set name
+            // sort and convert to cram
+            samtools_sort_novoalign(samtools_sam2bam_novoalign.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_novoalign(samtools_sort_novoalign.out, "alignment/novoalign")
+            samtools_index_novoalign.out.tuple_sample_ali.set{novoalign_ali} // set name
             // save aligned reads
-            sorted_bam.concat(novoalign_ali).set{sorted_bam} 
+            sorted_ali.concat(novoalign_ali).set{sorted_ali} 
             // stat on aligned reads
-            if (params.fastqc){
+            if (params.fastqc && !params.cram){
                 fastqc_ali_novoalign(novoalign_ali, "fastqc/novoalign", "novoalign")
                 logs.concat(fastqc_ali_novoalign.out).set{logs} // save log
             }
@@ -1110,13 +1160,15 @@ workflow {
             // No summary available. To get one we could run show-coords see https://mummer4.github.io/tutorial/tutorial.html
             // convert sam to bam
             samtools_sam2bam_nucmer(nucmer.out.tuple_sample_sam, reference.collect())
-            // sort
-            samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, "alignment/nucmer")
-            samtools_sort_nucmer.out.tuple_sample_sortedbam.set{nucmer_ali} // set name
+            // sort and convert to cram
+            samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_nucmer(samtools_sort_nucmer.out, "alignment/nucmer")
+            samtools_index_nucmer.out.tuple_sample_ali.set{nucmer_ali} // set name
             // save aligned reads
-            sorted_bam.concat(nucmer_ali).set{sorted_bam} 
+            sorted_ali.concat(nucmer_ali).set{sorted_ali} 
             // stat on aligned reads
-            if (params.fastqc){
+            if (params.fastqc && !params.cram){
                 fastqc_ali_nucmer(nucmer_ali, "fastqc/nucmer", "nucmer")
                 logs.concat(fastqc_ali_nucmer.out).set{logs} // save log
             }
@@ -1126,6 +1178,7 @@ workflow {
             }
         }
         
+        // ------------------- salmon -----------------
         if ("salmon" in aligner_list ){
             // index
             if (! salmon_index_done){ // run salmon index only if not already done when libray type is guessed
@@ -1136,13 +1189,15 @@ workflow {
             logs.concat(salmon.out.salmon_summary).set{logs} // save log
             // convert sam to bam
             samtools_sam2bam_salmon(salmon.out.tuple_sample_sam)
-            // sort
-            samtools_sort_salmon(samtools_sam2bam_salmon.out.tuple_sample_bam, "alignment/salmon")
-            samtools_sort_salmon.out.tuple_sample_sortedbam.set{salmon_ali} // set name
+            // sort and convert to cram
+            samtools_sort_salmon(samtools_sam2bam_salmon.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_salmon(samtools_sort_salmon.out, "alignment/salmon")
+            samtools_index_salmon.out.tuple_sample_ali.set{salmon_ali} // set name
             // save aligned reads
-            sorted_bam.concat(salmon_ali).set{sorted_bam} 
+            sorted_ali.concat(salmon_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_salmon(salmon_ali, "fastqc/salmon", "salmon")
                 logs.concat(fastqc_ali_salmon.out).set{logs} // save log
             }
@@ -1152,7 +1207,7 @@ workflow {
             }
         }
 
-        // ------------------- STAR -----------------
+        // ------------------- STAR ----------------- output is sorted bam but bai missing
         if ( "star" in aligner_list ){
             // Take read length information from only one sample for --sjdbOverhang option
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
@@ -1170,10 +1225,18 @@ workflow {
             } else {
                 star.out.tuple_sample_bam.set{star_ali} // save aligned reads
             }
+            // convert to cram if requested
+            if(params.cram){
+                samtools_bam2cram_star(star_ali, reference.collect())
+                samtools_bam2cram_star.out.tuple_sample_ali.set{star_ali}
+            } 
+            // index bam files
+            samtools_index_star(star_ali, "alignment/star")
+            samtools_index_star.out.tuple_sample_ali.set{star_ali}
             // save aligned reads
-            sorted_bam.concat(star_ali).set{sorted_bam} 
+            sorted_ali.concat(star_ali).set{sorted_ali} 
             // stat on aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_star(star_ali, "fastqc/star", "star")
                 logs.concat(fastqc_ali_star.out).set{logs} // save log
             }
@@ -1183,17 +1246,25 @@ workflow {
             }
         }
 
-        // ---------------- subread -----------------
+        // ---------------- subread ----------------- output is sorted bam with bai
         if ( "subread" in aligner_list ){
             // index
             subread_index(reference.collect(), "alignment/subread/indicies")
             // align
             subread(reads, reference.collect(), subread_index.out.collect(), annotation.collect(), "alignment/subread")
             subread.out.tuple_sample_bam.set{subread_ali} // set name
+            // convert to cram if requested
+            if(params.cram){
+                samtools_bam2cram_subread(subread_ali, reference.collect())
+                samtools_bam2cram_subread.out.tuple_sample_ali.set{subread_ali}
+            } 
+            // index bam
+            samtools_index_subread(subread_ali, "alignment/subread")
+            samtools_index_subread.out.tuple_sample_ali.set{subread_ali}
             // save aligned reads
-            sorted_bam.concat(subread_ali).set{sorted_bam}
+            sorted_ali.concat(subread_ali).set{sorted_ali}
             // stat on sorted aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_subread(subread_ali, "fastqc/subread", "subread")
                 logs.concat(fastqc_ali_subread.out).set{logs} // save log
             }
@@ -1212,13 +1283,15 @@ workflow {
             // merge bam if paired
             samtools_merge_bam_if_paired(sublong.out.tuple_sample_bam)
             samtools_merge_bam_if_paired.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
-            // sort
-            samtools_sort_sublong(sublong_ali_tmp, "alignment/sublong")
-            samtools_sort_sublong.out.tuple_sample_sortedbam.set{sublong_ali} // set name
+            // sort and convert to cram
+            samtools_sort_sublong(sublong_ali_tmp, reference.collect())
+            // index bam/cram files
+            samtools_index_sublong(samtools_sort_sublong.out, "alignment/sublong")
+            samtools_index_sublong.out.tuple_sample_ali.set{sublong_ali} // set name
             // save aligned reads
-            sorted_bam.concat(sublong_ali).set{sorted_bam}
+            sorted_ali.concat(sublong_ali).set{sorted_ali}
             // stat on sorted aligned reads
-            if(params.fastqc){
+            if(params.fastqc && !params.cram){
                 fastqc_ali_sublong(sublong_ali, "fastqc/sublong", "sublong")
                 logs.concat(fastqc_ali_sublong.out).set{logs} // save log
             }
@@ -1232,7 +1305,7 @@ workflow {
         multiqc(logs.collect(),params.multiqc_config)
 
     emit:
-        sorted_bam                // channel: [ val(meta), pdf ]
+        sorted_ali                // channel: [ val(meta), path(alignment), path(index) ]
 
 }
 
@@ -1295,6 +1368,7 @@ def helpMSG() {
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
+        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files.
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
@@ -1309,7 +1383,7 @@ def helpMSG() {
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
-        --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --fastqc                    run fastqc on raw and aligned reads (default: false). Note: FastQC will be automatically disabled for alignment files when --cram is enabled.
         --samtools_stats            run samtools stats on aligned reads (default: false)
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 

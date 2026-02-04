@@ -15,7 +15,7 @@ process ngmlr {
         val outpath
 
     output:
-        tuple val(meta), path ("*ngmlr.sam"), emit: tuple_sample_sam, optional:true
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam, optional:true
         path "*.log",  emit: ngmlr_summary
 
     script:

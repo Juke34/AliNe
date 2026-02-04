@@ -60,3 +60,25 @@ process seqkit_convert {
         """
     }
 }
+
+/*
+ * Clean FASTA headers by removing everything after the first space
+ * and create samtools index
+ */
+process seqkit_clean_fasta_headers {
+    label 'seqkit'
+    tag "${fasta.baseName}"
+    publishDir "${params.outdir}/${outpath}", mode: 'copy'
+
+    input:
+        path(fasta)
+        val outpath
+
+    output:
+        path("*.clean.fa"), emit: clean_fasta
+
+    script:
+        """
+            seqkit replace -p " .*" -r "" ${fasta} > ${fasta.baseName}.clean.fa
+        """
+}

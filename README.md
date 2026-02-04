@@ -8,7 +8,7 @@ AliNe (Alignment in Nextflow) - RNAseq DNAseq
 AliNe is a pipeline written in Nextflow that aims to efficiently align reads against a reference using the tools of your choice.  
 
 Input: file, list of file, folder or csv  
-Output: Coordinate sorted BAM file. 
+Output: Coordinate sorted BAM/CRAM file. 
 
 ## Table of Contents
 
@@ -337,6 +337,7 @@ On success you should get a message looking like this:
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
+        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files.
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
@@ -351,7 +352,7 @@ On success you should get a message looking like this:
 
     Extra steps 
         --trimming_fastp            run fastp for trimming (default: false)
-        --fastqc                    run fastqc on raw and aligned reads (default: false)
+        --fastqc                    run fastqc on raw and aligned reads (default: false). Note: FastQC will be automatically disabled for alignment files when --cram is enabled.
         --samtools_stats            run samtools stats on aligned reads (default: false)
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
