@@ -35,7 +35,7 @@ process bwamem2_index {
 */
 process bwamem2 {
     label 'bwamem2'
-    tag "$sample"
+    tag "${meta.id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bwamem2.log", mode: 'copy'
 
     input:
