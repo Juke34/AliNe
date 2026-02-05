@@ -70,26 +70,77 @@ process samtools_merge_bam_if_paired {
 /*
 http://www.htslib.org/doc/samtools-sort.html
 Sort alignments by leftmost coordinates 
+And convert to cram if needed (when samtools_bam2cram can be avoided) to save disk space
 */
 process samtools_sort {
     label 'samtools'
     tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
         tuple val(meta), path(bam)
-        val outpath
+        path(genome_fasta)
 
     output:
-        tuple val(meta), path ("*_sorted.bam"), emit: tuple_sample_sortedbam
+        tuple val(meta), path ("*_sorted.{bam,cram}"), emit: tuple_sample_ali
+
+    script:
+
+        if (params.cram) {
+            """
+                samtools sort -@ ${task.cpus} --reference ${genome_fasta} -o ${bam.baseName}_sorted.cram ${bam}
+            """
+        } else {
+            """
+                samtools sort -@ ${task.cpus} -o ${bam.baseName}_sorted.bam ${bam}
+            """
+        }
+}
+
+
+/*
+http://www.htslib.org/doc/samtools-view.html
+Convert BAM to CRAM format
+*/
+process samtools_bam2cram {
+    label 'samtools'
+    tag "${meta.id}"
+
+    input:
+        tuple val(meta), path(bam)
+        path(genome_fasta)
+
+    output:
+        tuple val(meta), path ("*.cram"), emit: tuple_sample_ali
 
     script:
 
         """
-            samtools sort -@ ${task.cpus} ${bam} -o ${bam.baseName}_sorted.bam  
+           samtools view -C -T ${genome_fasta} -o ${bam.baseName}.cram ${bam}
         """
 }
 
+/*
+http://www.htslib.org/doc/samtools-index.html
+Index BAM or CRAM files
+*/
+process samtools_index {
+    label 'samtools'
+    tag "${meta.id}"
+    publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.bam,*.cram,*.crai,*.bai}"
+
+    input:
+        tuple val(meta), path(alignment)
+        val outpath
+
+    output:
+        tuple val(meta), path(alignment), path ("*.{bai,crai}"), emit: tuple_sample_ali
+
+    script:
+
+        """
+            samtools index ${alignment}
+        """
+}
 
 /*
 http://www.htslib.org/doc/samtools-stats.html
@@ -101,7 +152,7 @@ process samtools_stats {
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
-        tuple val(meta), path(bam)
+        tuple val(meta), path(bam), path(index)
         path(genome_fasta)
         val outpath
         val suffix
