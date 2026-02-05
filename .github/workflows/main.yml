@@ -60,7 +60,7 @@ jobs:
       - name: test short single
         run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
       - name: test short single cram
-        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf --cram
+        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf --cram --filter_unmapped
       - name: test short paired
         run: nextflow run -ansi-log -profile docker,test_illumina_paired aline.nf
       - name: test ont

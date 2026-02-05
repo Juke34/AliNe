@@ -339,7 +339,6 @@ On success you should get a message looking like this:
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwamem, bwamem2, bwasw, dragmap, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, salmon, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
-        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files.
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
@@ -356,6 +355,8 @@ On success you should get a message looking like this:
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false). Note: FastQC will be automatically disabled for alignment files when --cram is enabled.
         --samtools_stats            run samtools stats on aligned reads (default: false)
+        --filter_unmapped           filter out unmapped reads from final alignment files (default: false). Filtering is performed during sorting when possible for optimal performance.
+        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files. Conversion is performed during sorting when possible for optimal performance.
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
     Aligner specific options
