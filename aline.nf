@@ -290,6 +290,7 @@ include {ngmlr} from "$baseDir/modules/ngmlr.nf"
 include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {fasta_uncompress} from "$baseDir/modules/pigz.nf"
+include {r_rendering} from "$baseDir/modules/r.nf"
 include {salmon_index; salmon_guess_lib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
          samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
@@ -1345,6 +1346,9 @@ workflow {
 
         // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
+
+        // ------------------- R rendering -----------------
+        r_rendering(multiqc.out.multiqc_report_data)
 
     emit:
         sorted_ali                // channel: [ val(meta), path(alignment), path(index) ]

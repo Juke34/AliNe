@@ -456,7 +456,8 @@ Here the description of typical ouput you will get from AliNe:
     │
     └── MultiQC                                               # MultiQC folder that aggregate results across many samples into a single report
         ├── multiqc_report.html                               # Report with interactive plots for statistics across many samples.
-        └── multiqc_report_data                               # Plot and data used by the multiqc_report.html
+        ├── multiqc_report_data                               # Plot and data used by the multiqc_report.html
+        └── alignment_comparison.tsv                          # A tsv table summerizing the statistics of the different aligners across all samples.
 ```
 
 ### Statistics
@@ -501,52 +502,7 @@ Some information produced via FastQC or Samtools stats are reported at the top o
 
 <img src="img/multiqc.png" />
 
-In order to facilitate the reading of this `General Statistics` you can export the table in tsv using the `Export as CSV...` button and execute the following piece of R code on the downloaded `general_stats_table.tsv` file :
-
-```R
-# install packages
-install.packages("dplyr")
-install.packages("stringr")
-install.packages("tidyr")
-install.packages("knitr")
-
-# Load necessary libraries
-library(dplyr)
-library(stringr)
-library(tidyr)
-library(knitr)
-
-# Read the TSV file
-file_path <- "general_stats_table.tsv"
-df <- read.delim(file_path, check.names = FALSE)
-
-# clean sample name to remove suffix _*_samtoolsstats
-df$Sample <- df$Sample |> stringr::str_remove_all("_\\d+_samtoolsstats")
-
-# sample name as row name
-rownames(df) <- df$Sample
-
-# remove Sample column and clean up the column names
-tableout <- cbind(ID = rownames(df), stack(df[-1])) |> 
-  transform(ind = as.character(ind) |> stringr::str_remove_all("\\.\\d+"))
-
-# remove na values
-tableout <- tableout[!is.na(tableout$values),]
-# remove . values
-tableout$values <- tableout$values |> stringr::str_remove_all("^\\.$")
-
-# pivot data
-tableout <- tableout |> pivot_wider(id_cols = ID , names_from = ind, values_from = values, 
-              values_fn = \(x) paste(unique(x), collapse = ""))
-
-# round each value to 4 decimals
-tableout <- tableout |> mutate(across(-ID, ~round(as.numeric(.), 4)))
-
-# print with nice output
-knitr::kable(tableout)
-```
-
-You will get a table similar to this one:  
+To make the General Statistics easier to read and compare, AliNe also generates a TSV file named `alignment_comparison.tsv`, located in the `<output_directory>/MultiQC` directory. This file contains the same information as the `General Statistics` table, but in a simpler, tabular format that is more convenient for comparisons. It looks like this:  
 
 ```
 |ID                                  |    Dups| GC|   Seqs| Error rate| Non-primary| Reads mapped| % Mapped| Total seqs|

@@ -73,6 +73,14 @@ module_order:
         path_filters:
           - "*bwasw_*.txt"
     - fastqc:
+        name: "FastQC (dragmap)"
+        path_filters:
+          - "*dragmap_logs/*"
+    - samtools:
+        name: "Samtools stats (dragmap)"
+        path_filters:
+          - "*dragmap_*.txt"
+    - fastqc:
         name: "FastQC (graphmap2)"
         path_filters:
           - "*graphmap2_logs/*"
