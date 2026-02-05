@@ -52,13 +52,15 @@ jobs:
             ${{ runner.os }}-nextflow
       - name: Install Nextflox
         if: ${{ steps.cache-nextflow.outputs.cache-hit != 'true' }}
-        run: curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
+        run: export NXF_VER=24.10.6 && curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
       # Run tests sequentialy
       - name: test short single
         run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
+      - name: test short single cram
+        run: nextflow run -ansi-log -profile docker,test_illumina_single --cram aline.nf
       - name: test short paired
         run: nextflow run -ansi-log -profile docker,test_illumina_paired aline.nf
       - name: test ont
