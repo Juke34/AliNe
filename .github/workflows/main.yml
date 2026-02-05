@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-openjdk-11
       - name: Install openjdk
         if: ${{ steps.cache-openjdk.outputs.cache-hit != 'true' }}
-        run: sudo apt-get install openjdk-11-jdk
+        run: sudo apt-get update && sudo apt-get install -y openjdk-11-jdk
       # Install/cache nextflow
       - name: Cache nextflow
         id: cache-nextflow
