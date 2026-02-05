@@ -87,6 +87,13 @@ process check_aligner{
             }
         }
 
+        // --- dragmap tool ---
+        if ( "dragmap" in aligner_list ){
+            if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                log.info "${meta.id} => Dragmap aligner is not recommended to align long reads!"
+            }
+        }
+
         // --- graphmap2 tool ---
         if ( "graphmap2" in aligner_list ){
             if ( meta.read_type == "short_single" && meta.read_type == "short_paired"){
@@ -327,6 +334,12 @@ process check_aligner_params{
         if ( "bwasw" in aligner_list ){
             def bwasw_options = params.bwasw_options ?: ""
             meta.bwasw_options = bwasw_options
+        }
+
+        // --- dragmap tool ---
+        if ( "dragmap" in aligner_list ){
+            def dragmap_options = params.dragmap_options ?: ""
+            meta.dragmap_options = dragmap_options
         }
 
         // --- graphmap2 tool ---

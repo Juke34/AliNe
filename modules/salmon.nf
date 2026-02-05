@@ -6,7 +6,7 @@ https://github.com/COMBINE-lab/salmon
 process salmon_index {
     label 'salmon'
     tag "$genome_fasta"
-    publishDir "${params.outdir}/${outpath}", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}", mode: 'copy', enabled: params.aligner.contains('salmon')
 
     input:
         path genome_fasta

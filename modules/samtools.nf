@@ -84,22 +84,37 @@ process samtools_sort {
         tuple val(meta), path ("*_sorted.{bam,cram}"), emit: tuple_sample_ali
 
     script:
+        
+        // catch filename
+        def extension = params.filter_unmapped ? "_filtered_sorted" : "_sorted"
+        filename = AlineUtils.getCleanName(bam) + extension
 
         if (params.cram) {
-            """
-                samtools sort -@ ${task.cpus} --reference ${genome_fasta} -o ${bam.baseName}_sorted.cram ${bam}
-            """
+            if (params.filter_unmapped) {
+                """
+                    samtools view -b -F 4 -@ ${task.cpus} ${bam} | samtools sort -@ ${task.cpus} --reference ${genome_fasta} -o ${filename}.cram -
+                """
+            } else {
+                """
+                    samtools sort -@ ${task.cpus} --reference ${genome_fasta} -o ${filename}.cram ${bam}
+                """
+            }
         } else {
-            """
-                samtools sort -@ ${task.cpus} -o ${bam.baseName}_sorted.bam ${bam}
-            """
+            if (params.filter_unmapped) {
+                """
+                    samtools view -b -F 4 -@ ${task.cpus} ${bam} | samtools sort -@ ${task.cpus} -o ${filename}.bam -
+                """
+            } else {
+                """
+                    samtools sort -@ ${task.cpus} -o ${filename}.bam ${bam}
+                """
+            }
         }
 }
 
-
 /*
 http://www.htslib.org/doc/samtools-view.html
-Convert BAM to CRAM format
+Convert BAM to CRAM format (done during sorting when possible for optimal performance, otherwise as a separate step)
 */
 process samtools_bam2cram {
     label 'samtools'
@@ -139,6 +154,26 @@ process samtools_index {
 
         """
             samtools index ${alignment}
+        """
+}
+
+/*
+http://www.htslib.org/doc/samtools-view.html
+Filter unmapped reads from BAM file (done during sorting when possible for optimal performance, otherwise as a separate step)
+*/
+process samtools_view_filter {
+    label 'samtools'
+    tag "${meta.id}"
+
+    input:
+        tuple val(meta), path(bam)
+
+    output:
+        tuple val(meta), path ("*_filtered.bam"), emit: tuple_sample_bam
+
+    script:
+        """
+            samtools view -b -F 4 -@ ${task.cpus} -o ${bam.baseName}_filtered.bam ${bam}
         """
 }
 

@@ -37,7 +37,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options      = ''
 params.bowtie_options     = ''
@@ -46,6 +46,7 @@ params.bwaaln_options     = ''
 params.bwamem_options     = ''
 params.bwamem2_options    = ''
 params.bwasw_options      = ''
+params.dragmap_options    = ''
 params.graphmap2_options  = '' // owler option is possible
 params.hisat2_options     = ''
 params.kallisto_options   = ''
@@ -71,6 +72,7 @@ params.fastqc = false
 params.samtools_stats = false
 params.multiqc_config = "$baseDir/config/multiqc_conf.yml"
 params.cram = false
+params.filter_unmapped = false
 
 // other
 params.help = null
@@ -247,10 +249,11 @@ Extra step paramesters
     trimming_fastp              : ${params.trimming_fastp}
     fastqc                      : ${params.fastqc}
     samtools_stats              : ${params.samtools_stats}
+    cram                        : ${params.cram}
+    filter_unmapped             : ${params.filter_unmapped}
 
 Report Parameters
     multiqc_config              : ${params.multiqc_config}
-    cram                        : ${params.cram}
 
 Aligner Parameters (provided by user)
 """
@@ -268,12 +271,13 @@ include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {bwamem2_index; bwamem2} from "$baseDir/modules/bwamem2.nf"
+include {dragmap_index; dragmap} from "$baseDir/modules/dragmap.nf"
 include {seqkit_convert; seqkit_clean_fasta_headers} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp} from "$baseDir/modules/fastqc.nf"
 include {fastqc_ali as fastqc_ali_bbmap; fastqc_ali as fastqc_ali_bowtie ; fastqc_ali as fastqc_ali_bowtie2 ; 
-    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_graphmap2 ; 
+    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_dragmap; fastqc_ali as fastqc_ali_graphmap2 ; 
     fastqc_ali as fastqc_ali_hisat2; fastqc_ali as fastqc_ali_kallisto; fastqc_ali as fastqc_ali_last; fastqc_ali as fastqc_ali_minimap2; fastqc_ali as fastqc_ali_ngmlr; 
     fastqc_ali as fastqc_ali_novoalign ; fastqc_ali as fastqc_ali_nucmer;  fastqc_ali as fastqc_ali_salmon; fastqc_ali as fastqc_ali_star; fastqc_ali as fastqc_ali_subread ; 
     fastqc_ali as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
@@ -286,27 +290,29 @@ include {ngmlr} from "$baseDir/modules/ngmlr.nf"
 include {nucmer} from "$baseDir/modules/mummer4.nf"
 include {novoalign_index; novoalign} from "$baseDir/modules/novoalign.nf"
 include {fasta_uncompress} from "$baseDir/modules/pigz.nf"
+include {r_rendering} from "$baseDir/modules/r.nf"
 include {salmon_index; salmon_guess_lib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
          samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
-         samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
+         samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_dragmap; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
          samtools_sam2bam as samtools_sam2bam_last; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign; samtools_sam2bam as samtools_sam2bam_salmon } from "$baseDir/modules/samtools.nf"
 include {samtools_bam2cram as samtools_bam2cram_star; samtools_bam2cram as samtools_bam2cram_subread} from "$baseDir/modules/samtools.nf"
+include {samtools_view_filter as samtools_view_filter_star; samtools_view_filter as samtools_view_filter_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
-         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_graphmap2; 
+         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_dragmap; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_kallisto; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
          samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie; samtools_stats as samtools_stats_ali_bowtie2 ;
          samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2;
-         samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
+         samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_dragmap; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
          samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_last; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_merge_bam_if_paired} from "$baseDir/modules/samtools.nf"
 include {samtools_index as samtools_index_bbmap; samtools_index as samtools_index_bowtie; samtools_index as samtools_index_bowtie2; samtools_index as samtools_index_bwaaln;
-         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_graphmap2;
+         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_dragmap; samtools_index as samtools_index_graphmap2;
          samtools_index as samtools_index_hisat2; samtools_index as samtools_index_kallisto; samtools_index as samtools_index_last; samtools_index as samtools_index_minimap2;
          samtools_index as samtools_index_ngmlr; samtools_index as samtools_index_novoalign; samtools_index as samtools_index_nucmer; samtools_index as samtools_index_salmon;
          samtools_index as samtools_index_star; samtools_index as samtools_index_subread; samtools_index as samtools_index_sublong} from "$baseDir/modules/samtools.nf"
@@ -969,6 +975,33 @@ workflow {
             }
         }
 
+        // ------------------- DRAGMAP -----------------
+        if ("dragmap" in aligner_list){
+            // index
+            dragmap_index(reference.collect(), "alignment/dragmap/indicies")
+            // align
+            dragmap(reads, reference.collect(), dragmap_index.out.collect(), "alignment/dragmap")
+            logs.concat(dragmap.out.dragmap_summary).set{logs} // save log
+            // convert sam to bam
+            samtools_sam2bam_dragmap(dragmap.out.tuple_sample_sam)
+            // sort and convert to cram
+            samtools_sort_dragmap(samtools_sam2bam_dragmap.out.tuple_sample_bam, reference.collect())
+            // index
+            samtools_index_dragmap(samtools_sort_dragmap.out, "alignment/dragmap")
+            samtools_index_dragmap.out.tuple_sample_ali.set{dragmap_ali} // set name
+            // save aligned reads
+            sorted_ali.concat(dragmap_ali).set{sorted_ali} 
+            // stat on aligned reads
+            if(params.fastqc && !params.cram){
+                fastqc_ali_dragmap(dragmap_ali, "fastqc/dragmap", "dragmap")
+                logs.concat(fastqc_ali_dragmap.out).set{logs} // save log
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_dragmap(dragmap_ali, reference.collect(), "samtools_stats/dragmap", "dragmap")
+                logs.concat(samtools_stats_ali_dragmap.out).set{logs} // save log
+            }
+        }
+
         // ------------------- GRAPHMAP2 -----------------
         if ("graphmap2" in aligner_list ){
             // index
@@ -1225,6 +1258,11 @@ workflow {
             } else {
                 star.out.tuple_sample_bam.set{star_ali} // save aligned reads
             }
+            // filter unmapped reads if requested
+            if(params.filter_unmapped){
+                samtools_view_filter_star(star_ali)
+                samtools_view_filter_star.out.tuple_sample_bam.set{star_ali}
+            }
             // convert to cram if requested
             if(params.cram){
                 samtools_bam2cram_star(star_ali, reference.collect())
@@ -1253,6 +1291,11 @@ workflow {
             // align
             subread(reads, reference.collect(), subread_index.out.collect(), annotation.collect(), "alignment/subread")
             subread.out.tuple_sample_bam.set{subread_ali} // set name
+            // filter unmapped reads if requested
+            if(params.filter_unmapped){
+                samtools_view_filter_subread(subread_ali)
+                samtools_view_filter_subread.out.tuple_sample_bam.set{subread_ali}
+            }
             // convert to cram if requested
             if(params.cram){
                 samtools_bam2cram_subread(subread_ali, reference.collect())
@@ -1303,6 +1346,9 @@ workflow {
 
         // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
+
+        // ------------------- R rendering -----------------
+        r_rendering(multiqc.out.multiqc_report_data)
 
     emit:
         sorted_ali                // channel: [ val(meta), path(alignment), path(index) ]
@@ -1368,7 +1414,6 @@ def helpMSG() {
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
         --aligner                   aligner(s) to use among this list (comma or space separated) ${align_tools}
         --outdir                    path to the output directory (default: alignment_results)
-        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files.
         --annotation                [Optional][used by STAR, Tophat2] Absolute path to the annotation file (gtf or gff3)
 
     Type of input reads
@@ -1385,6 +1430,8 @@ def helpMSG() {
         --trimming_fastp            run fastp for trimming (default: false)
         --fastqc                    run fastqc on raw and aligned reads (default: false). Note: FastQC will be automatically disabled for alignment files when --cram is enabled.
         --samtools_stats            run samtools stats on aligned reads (default: false)
+        --filter_unmapped           filter out unmapped reads from final alignment files (default: false). Filtering is performed during sorting when possible for optimal performance.
+        --cram                      output alignment files in sorted CRAM format instead of sorted BAM (default: false). This saves disk space but disables FastQC on alignment files. Conversion is performed during sorting when possible for optimal performance.
         --multiqc_config            path to the multiqc config file (default: config/multiqc_conf.yml)
 
     Aligner specific options
@@ -1395,6 +1442,7 @@ def helpMSG() {
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
+        --dragmap_options           additional options for dragmap
         --graphmap2_options         additional options for graphmap2
         --hisat2_options            additional options for hisat2
         --kallisto_options          additional options for kallisto
@@ -1456,6 +1504,11 @@ def printAlignerOptions(aligner_list) {
         sentence += """
     bwasw parameters
         bwasw_options           : ${params.bwasw_options}
+    """} 
+    if ("dragmap" in aligner_list){
+        sentence += """
+    dragmap parameters
+        dragmap_options         : ${params.dragmap_options}
     """} 
     if ("graphmap2" in aligner_list){
         sentence += """

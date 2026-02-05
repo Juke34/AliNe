@@ -7,8 +7,8 @@ process multiqc {
         path multiqc_config
 
     output:
-        path "*multiqc_report.html", optional:true
-        path "*_data", optional:true
+        path "*multiqc_report.html", optional:true, emit: multiqc_report_html
+        path "*_data", optional:true, emit: multiqc_report_data
 
     script:
         """
