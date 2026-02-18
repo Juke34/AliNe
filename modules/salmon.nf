@@ -50,7 +50,7 @@ process salmon_guess_lib {
             # extract the result
             LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
             # change output name
-            mv ${output}/lib_format_counts.json ${output}/${meta.file_id}_lib_format_counts.json
+            mv ${output}/lib_format_counts.json ${output}/${meta.file_id}_AliNe_lib_format_counts.json
         """
 
 }
