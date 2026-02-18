@@ -553,7 +553,8 @@ workflow {
                                             }
                                         }
                                         // Create a tuple with metadata and reads
-                                        def meta = [ id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
+                                        def file_id = AlineUtils.get_file_id(fastq1, read_type)
+                                        def meta = [ file_id: file_id, sample_id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
                                         def reads = pair ? [fastq1, fastq2] : fastq1
                                         // Return only if the fastq file(s) extension are valid
                                         if ( AlineUtils.is_fastq( fastq1.toString() ) and ( ! fastq2 || AlineUtils.is_fastq( fastq2.toString() ) ) ){
@@ -568,7 +569,8 @@ workflow {
             if (via_URL && per_pair){
             my_samples = Channel.of(read_list)
             raw_reads = my_samples.flatten().map { it -> 
-                                                [it.name.split('_')[0], it] }
+                                                def file_id = AlineUtils.get_file_id(it,read_typep)
+                                                [file_id, it] }
                                 .groupTuple()
                                 .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
             } else {
@@ -576,9 +578,9 @@ workflow {
                 raw_reads = Channel.fromFilePairs(fromFilePairs_input, size: per_pair ? 2 : 1, checkIfExists: true)
                     .ifEmpty { exit 1, "Cannot find reads matching ${path_reads}!\n" }
             }
-            raw_reads = raw_reads.map { sample, files -> [ [ id: sample ], files ] }
+            raw_reads = raw_reads.map { file_id, files -> [ [ file_id: file_id ], files ] }
         }
-       
+
         // ------------------------ deal with reference file ------------------------
         Channel.fromPath(params.reference, checkIfExists: true)
             .ifEmpty { exit 1, "Cannot find reference matching ${params.reference}!\n" }
@@ -609,7 +611,7 @@ workflow {
             raw_reads = raw_reads.map { meta, files -> [ meta + [ data_type: params.data_type ], files ] }
             params.debug && raw_reads.view()
         }
-
+        
         // ------------------------ read_type ------------------------ 
         // // By default priority to read_type from --read_type over csv value (the same for all csv params e.g. strandedness, data_type)
         if (read_typep) {
@@ -619,16 +621,19 @@ workflow {
             raw_reads = raw_reads.map { meta, files -> [ meta + [ paired: pair ], files ] }
             params.debug && raw_reads.view()
         }
-
+        
         // -------------- Warning aligner read_type usage ---------------
         log.info """Check aligner ..."""
         check_aligner( raw_reads, aligner_list )
 
+        // -------------- Other ---------------
         // Initialize channels
         Channel.empty().set{logs}
-       
         // extra params
         salmon_index_done = false // to avoid multiple calls to salmon_index
+        // add AliNe suffix for output files - can be used to extract file_id in the output file name 
+        raw_reads = raw_reads.map { meta, files -> [ meta + [ suffix: "_AliNe" ], files ] }
+
         // ------------------------------------------------------------------------------------------------
         //                                          PREPROCESSING 
         // ------------------------------------------------------------------------------------------------
@@ -643,6 +648,7 @@ workflow {
         params.debug && log.info('Standardize Score to Be Phred+33')
         seqkit_convert(raw_reads, "seqkit_score")
         seqkit_convert.out.trimmed.set{raw_reads_standardized}
+
         // ------------------------------------------------------------------------------------------------
         //                                          TRIMMING 
         // ------------------------------------------------------------------------------------------------        
@@ -681,8 +687,8 @@ workflow {
             read_length(subsampled, "mean_read_length")
                 
             // add read length in meta
-            raw_reads_trim.map { meta, fastq -> tuple(meta.id, meta, fastq) }
-                        .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.id, length) })
+            raw_reads_trim.map { meta, fastq -> tuple(meta.file_id, meta, fastq) }
+                        .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.file_id, length) })
                         .map { id, meta, fastq, length ->
                             def updated_meta = meta + [read_length: length, subsampled: true]
                             tuple(updated_meta, fastq)
@@ -703,8 +709,8 @@ workflow {
                 read_length(subsampled, "mean_read_length")
 
                 // add read length in meta
-                raw_reads_trim_short_single.map { meta, fastq -> tuple(meta.id, meta, fastq) }
-                                           .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.id, length) })
+                raw_reads_trim_short_single.map { meta, fastq -> tuple(meta.file_id, meta, fastq) }
+                                           .join(read_length.out.tuple_id_readlength.map { meta, length -> tuple(meta.file_id, length) })
                                            .map { id, meta, fastq, length ->
                                                 def updated_meta = meta + [read_length: length, subsampled: true]
                                                 tuple(updated_meta, fastq)
@@ -751,7 +757,7 @@ workflow {
 
         // catch what is already subsampled
         sample_to_guess_already_subsampled = sample_to_guess.filter { meta, reads -> meta.subsampled }
-        subsample_sample_to_guess_already_subsampled = sample_to_guess_already_subsampled.map { meta, reads -> tuple(meta.id, meta, reads) }
+        subsample_sample_to_guess_already_subsampled = sample_to_guess_already_subsampled.map { meta, reads -> tuple(meta.file_id, meta, reads) }
                                                                                         .join( subsampled.map { meta2, subreads -> tuple(meta2.id, meta2, subreads) } )
                                                                                         .map { id, meta, reads, meta2, subreads ->
                                                                                             tuple(meta2, subreads)
@@ -769,8 +775,8 @@ workflow {
         salmon_guess_lib(all_subsampled_read_guessing, salmon_index_ch, "salmon_strandedness")
 
         // add strandedness in meta
-        sample_to_guess.map { meta, fastq -> tuple(meta.id, meta, fastq) }
-        .join(salmon_guess_lib.out.tuple_id_libtype.map { meta, libtype -> tuple(meta.id, libtype) })
+        sample_to_guess.map { meta, fastq -> tuple(meta.file_id, meta, fastq) }
+        .join(salmon_guess_lib.out.tuple_id_libtype.map { meta, libtype -> tuple(meta.file_id, libtype) })
         .map { id, meta, fastq, libtype ->
             def updated_meta = meta + [strandedness: libtype, subsampled: true]
             tuple(updated_meta, fastq)
@@ -1343,7 +1349,7 @@ workflow {
                 logs.concat(samtools_stats_ali_sublong.out).set{logs} // save log
             }
         }
-
+        logs.view()
         // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
 

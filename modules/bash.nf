@@ -5,7 +5,7 @@ Here are described all processes related to bash
 // A process to compute the mean read length of a FASTQ
 process read_length {
     label 'bash'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*", mode: 'copy'
 
     input:
@@ -29,7 +29,7 @@ This process checks the aligner used according to the read type and inform user 
 */
 process check_aligner{
     label 'bash'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
 
     input:
         tuple val(meta), path(fastq)
@@ -48,21 +48,21 @@ process check_aligner{
         // --- bowtie tool ---
         if ( "bowtie" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Bowtie aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Bowtie aligner is not recommended to align long reads!"
             }
         }
 
         // --- bowtie2 tool ---
         if ( "bowtie2" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Bowtie2 aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Bowtie2 aligner is not recommended to align long reads!"
             }
         }
 
         // --- bwa aln tool ---
         if ( "bwaaln" in aligner_list ){
             if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Bwaaln aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Bwaaln aligner is not recommended to align long reads!"
             }
         }
         
@@ -75,7 +75,7 @@ process check_aligner{
         // --- bwa mem2 tool ---
         if ("bwamem2" in aligner_list ){
             if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Bwamem2 aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Bwamem2 aligner is not recommended to align long reads!"
             }
         }
        
@@ -83,42 +83,42 @@ process check_aligner{
         // --- bwa sw tool ---
         if ( "bwasw" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Bwasw aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Bwasw aligner is not recommended to align long reads!"
             }
         }
 
         // --- dragmap tool ---
         if ( "dragmap" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Dragmap aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Dragmap aligner is not recommended to align long reads!"
             }
         }
 
         // --- graphmap2 tool ---
         if ( "graphmap2" in aligner_list ){
             if ( meta.read_type == "short_single" && meta.read_type == "short_paired"){
-                log.info "${meta.id} => Graphmap2 aligner is not recommended to align short reads!"
+                log.info "${meta.file_id} => Graphmap2 aligner is not recommended to align short reads!"
             }
         }
         
         // hisat2
         if ("hisat2" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Hisat2 aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Hisat2 aligner is not recommended to align long reads!"
             }
         }
 
         // --- kallisto tool ---
         if ( "kallisto" in aligner_list ){
             if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Kallisto aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Kallisto aligner is not recommended to align long reads!"
             }
         }
 
         // --- last tool ---
         if ( "last" in aligner_list ){
             if ( meta.read_type == "short_single" && meta.read_type == "short_paired"){
-                log.info "${meta.id} => Last aligner is not recommended to align short reads!"
+                log.info "${meta.file_id} => Last aligner is not recommended to align short reads!"
             }
         }
 
@@ -131,28 +131,28 @@ process check_aligner{
         // ngmlr tool - check options
         if ("ngmlr" in aligner_list ){
             if ( meta.read_type == "short_single" && meta.read_type == "short_paired"){
-                log.info "${meta.id} => Ngmlr aligner is not recommended to align short reads!"
+                log.info "${meta.file_id} => Ngmlr aligner is not recommended to align short reads!"
             }
         }
 
         // novoalign tool - load license into the container
         if ("novoalign" in aligner_list ){
             if ( meta.read_type == "ont"){
-                log.info "${meta.id} => Novoalign aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Novoalign aligner is not recommended to align long reads!"
             }
         }
 
         // mummer / nucmer
         if ("nucmer" in aligner_list ){
             if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Nucmer aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Nucmer aligner is not recommended to align long reads!"
             }
         }
 
         // --- salmon tool ---
         if ( "salmon" in aligner_list ){
             if ( meta.read_type == "ont" || meta.read_type == "pacbio"){
-                log.info "${meta.id} => Salmon aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Salmon aligner is not recommended to align long reads!"
             }
         }
 
@@ -163,14 +163,14 @@ process check_aligner{
         // --- subread tool ---
         if ( "subread" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
-                log.info "${meta.id} => Subread aligner is not recommended to align long reads!"
+                log.info "${meta.file_id} => Subread aligner is not recommended to align long reads!"
             }
         }
 
         // --- sublong tool ---
         if ( "sublong" in aligner_list ){
             if ( meta.read_type == "short_single" || meta.read_type == "short_paired"){
-                log.info "${meta.id} => Sublong aligner is not recommended to align short reads!"
+                log.info "${meta.file_id} => Sublong aligner is not recommended to align short reads!"
             }
         }
 
@@ -184,7 +184,7 @@ This process checks the aligner parameters and adpat them according to the read 
 */
 process check_aligner_params{
     label 'bash'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
     input:
@@ -206,7 +206,7 @@ process check_aligner_params{
             if ( !params.relax ){
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     bbmap_tool = "mapPacBio.sh"
-                    log.info "${meta.id} => Long reads being used, using mapPacBio.sh to align with bbmap!\n" +
+                    log.info "${meta.file_id} => Long reads being used, using mapPacBio.sh to align with bbmap!\n" +
                              "    However, if you know what you are doing you can activate the AliNe --relax parameter to use bbmap.sh anyway."
                     // Function to check and set maxlen in params.bbmap_options when long_reads is set
                     // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
@@ -293,14 +293,14 @@ process check_aligner_params{
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem_options.contains(" pacbio") ){
                         bwamem_options += " -x pacbio"
-                        log.info "${meta.id} => Pacbio reads being used, setting -x pacbio to bwamem!\n" +
+                        log.info "${meta.file_id} => Pacbio reads being used, setting -x pacbio to bwamem!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
                 if (meta.read_type == "ont"){
                     if ( ! bwamem_options.contains(" ont2d") ){
                         bwamem_options += " -x ont2d"
-                        log.info "${meta.id} => Ont reads being used, setting -x ont2d to bwamem!\n" + 
+                        log.info "${meta.file_id} => Ont reads being used, setting -x ont2d to bwamem!\n" + 
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
@@ -315,14 +315,14 @@ process check_aligner_params{
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem2_options.contains(" pacbio") ){
                         bwamem2_options += " -x pacbio"
-                        log.info "${meta.id} => Pacbio reads being used, setting -x pacbio to bwamem2!\n" +
+                        log.info "${meta.file_id} => Pacbio reads being used, setting -x pacbio to bwamem2!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
                 if (meta.read_type == "ont"){
                     if ( ! bwamem2_options.contains(" ont2d") ){
                         bwamem2_options += " -x ont2d"
-                        log.info "${meta.id} => Ont reads being used, setting -x ont2d to bwamem2!\n" +
+                        log.info "${meta.file_id} => Ont reads being used, setting -x ont2d to bwamem2!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
@@ -437,7 +437,7 @@ process check_aligner_params{
                 if (meta.read_type == "pacbio"){
                     if ( ! minimap2_options.contains(" ava-pb") and ! minimap2_options.contains(" splice:hq") and 
                          ! minimap2_options.contains(" map-hifi") and ! minimap2_options.contains(" map-pb") ){
-                         log.info("${meta.id} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for pacbio data.\n" +
+                         log.info("${meta.file_id} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for pacbio data.\n" +
                                  "    We set the default <map-pb> parameter. If you do not agree, please provide options among this list:\n" +
                                  "    ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).\n" +
                                  "    If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.")
@@ -447,7 +447,7 @@ process check_aligner_params{
                 if (meta.read_type == "ont"){
                     if ( ! minimap2_options.contains(" ava-ont") and ! minimap2_options.contains(" splice") and 
                         ! minimap2_options.contains(" lr:hq") and ! minimap2_options.contains(" map-ont") ){
-                        log.info("${meta.id} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for ont data.\n" +
+                        log.info("${meta.file_id} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for ont data.\n" +
                                  "    We set the default <map-ont> option. If you do not agree, please provide options among this list:\n" +
                                  "    ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).\n" +
                                  "    If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.")
@@ -470,7 +470,7 @@ process check_aligner_params{
                 if (meta.read_type == "ont"){
                     if (! ngmlr_options.contains("-x ont")){
                         ngmlr_options += " -x ont"
-                        log.info "${meta.id} => Ont reads being used, setting -x ont to ngmlr!\n" +
+                        log.info "${meta.file_id} => Ont reads being used, setting -x ont to ngmlr!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
@@ -488,12 +488,12 @@ process check_aligner_params{
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     if (! novoalign_options.contains("-g ")){
                         novoalign_options += " -g 20"
-                        log.info "${meta.id} => Long reads being used, setting -g 20 to Novoalign!\n" +
+                        log.info "${meta.file_id} => Long reads being used, setting -g 20 to Novoalign!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                     if (! novoalign_options.contains("-x ")){
                         novoalign_options += " -x 0"
-                        log.info "${meta.id} => Long reads being used, setting -x 0 to Novoalign!\n" +
+                        log.info "${meta.file_id} => Long reads being used, setting -x 0 to Novoalign!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
@@ -595,7 +595,7 @@ process check_aligner_params{
 
 
         """
-        fileout="${meta.id}.txt"
+        fileout="${meta.file_id}.txt"
         meta="${meta}"
         # Remove square brackets
         meta=\$(echo "\$meta" | tr -d '[]')

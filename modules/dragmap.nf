@@ -35,8 +35,8 @@ process dragmap_index {
 */
 process dragmap {
     label 'dragmap'
-    tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*dragmap.log", mode: 'copy'
+    tag "${meta.file_id}"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
         tuple val(meta), path(reads)
@@ -45,23 +45,23 @@ process dragmap {
         val outpath
 
     output:
-        tuple val(meta), path ("*dragmap.sam"), emit: tuple_sample_sam
-        path "*dragmap.log",  emit: dragmap_summary
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
+        path "*.log",  emit: dragmap_summary
 
     script:
         // options for dragmap
         def dragmap_options = meta.dragmap_options ?: ""
 
-        // catch filename
-        def fileName =  AlineUtils.getCleanName(reads)
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_dragmap"
       
         if (meta.paired){
             """
-            dragen-os ${dragmap_options} --num-threads ${task.cpus} -r dragmap_index -1 ${reads[0]} -2 ${reads[1]} > ${fileName}_dragmap.sam 2> ${fileName}_dragmap.log 
+            dragen-os ${dragmap_options} --num-threads ${task.cpus} -r dragmap_index -1 ${reads[0]} -2 ${reads[1]} > ${fileName}.sam 2> ${fileName}.log 
             """
         } else {
             """
-            dragen-os ${dragmap_options} --num-threads ${task.cpus} -r dragmap_index -1 ${reads} > ${fileName}_dragmap.sam 2> ${fileName}_dragmap.log 
+            dragen-os ${dragmap_options} --num-threads ${task.cpus} -r dragmap_index -1 ${reads} > ${fileName}.sam 2> ${fileName}.log 
             """
         }
 }

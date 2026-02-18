@@ -30,7 +30,7 @@ process subread_index {
 */
 process subread {
     label 'subread'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "*.{vcf,log}"
 
     input:
@@ -55,14 +55,14 @@ process subread {
             input =  "-r ${fastq[0]} -R ${fastq[1]}"
         }
 
-        // remove fastq.gz
-        def fileName = fastq[0].baseName.replace('.fastq','') + "_subread_sorted"
-        
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_subread_sorted"
+
         // prepare index name
         def index_prefix = genome.baseName + "_index"
 
         """
-        subread-align -T ${task.cpus} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${subread_options} > ${fileName}_subread_sorted.log 
+        subread-align -T ${task.cpus} -i ${index_prefix} ${input} -o ${fileName}.bam --sortReadsByCoordinates ${subread_options} > ${fileName}.log 
         """
 }
 
@@ -93,7 +93,7 @@ process sublong_index {
 */
 process sublong {
     label 'subread'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -110,8 +110,8 @@ process sublong {
         // options for sublong
         def sublong_options = meta.sublong_options ?: ""
 
-        // remove fastq.gz
-        def fileName = AlineUtils.getCleanName(reads) + "_sublong"
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_sublong"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"
@@ -119,12 +119,12 @@ process sublong {
         // For paired-end we concat output 
         if (meta.paired){
             """
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${sublong_options} > ${fileName}_sublong.log
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[1]} -o ${reads[1].baseName}.bam ${sublong_options} > ${fileName}_sublong.log
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${reads[0].baseName}.bam ${sublong_options} > ${reads[0].baseName}.log
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[1]} -o ${reads[1].baseName}.bam ${sublong_options} > ${reads[1].baseName}.log
             """
         } else {
             """
-            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${sublong_options} > ${fileName}_sublong.log
+            sublong -T ${task.cpus} -i ${index_prefix} -r ${reads[0]} -o ${fileName}.bam ${sublong_options} > ${fileName}.log
             """
         }
 }

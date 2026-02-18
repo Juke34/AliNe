@@ -30,7 +30,7 @@ process bbmap_index {
 
 process bbmap {
     label 'bbmap'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
@@ -57,7 +57,7 @@ process bbmap {
         }
 
         // set fileName
-        def fileName = AlineUtils.getCleanName(fastq) + "_bbmap"
+        def fileName = meta.file_id + meta.suffix + "_bbmap"
 
         // alignement
         """
@@ -70,7 +70,7 @@ process bbmap {
             bhist=${fileName}_bhist.txt qhist=${fileName}_qhist.txt aqhist=${fileName}_aqhist.txt lhist=${fileName}_lhist.txt ihist=${fileName}_ihist.txt \\
             ehist=${fileName}_ehist.txt qahist=${fileName}_qahist.txt indelhist=${fileName}_indelhist.txt mhist=${fileName}_mhist.txt \\
             gchist=${fileName}_gchist.txt idhist=${fileName}_idhist.txt scafstats=${fileName}_scafstats.txt \\
-            -Xmx${avail_mem}g &> ${fileName}.bbmap.log.txt
+            -Xmx${avail_mem}g &> ${fileName}.log.txt
 
         """
 }

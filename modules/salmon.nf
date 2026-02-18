@@ -23,7 +23,7 @@ process salmon_index {
 
 process salmon_guess_lib {
     label 'salmon'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
    
     input:
@@ -50,7 +50,7 @@ process salmon_guess_lib {
             # extract the result
             LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
             # change output name
-            mv ${output}/lib_format_counts.json ${output}/${meta.id}_lib_format_counts.json
+            mv ${output}/lib_format_counts.json ${output}/${meta.file_id}_lib_format_counts.json
         """
 
 }
@@ -58,8 +58,8 @@ process salmon_guess_lib {
 //  Use salmon as aligner - output sorted sam
 process salmon {
     label 'salmon'
-    tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*/*.json", mode: 'copy'
+    tag "${meta.file_id}"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
    
     input:
         tuple val(meta), path(fastq)
@@ -80,8 +80,8 @@ process salmon {
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
 
-        // catch filename
-        def filename = "${fastq[0].baseName.replace('.fastq','')}_salmon"
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_salmon"
        
         // Salmon automatically estimates the fragment length distribution for paired-end reads (like Kallisto)
         if ( meta.paired ){
@@ -90,7 +90,7 @@ process salmon {
                     ${input} \
                     --thread ${task.cpus} \
                     --writeMappings \
-                    --output ${filename} > ${filename}.sam 2> ${filename}.log
+                    --output ${fileName} > ${fileName}.sam 2> ${fileName}.log
             """
         } else {
             """
@@ -98,7 +98,7 @@ process salmon {
                     ${input} \
                     --thread ${task.cpus} \
                     --writeMappings \
-                    --output ${filename} > ${filename}.sam 2> ${filename}.log
+                    --output ${fileName} > ${fileName}.sam 2> ${fileName}.log
             """
         }
 }

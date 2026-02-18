@@ -6,7 +6,7 @@
 */
 process nucmer {
     label 'mummer4'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
@@ -23,14 +23,14 @@ process nucmer {
 
         // deal with library type - Not supported 
 
-        // catch filename
-        def fileName = AlineUtils.getCleanName(reads[0])
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_nucmer"
 
         // Name input
-        reads0 = AlineUtils.getCleanName(reads[0])
         genomeReady = AlineUtils.getCleanName(genome) + "_nucmer.fa"
 
         if (meta.paired){
+            reads0 = AlineUtils.getCleanName(reads[0])
             reads1 = AlineUtils.getCleanName(reads[1])
             """
             # Prepare reference
@@ -51,14 +51,14 @@ process nucmer {
                 gzip -c -d ${reads[1]} > ${reads1}
             fi
 
-            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
-            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads1}  --sam-long ${reads[1].baseName}_nucmer.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${reads[0].baseName}.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads1}  --sam-long ${reads[1].baseName}.sam
 
             # Merge sam
-            cat ${fileName}_nucmer.sam > ${fileName}_nucmer_concatR1R2.sam
-            rm ${fileName}_nucmer.sam
-            awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}_nucmer.sam >> ${fileName}_nucmer_concatR1R2.sam
-            rm ${reads[1].baseName}_nucmer.sam
+            cat ${reads[0].baseName}.sam > ${fileName}_concatR1R2.sam
+            rm ${reads[0].baseName}.sam
+            awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}.sam >> ${fileName}_concatR1R2.sam
+            rm ${reads[1].baseName}.sam
             """
         } else{
             """
@@ -73,9 +73,9 @@ process nucmer {
             # Prepare reads 0  
             extension=\$(echo ${reads[0]} | awk -F . '{print \$NF}')
             if [[ \${extension} == "gz" ]];then
-                gzip -c -d ${reads[0]} > ${reads0}
+                gzip -c -d ${reads[0]} > ${fileName}
             fi 
-            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${fileName}_nucmer.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${fileName}  --sam-long ${fileName}.sam
             """
         }
 }

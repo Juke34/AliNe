@@ -72,7 +72,7 @@ process star_index {
 
 process star {
     label 'star'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
@@ -90,8 +90,8 @@ process star {
         // options for STAR
         def star_options = meta.star_options ?: ""
 
-        // defiine the output name prefix
-        def output = AlineUtils.getCleanName(reads)
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_" + meta.star_tool
 
         // deal with library type - Not supported 
 
@@ -107,7 +107,7 @@ process star {
                 --readFilesIn pipedRead1 pipedRead2 \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
+                --outFileNamePrefix ${fileName}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -121,7 +121,7 @@ process star {
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${output}_${meta.star_tool}_sorted \\
+                --outFileNamePrefix ${fileName}_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate
         """
@@ -136,7 +136,7 @@ For a study with multiple samples, it is recommended to collect 1st pass junctio
 */
 process star2pass{
     label 'star'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
@@ -158,6 +158,9 @@ process star2pass{
 
         // deal with library type - Not supported in STAR
 
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_" + meta.star_tool
+
         // alignment
         if (meta.paired){
         """
@@ -171,7 +174,7 @@ process star2pass{
                 --readFilesIn pipedRead1 pipedRead2  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads.baseName.replace('.fastq','')}_${meta.star_tool}_2pass_sorted \\
+                --outFileNamePrefix ${fileName}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab
@@ -194,7 +197,7 @@ process star2pass{
                 --readFilesIn pipedRead  \\
                 --runThreadN ${task.cpus} \\
                 --runMode alignReads \\
-                --outFileNamePrefix ${reads[0].baseName.replace('.fastq','')}_${meta.star_tool}_2pass_sorted \\
+                --outFileNamePrefix ${fileName}_2pass_sorted \\
                 --outSAMunmapped Within \\
                 --outSAMtype BAM SortedByCoordinate \\
                 --sjdbFileChrStartEnd *SJ.out.tab
