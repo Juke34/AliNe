@@ -54,11 +54,11 @@ class AlineUtils {
         if (read_type == "short_paired") {
             // Pattern for paired-end: _R?[12](_\d+)?(.fastq|.fq)(.gz)?$
             return name
-                .replaceAll(/_R?[12](_\d+)?\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
-                .replaceAll(/_R?[12](_\d+)?\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
-                .replaceAll(/_R?[12](_\d+)?\.fastq$/, '')      // Remove _R1_001.fastq, etc.
-                .replaceAll(/_R?[12](_\d+)?\.fq$/, '')         // Remove _R1_001.fq, etc.
-                .replaceAll(/_R?[12](_\d+)?\.bam$/, '')        // Remove _R1.bam, etc.
+                .replaceAll(/_R?[12](_\d+)?.*\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
+                .replaceAll(/_R?[12](_\d+)?.*\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
+                .replaceAll(/_R?[12](_\d+)?.*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
+                .replaceAll(/_R?[12](_\d+)?.*\.fq$/, '')         // Remove _R1_001.fq, etc.
+                .replaceAll(/_R?[12](_\d+)?.*\.bam$/, '')        // Remove _R1.bam, etc.
         } else {
             // Pattern for single-end: (.fastq|.fq)(.gz)?$
             return name
