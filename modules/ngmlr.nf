@@ -6,7 +6,7 @@
 */
 process ngmlr {
     label 'ngmlr'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -22,24 +22,24 @@ process ngmlr {
         // options for ngmlr
         def ngmlr_options = meta.ngmlr_options ?: ""
 
-        // catch filename
-        def fileName = AlineUtils.getCleanName(reads)
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_ngmlr"
 
         // For paired-end we concat output 
         if (meta.paired){
             """
-            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
-            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[1]} -o ${reads[1].baseName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${reads[0].baseName}.sam 2> ${reads[0].baseName}_nglmr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[1]} -o ${reads[1].baseName}.sam 2> ${reads[1].baseName}_nglmr.log 
             
             # Merge sam
-            cat ${fileName}_ngmlr.sam > ${fileName}_ngmlr_concatR1R2.sam
-            rm ${fileName}_ngmlr.sam
-            awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}_ngmlr.sam >> ${fileName}_ngmlr_concatR1R2.sam
-            rm ${reads[1].baseName}_ngmlr.sam
+            cat ${reads[0].baseName}.sam > ${fileName}_concatR1R2.sam
+            rm ${reads[0].baseName}.sam
+            awk '!/^@HD/ && !/^@SQ/ && !/^@RG/ && !/^@PG/ && !/^@CO/ && NF' ${reads[1].baseName}.sam >> ${fileName}_concatR1R2.sam
+            rm ${reads[1].baseName}.sam
             """
         } else {
             """
-            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}_ngmlr.sam 2> ${fileName}_ngmlr.log 
+            ngmlr ${ngmlr_options} -t ${task.cpus} -r ${genome} -q ${reads[0]} -o ${fileName}.sam 2> ${fileName}.log 
             """
         }
 

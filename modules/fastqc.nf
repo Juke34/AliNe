@@ -1,6 +1,6 @@
 process fastqc {
     label 'fastqc'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
@@ -14,19 +14,21 @@ process fastqc {
     script:
 
         // Suffix to separate different runs
-        def sample_id = meta.id
         def add_suffix = suffix ? "_${suffix}_" : '_'
 
+        // catch output file prefix 
+        def fileName = "fastqc_${meta.file_id}${add_suffix}logs"
+
         """
-        mkdir fastqc_${sample_id}${add_suffix}logs
-        fastqc -t ${task.cpus} -o fastqc_${sample_id}${add_suffix}logs -q ${reads}
+        mkdir fastqc_${fileName}
+        fastqc -t ${task.cpus} -o fastqc_${fileName} -q ${reads}
         """
 }
 
 // To take in consideration the index coming along when aligned files are provided
 process fastqc_ali {
     label 'fastqc'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
@@ -40,11 +42,11 @@ process fastqc_ali {
     script:
 
         // Suffix to separate different runs
-        def sample_id = meta.id
+        def file_id = meta.file_id
         def add_suffix = suffix ? "_${suffix}_" : '_'
 
         """
-        mkdir fastqc_${sample_id}${add_suffix}logs
-        fastqc -t ${task.cpus} -o fastqc_${sample_id}${add_suffix}logs -q ${reads}
+        mkdir fastqc_${file_id}${add_suffix}logs
+        fastqc -t ${task.cpus} -o fastqc_${file_id}${add_suffix}logs -q ${reads}
         """
 }

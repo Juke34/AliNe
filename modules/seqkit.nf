@@ -4,7 +4,7 @@
 
 process seqkit_convert {
     label 'seqkit'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     publishDir "${params.outdir}/${outpath}",  pattern: "*result.txt", mode: 'copy'
 
     input:
@@ -16,8 +16,13 @@ process seqkit_convert {
         path("*result.txt")
 
     script: 
+        // add suffix to meta for output files
+        def suffix = meta.suffix ? "${meta.suffix}_sekqit" : '_sekqit'
+        meta = meta + [suffix: suffix]
+
+        // catch filename
         def filebase0 = AlineUtils.getCleanName(sample[0])
-        fileout = "${meta.id}_result.txt"
+        fileout = "${meta.file_id}_result.txt"
 
     if (meta.paired){
         def filebase1 = AlineUtils.getCleanName(sample[1])
@@ -52,10 +57,10 @@ process seqkit_convert {
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
             echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s \$(realpath ${sample}) ${sample.baseName.replace('.fastq','')}_seqkit.fastq.gz 
+            ln -s \$(realpath ${sample}) ${filebase0}_seqkit.fastq.gz 
         else
             echo -e "\n converted by seqkit" >> ${fileout}
-            seqkit convert ${sample} | gzip > ${sample[0].baseName.replace('.fastq','')}_seqkit.fastq.gz
+            seqkit convert ${sample} | gzip > ${filebase0}_seqkit.fastq.gz
         fi
         """
     }
@@ -75,10 +80,11 @@ process seqkit_clean_fasta_headers {
         val outpath
 
     output:
-        path("*.clean.fa"), emit: clean_fasta
+        path("*_clean.fa"), emit: clean_fasta
 
     script:
+        def filename = AlineUtils.getCleanName(fasta)
         """
-            seqkit replace -p " .*" -r "" ${fasta} > ${fasta.baseName}.clean.fa
+            seqkit replace -p " .*" -r "" ${fasta} > ${filename}_clean.fa
         """
 }

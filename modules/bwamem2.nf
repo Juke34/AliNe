@@ -35,8 +35,8 @@ process bwamem2_index {
 */
 process bwamem2 {
     label 'bwamem2'
-    tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*bwamem2.log", mode: 'copy'
+    tag "${meta.file_id}"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
         tuple val(meta), path(reads)
@@ -45,23 +45,23 @@ process bwamem2 {
         val outpath
 
     output:
-        tuple val(meta), path ("*bwamem2.sam"), emit: tuple_sample_sam
-        path "*bwamem2.log",  emit: bwamem2_summary
+        tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
+        path "*.log",  emit: bwamem2_summary
 
     script:
         // options for bwa-mem2
         def bwamem2_options = meta.bwamem2_options ?: ""
 
-        // catch filename
-        def fileName =  AlineUtils.getCleanName(reads)
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_bwamem2"
       
         if (meta.paired){
             """
-            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads[0]} ${reads[1]} > ${fileName}.sam 2> ${fileName}.log 
             """
         } else {
             """
-            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}_bwamem2.sam 2> ${fileName}_bwamem2.log 
+            bwa-mem2 mem ${bwamem2_options} -t ${task.cpus} ${genome.baseName} ${reads} > ${fileName}.sam 2> ${fileName}.log 
             """
         }
 }

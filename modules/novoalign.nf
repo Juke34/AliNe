@@ -27,9 +27,9 @@ process novoalign_index {
 
 process novoalign {
     label 'novoalign'
-    tag "${meta.id}"
+    tag "${meta.file_id}"
     containerOptions "${novoalign_lic}"
-    publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
+    publishDir "${params.outdir}/${outpath}/stats", pattern: "*.log", mode: 'copy'
 
     input:
         tuple val(meta), path(fastq), val(library), val(read_length)
@@ -40,7 +40,7 @@ process novoalign {
 
     output:
         tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
-        path "*.txt",  emit: novoalign_log
+        path "*.log",  emit: novoalign_log
 
     script:
         // options for novoalign
@@ -51,13 +51,14 @@ process novoalign {
 
         // deal with library type - Not supported
 
-        // set fileName
-        def fileName = AlineUtils.getCleanName(fastq[0])
+        // catch output file prefix 
+        def fileName = meta.file_id + meta.suffix + "_novoalign"
+
         """
         novoalign ${novoalign_options} \\
             -d ${genome_index} \\
             -f ${input} \\
-            -o SAM > ${fileName}.sam 2> log.txt
+            -o SAM > ${fileName}.sam 2> ${fileName}.log
 
         """
 }

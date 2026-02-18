@@ -19,8 +19,8 @@ process bowtie_index {
 
 process bowtie {
     label 'bowtie'
-    tag "${meta.id}"
-    publishDir "${params.outdir}/${outpath}", pattern: "*bowtie.log", mode: 'copy'
+    tag "${meta.file_id}"
+    publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
         tuple val(meta), path(reads)
@@ -30,15 +30,15 @@ process bowtie {
 
     output:
         tuple val(meta), path ("*.sam"), emit: tuple_sample_sam
-        path "*bowtie.log",  emit: bowtie_summary
+        path "*.log",  emit: bowtie_summary
 
     script:
 
         // options for bowtie
         def bowtie_options = meta.bowtie_options ?: ""
 
-        // catch filename
-        def outBaseName = AlineUtils.getCleanName(reads) + "_bowtie"
+        // catch output file prefix 
+        def outBaseName = meta.file_id + meta.suffix + "_bowtie"
 
         if (meta.paired){
         """
