@@ -25,7 +25,7 @@ process kallisto_index {
 // kallisto output sorted bam
 process kallisto {
     label 'kallisto'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "*.log"
 
     input:
@@ -42,7 +42,7 @@ process kallisto {
         def kallisto_options = meta.kallisto_options ?: ""
 
         // catch output file prefix 
-        fileName = meta.file_id + meta.suffix + "_kallisto"
+        fileName = meta.uid + meta.suffix + "_kallisto"
 
         // For paired-end reads, Kallisto automatically estimates the fragment length distribution from the data and does not require you to specify it manually
         if (meta.paired){

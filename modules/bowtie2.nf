@@ -19,7 +19,7 @@ process bowtie2_index {
 
 process bowtie2 {
     label 'bowtie2'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -37,7 +37,7 @@ process bowtie2 {
         def bowtie2_options = meta.bowtie2_options ?: ""
         
         // catch output file prefix 
-        def filename = meta.file_id + meta.suffix + "_bowtie2"
+        def filename = meta.uid + meta.suffix + "_bowtie2"
 
         if (meta.paired){
         """

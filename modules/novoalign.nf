@@ -27,7 +27,7 @@ process novoalign_index {
 
 process novoalign {
     label 'novoalign'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     containerOptions "${novoalign_lic}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.log", mode: 'copy'
 
@@ -52,7 +52,7 @@ process novoalign {
         // deal with library type - Not supported
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_novoalign"
+        def fileName = meta.uid + meta.suffix + "_novoalign"
 
         """
         novoalign ${novoalign_options} \\

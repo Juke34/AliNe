@@ -30,7 +30,7 @@ process bbmap_index {
 
 process bbmap {
     label 'bbmap'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}/stats", pattern: "*.txt", mode: 'copy'
 
     input:
@@ -57,7 +57,7 @@ process bbmap {
         }
 
         // set fileName
-        def fileName = meta.file_id + meta.suffix + "_bbmap"
+        def fileName = meta.uid + meta.suffix + "_bbmap"
 
         // alignement
         """

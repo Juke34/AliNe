@@ -24,7 +24,7 @@ process hisat2_index {
 
 process hisat2 {
     label 'hisat2'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
     input:
@@ -45,7 +45,7 @@ process hisat2 {
         index_basename = hisat2_index_files[0].toString() - ~/.\d.ht2l?/
         
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_hisat2"
+        def fileName = meta.uid + meta.suffix + "_hisat2"
        
         // alignment
         if (meta.paired) {

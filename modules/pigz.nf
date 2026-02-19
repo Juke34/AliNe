@@ -16,7 +16,7 @@ process fasta_uncompress {
     script:
     
         // remove the extension from the genome file name
-        genomeReady = AlineUtils.getCleanName(genome)
+        genomeReady = AlineUtils.cleanPrefix(genome)
         genomeFa = genomeReady + ".fa"
 
     """

@@ -7,7 +7,7 @@ See https://github.com/OpenGene/fastp
  
 process fastp {
     label 'fastp'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
    
     input:
@@ -16,7 +16,7 @@ process fastp {
 
     output:
         tuple val(meta), path("*_fastp.fastq.gz"), emit: trimmed
-        path("${meta.file_id}_fastp_report.html"), emit: report
+        path("*_report.html"), emit: report
    
     script:
 
@@ -26,19 +26,16 @@ process fastp {
 
         // set input/output according to short_paired parameter
         def input = "-i ${fastq[0]}" 
-        def fastqBase0 = AlineUtils.getCleanName(fastq[0])
-        def output = "-o ${fastqBase0}_fastp.fastq.gz" 
+        def output = "-o ${meta.uid}${suffix}.fastq.gz" 
         if ( meta.paired ){
-            def fastqBase1 = AlineUtils.getCleanName(fastq[1])
-            input = "-i ${fastq[0]} -I ${fastq[1]}"
-            
-            output = "-o ${fastqBase0}_fastp.fastq.gz -O ${fastqBase1}${suffix}.fastq.gz"
+            input = "-i ${fastq[0]} -I ${fastq[1]}"     
+            output = "-o ${meta.file_id[0]}${suffix}.fastq.gz -O ${meta.file_id[1]}${suffix}.fastq.gz"
         }
 
         """
         fastp $input \\
               $output \\
               --thread ${task.cpus} \\
-              --html ${meta.file_id}_fastp_report.html
+              --html ${meta.uid}${suffix}_report.html
         """
 }

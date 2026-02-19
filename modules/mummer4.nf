@@ -6,7 +6,7 @@
 */
 process nucmer {
     label 'mummer4'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*nucmer.log", mode: 'copy'
 
     input:
@@ -24,14 +24,12 @@ process nucmer {
         // deal with library type - Not supported 
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_nucmer"
+        def fileName = meta.uid + meta.suffix + "_nucmer"
 
         // Name input
-        genomeReady = AlineUtils.getCleanName(genome) + "_nucmer.fa"
+        genomeReady = AlineUtils.cleanPrefix(genome) + "_nucmer.fa"
 
         if (meta.paired){
-            reads0 = AlineUtils.getCleanName(reads[0])
-            reads1 = AlineUtils.getCleanName(reads[1])
             """
             # Prepare reference
             extension=\$(echo ${genome} | awk -F . '{print \$NF}')
@@ -43,16 +41,16 @@ process nucmer {
             # Prepare reads 0  
             extension=\$(echo ${reads[0]} | awk -F . '{print \$NF}')
             if [[ \${extension} == "gz" ]];then
-                gzip -c -d ${reads[0]} > ${reads0}
+                gzip -c -d ${reads[0]} > ${meta.file_id[0]}
             fi
             # Prepare reads 1
             extension=\$(echo ${reads[1]} | awk -F . '{print \$NF}')
             if [[ \${extension} == "gz" ]];then
-                gzip -c -d ${reads[1]} > ${reads1}
+                gzip -c -d ${reads[1]} > ${meta.file_id[1]}
             fi
 
-            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads0}  --sam-long ${reads[0].baseName}.sam
-            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${reads1}  --sam-long ${reads[1].baseName}.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${meta.file_id[0]}  --sam-long ${reads[0].baseName}.sam
+            nucmer ${nucmer_options} -t ${task.cpus} ${genomeReady} ${meta.file_id[1]}  --sam-long ${reads[1].baseName}.sam
 
             # Merge sam
             cat ${reads[0].baseName}.sam > ${fileName}_concatR1R2.sam

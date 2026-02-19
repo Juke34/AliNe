@@ -30,7 +30,7 @@ process subread_index {
 */
 process subread {
     label 'subread'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "*.{vcf,log}"
 
     input:
@@ -56,7 +56,7 @@ process subread {
         }
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_subread_sorted"
+        def fileName = meta.uid + meta.suffix + "_subread_sorted"
 
         // prepare index name
         def index_prefix = genome.baseName + "_index"
@@ -93,7 +93,7 @@ process sublong_index {
 */
 process sublong {
     label 'subread'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -111,7 +111,7 @@ process sublong {
         def sublong_options = meta.sublong_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_sublong"
+        def fileName = meta.uid + meta.suffix + "_sublong"
         
         // prepare index name
         def index_prefix = genome.baseName + "_index"

@@ -23,7 +23,7 @@ process salmon_index {
 
 process salmon_guess_lib {
     label 'salmon'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.json", mode: 'copy'
    
     input:
@@ -36,21 +36,22 @@ process salmon_guess_lib {
         path "*lib_format_counts.json"
    
     script:
-
+        // get suffix from meta for output files
+        def suffix = meta.suffix ? "${meta.suffix}_salmon" : '_salmon'
+        meta = meta + [suffix: suffix]
+        
         // set input according to read_type parameter
         def input =  "-r ${fastq[0]}"
         if (meta.paired){
             input =  "-1 ${fastq[0]} -2 ${fastq[1]}" // if short reads check paired or not
         }
-        // remove the extension from fastq file name
-        def output = AlineUtils.getCleanName(fastq)
 
         """
-            salmon quant -i ${salmon_index} -l A ${input} --thread ${task.cpus} -o ${output} --minAssignedFrags 2 
+            salmon quant -i ${salmon_index} -l A ${input} --thread ${task.cpus} -o ${meta.uid}} --minAssignedFrags 2 
             # extract the result
-            LIBTYPE=\$(grep expected_format ${output}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
+            LIBTYPE=\$(grep expected_format ${meta.uid}}/lib_format_counts.json | awk '{print \$2}' | tr -d '",\n')
             # change output name
-            mv ${output}/lib_format_counts.json ${meta.file_id}_AliNe_lib_format_counts.json
+            mv ${meta.uid}}/lib_format_counts.json ${meta.uid}${suffix}_lib_format_counts.json
         """
 
 }
@@ -58,7 +59,7 @@ process salmon_guess_lib {
 //  Use salmon as aligner - output sorted sam
 process salmon {
     label 'salmon'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
    
     input:
@@ -81,7 +82,7 @@ process salmon {
         }
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_salmon"
+        def fileName = meta.uid + meta.suffix + "_salmon"
        
         // Salmon automatically estimates the fragment length distribution for paired-end reads (like Kallisto)
         if ( meta.paired ){

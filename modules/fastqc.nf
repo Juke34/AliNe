@@ -1,6 +1,6 @@
 process fastqc {
     label 'fastqc'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
@@ -17,7 +17,7 @@ process fastqc {
         def add_suffix = suffix ? "_${suffix}_" : '_'
 
         // catch output file prefix 
-        def fileName = "fastqc_${meta.file_id}${add_suffix}logs"
+        def fileName = "fastqc_${meta.uid}${add_suffix}logs"
 
         """
         mkdir fastqc_${fileName}
@@ -28,7 +28,7 @@ process fastqc {
 // To take in consideration the index coming along when aligned files are provided
 process fastqc_ali {
     label 'fastqc'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:
@@ -42,7 +42,7 @@ process fastqc_ali {
     script:
 
         // Suffix to separate different runs
-        def file_id = meta.file_id
+        def file_id = meta.uid
         def add_suffix = suffix ? "_${suffix}_" : '_'
 
         """

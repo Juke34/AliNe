@@ -72,7 +72,7 @@ process star_index {
 
 process star {
     label 'star'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
@@ -91,7 +91,7 @@ process star {
         def star_options = meta.star_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_" + meta.star_tool
+        def fileName = meta.uid + meta.suffix + "_" + meta.star_tool
 
         // deal with library type - Not supported 
 
@@ -136,7 +136,7 @@ For a study with multiple samples, it is recommended to collect 1st pass junctio
 */
 process star2pass{
     label 'star'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.out,*SJ.out.tab}"
 
     input:
@@ -159,7 +159,7 @@ process star2pass{
         // deal with library type - Not supported in STAR
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_" + meta.star_tool
+        def fileName = meta.uid + meta.suffix + "_" + meta.star_tool
 
         // alignment
         if (meta.paired){

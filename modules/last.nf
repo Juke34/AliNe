@@ -22,7 +22,7 @@ process last_index {
 
 process last {
     label 'last'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*last.log", mode: 'copy'
 
     input:
@@ -40,7 +40,7 @@ process last {
         def last_options = meta.last_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_last"
+        def fileName = meta.uid + meta.suffix + "_last"
 
         // For paired-end we concat output 
         if (meta.paired){

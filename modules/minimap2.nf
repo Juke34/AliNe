@@ -26,7 +26,7 @@ process minimap2_index {
 */
 process minimap2 {
     label 'minimap2'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -45,7 +45,7 @@ process minimap2 {
         def minimap2_options = meta.minimap2_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_minimap2"
+        def fileName = meta.uid + meta.suffix + "_minimap2"
 
         output_format = "paf"
         if ( minimap2_options.contains("-a") ){

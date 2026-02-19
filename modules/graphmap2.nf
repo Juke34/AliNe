@@ -28,7 +28,7 @@ process graphmap2_index {
 */
 process graphmap2 {
     label 'graphmap2'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -48,7 +48,7 @@ process graphmap2 {
         def graphmap2_options = meta.graphmap2_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_graphmap2"
+        def fileName = meta.uid + meta.suffix + "_graphmap2"
 
         // Check if the owler option is set
         if ( graphmap2_options.contains("owler") ){

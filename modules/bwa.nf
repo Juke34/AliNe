@@ -22,7 +22,7 @@ process bwa_index {
 */
 process bwaaln {
     label 'bwa'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*_sam.log", mode: 'copy'
 
     input:
@@ -40,7 +40,7 @@ process bwaaln {
         def bwaaln_options = meta.bwaaln_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_bwaaln"
+        def fileName = meta.uid + meta.suffix + "_bwaaln"
 
         if (meta.paired){
         """
@@ -63,7 +63,7 @@ process bwaaln {
 */
 process bwamem {
     label 'bwa'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*bwa.log", mode: 'copy'
 
     input:
@@ -81,7 +81,7 @@ process bwamem {
         def bwamem_options = meta.bwamem_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_bwamem"
+        def fileName = meta.uid + meta.suffix + "_bwamem"
       
         if (meta.paired){
             """
@@ -100,7 +100,7 @@ process bwamem {
 */
 process bwasw {
     label 'bwa'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -118,7 +118,7 @@ process bwasw {
         def bwasw_options = meta.bwasw_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_bwasw"
+        def fileName = meta.uid + meta.suffix + "_bwasw"
 
         if (meta.paired){
             """

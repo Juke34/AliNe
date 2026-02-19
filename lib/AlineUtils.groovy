@@ -22,12 +22,13 @@ class AlineUtils {
         }
     }
 
-    // Function to extract the basename of a file
-    public static String getCleanName (file) {
-        def fileClean = file[0].baseName.replaceAll(/\.(gz)$/, '') // remove .gz
+    // Function to extract the basename of a file //getCleanName
+    public static String cleanPrefix (file) {
+        def fileClean = new File(file.toString()).getName()
+        fileClean = fileClean.replaceAll(/\.(gz)$/, '') // remove .gz
         fileClean = fileClean.replaceAll(/\.(fasta|fa)$/, '') // remove .fasta or .fa
         fileClean = fileClean.replaceAll(/\.(fastq|fq)$/, '') // remove .fastq or .fq
-        fileClean = fileClean.split('_AliNe')[0] // cut at AliNe if exists and take [0]
+        fileClean = fileClean.replaceAll(/\.(bam)$/, '') // remove .bam
         return fileClean
     }
 
@@ -49,31 +50,21 @@ class AlineUtils {
      *
      * This function must be synchronized with the counterpart in RAIN!
      */
-    public static String get_file_id(filename, read_type = "short_paired") {
+    public static String get_file_uid(filename) {
         def name = new File(filename.toString()).getName()
 
-        if (read_type == "short_paired") {
-            // Pattern for paired-end: _R?[12](_\d+)?(.fastq|.fq)(.gz)?$
-            return name
-                .replaceAll(/_R?[12](_\d+)?.*\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
-                .replaceAll(/_R?[12](_\d+)?.*\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
-                .replaceAll(/_R?[12](_\d+)?.*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
-                .replaceAll(/_R?[12](_\d+)?.*\.fq$/, '')         // Remove _R1_001.fq, etc.
-                .replaceAll(/_R?[12](_\d+)?.*\.bam$/, '')        // Remove _R1.bam, etc.
-                // Fallback: remove extensions if no paired-end pattern matched
-                .replaceAll(/\.fastq\.gz$/, '')  // Remove .fastq.gz
-                .replaceAll(/\.fq\.gz$/, '')     // Remove .fq.gz
-                .replaceAll(/\.fastq$/, '')      // Remove .fastq
-                .replaceAll(/\.fq$/, '')         // Remove .fq
-                .replaceAll(/\.bam$/, '')        // Remove .bam
-        } else {
-            // Pattern for single-end: (.fastq|.fq)(.gz)?$
-            return name
-                .replaceAll(/\.fastq\.gz$/, '')  // Remove .fastq.gz
-                .replaceAll(/\.fq\.gz$/, '')     // Remove .fq.gz
-                .replaceAll(/\.fastq$/, '')      // Remove .fastq
-                .replaceAll(/\.fq$/, '')         // Remove .fq
-                .replaceAll(/\.bam$/, '')        // Remove .bam
-        }
+        // Pattern for paired-end: _R?[12](_\d+)?(.fastq|.fq)(.gz)?$
+        return name
+            .replaceAll(/_R?[12](_\d+)?.*\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
+            .replaceAll(/_R?[12](_\d+)?.*\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
+            .replaceAll(/_R?[12](_\d+)?.*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
+            .replaceAll(/_R?[12](_\d+)?.*\.fq$/, '')         // Remove _R1_001.fq, etc.
+            .replaceAll(/_R?[12](_\d+)?.*\.bam$/, '')        // Remove _R1.bam, etc.
+            // Fallback: remove extensions if no paired-end pattern matched
+            .replaceAll(/\.fastq\.gz$/, '')  // Remove .fastq.gz
+            .replaceAll(/\.fq\.gz$/, '')     // Remove .fq.gz
+            .replaceAll(/\.fastq$/, '')      // Remove .fastq
+            .replaceAll(/\.fq$/, '')         // Remove .fq
+            .replaceAll(/\.bam$/, '')        // Remove .bam 
     } 
 }

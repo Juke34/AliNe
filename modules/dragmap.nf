@@ -35,7 +35,7 @@ process dragmap_index {
 */
 process dragmap {
     label 'dragmap'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -53,7 +53,7 @@ process dragmap {
         def dragmap_options = meta.dragmap_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_dragmap"
+        def fileName = meta.uid + meta.suffix + "_dragmap"
       
         if (meta.paired){
             """

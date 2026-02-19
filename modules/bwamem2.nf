@@ -35,7 +35,7 @@ process bwamem2_index {
 */
 process bwamem2 {
     label 'bwamem2'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -53,7 +53,7 @@ process bwamem2 {
         def bwamem2_options = meta.bwamem2_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_bwamem2"
+        def fileName = meta.uid + meta.suffix + "_bwamem2"
       
         if (meta.paired){
             """

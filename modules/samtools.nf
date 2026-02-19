@@ -3,7 +3,7 @@ Here a special process to override this problem
 */
 process samtools_sam2bam_nucmer {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), file(sam)
@@ -26,7 +26,7 @@ process samtools_sam2bam_nucmer {
 
 process samtools_sam2bam {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), path(sam)
@@ -43,7 +43,7 @@ process samtools_sam2bam {
 }
 process samtools_merge_bam_if_paired {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), path(bam)
@@ -74,7 +74,7 @@ And convert to cram if needed (when samtools_bam2cram can be avoided) to save di
 */
 process samtools_sort {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), path(bam)
@@ -118,7 +118,7 @@ Convert BAM to CRAM format (done during sorting when possible for optimal perfor
 */
 process samtools_bam2cram {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), path(bam)
@@ -140,7 +140,7 @@ Index BAM or CRAM files
 */
 process samtools_index {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy', pattern: "{*.bam,*.cram,*.crai,*.bai}"
 
     input:
@@ -163,7 +163,7 @@ Filter unmapped reads from BAM file (done during sorting when possible for optim
 */
 process samtools_view_filter {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
 
     input:
         tuple val(meta), path(bam)
@@ -183,7 +183,7 @@ Produces comprehensive statistics from alignment file
 */
 process samtools_stats {
     label 'samtools'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", mode: 'copy'
 
     input:

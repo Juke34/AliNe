@@ -6,7 +6,7 @@
 */
 process ngmlr {
     label 'ngmlr'
-    tag "${meta.file_id}"
+    tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.log", mode: 'copy'
 
     input:
@@ -23,7 +23,7 @@ process ngmlr {
         def ngmlr_options = meta.ngmlr_options ?: ""
 
         // catch output file prefix 
-        def fileName = meta.file_id + meta.suffix + "_ngmlr"
+        def fileName = meta.uid + meta.suffix + "_ngmlr"
 
         // For paired-end we concat output 
         if (meta.paired){
