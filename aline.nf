@@ -544,7 +544,7 @@ workflow {
                                         if ( fastq2 ) {
                                             if (read_type == "short_paired") {
                                                 pair = true
-                                                file_id2 = short_paired AlineUtils.cleanPrefix(fastq2)
+                                                file_id2 = AlineUtils.cleanPrefix(fastq2)
                                             } else {
                                                 log.info "The input ${input_csv} file contains a second fastq file for sample ${sample_id} but the read_type is set to <${read_type}>! R2 will not be taken into account! paired set to false."
                                             }
