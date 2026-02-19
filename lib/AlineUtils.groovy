@@ -27,6 +27,7 @@ class AlineUtils {
         def fileClean = file[0].baseName.replaceAll(/\.(gz)$/, '') // remove .gz
         fileClean = fileClean.replaceAll(/\.(fasta|fa)$/, '') // remove .fasta or .fa
         fileClean = fileClean.replaceAll(/\.(fastq|fq)$/, '') // remove .fastq or .fq
+        fileClean = fileClean.split('_AliNe')[0] // cut at AliNe if exists and take [0]
         return fileClean
     }
 

@@ -22,7 +22,7 @@ process seqkit_convert {
 
         // catch filename
         def filebase0 = AlineUtils.getCleanName(sample[0])
-        fileout = "${meta.file_id}_result.txt"
+        fileout = "${meta.file_id}${suffix}_result.txt"
 
     if (meta.paired){
         def filebase1 = AlineUtils.getCleanName(sample[1])
@@ -37,12 +37,12 @@ process seqkit_convert {
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
             echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s \$(realpath ${sample[0]}) ${filebase0}_seqkit.fastq.gz
-            ln -s \$(realpath ${sample[1]}) ${filebase1}_seqkit.fastq.gz
+            ln -s \$(realpath ${sample[0]}) ${filebase0}${suffix}.fastq.gz
+            ln -s \$(realpath ${sample[1]}) ${filebase1}${suffix}.fastq.gz
         else
             echo -e "\n converted by seqkit" >> ${fileout}
-            seqkit convert ${sample[0]} | gzip > ${filebase0}_seqkit.fastq.gz
-            seqkit convert ${sample[1]} | gzip > ${filebase1}_seqkit.fastq.gz
+            seqkit convert ${sample[0]} | gzip > ${filebase0}${suffix}.fastq.gz
+            seqkit convert ${sample[1]} | gzip > ${filebase1}${suffix}.fastq.gz
         fi
         """
     } else {
@@ -57,10 +57,10 @@ process seqkit_convert {
         if [[ \${scoring,,} == "sanger" || \${scoring,,} == "illumina-1.8+" ]];then  
             echo -e "\n keep intact" >> ${fileout}
             # File passes the check, create a symlink to the input file
-            ln -s \$(realpath ${sample}) ${filebase0}_seqkit.fastq.gz 
+            ln -s \$(realpath ${sample}) ${filebase0}${suffix}.fastq.gz 
         else
             echo -e "\n converted by seqkit" >> ${fileout}
-            seqkit convert ${sample} | gzip > ${filebase0}_seqkit.fastq.gz
+            seqkit convert ${sample} | gzip > ${filebase0}${suffix}.fastq.gz
         fi
         """
     }

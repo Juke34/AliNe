@@ -18,9 +18,10 @@ process read_length {
 
     script:
         // compute made only on first file when is paired
+        def fastqBase0 = AlineUtils.getCleanName(fastq[0])
         """
         READLENGTH=\$(cat ${fastq[0]} | awk 'NR % 4 == 2 {sum += length(\$0); count++} END {if (count > 0) print int((sum / count) + 0.5); else print "0"}')
-        echo \$READLENGTH > ${fastq[0].baseName.replace('.fastq','')}_read_length.txt
+        echo \$READLENGTH > ${fastqBase0}${meta.suffix}_read_length.txt
         """
 }
 

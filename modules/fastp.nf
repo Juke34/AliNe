@@ -31,7 +31,8 @@ process fastp {
         if ( meta.paired ){
             def fastqBase1 = AlineUtils.getCleanName(fastq[1])
             input = "-i ${fastq[0]} -I ${fastq[1]}"
-            output = "-o ${fastqBase0}_fastp.fastq.gz -O ${fastqBase1}_fastp.fastq.gz"
+            
+            output = "-o ${fastqBase0}_fastp.fastq.gz -O ${fastqBase1}${suffix}.fastq.gz"
         }
 
         """

@@ -751,6 +751,7 @@ workflow {
                 raw_reads_trim_length_strandedness = raw_reads_trim_length
               }
         }
+        
         // Separate samples to guess strandedness and not guess strandedness
         sample_to_guess = raw_reads_trim_length_strandedness.filter { meta, reads -> meta.strandedness == 'auto' }
         sample_to_notguess = raw_reads_trim_length_strandedness.filter { meta, reads -> meta.strandedness != 'auto' }
@@ -758,7 +759,7 @@ workflow {
         // catch what is already subsampled
         sample_to_guess_already_subsampled = sample_to_guess.filter { meta, reads -> meta.subsampled }
         subsample_sample_to_guess_already_subsampled = sample_to_guess_already_subsampled.map { meta, reads -> tuple(meta.file_id, meta, reads) }
-                                                                                        .join( subsampled.map { meta2, subreads -> tuple(meta2.id, meta2, subreads) } )
+                                                                                        .join( subsampled.map { meta2, subreads -> tuple(meta2.file_id, meta2, subreads) } )
                                                                                         .map { id, meta, reads, meta2, subreads ->
                                                                                             tuple(meta2, subreads)
                                                                                         }
@@ -1349,7 +1350,6 @@ workflow {
                 logs.concat(samtools_stats_ali_sublong.out).set{logs} // save log
             }
         }
-        logs.view()
         // ------------------- MULTIQC -----------------
         multiqc(logs.collect(),params.multiqc_config)
 
