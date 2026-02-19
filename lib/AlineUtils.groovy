@@ -23,7 +23,7 @@ class AlineUtils {
     }
 
     // Function to extract the basename of a file
-    public static String getCleanName(file) {
+    public static String getCleanName (file) {
         def fileClean = file[0].baseName.replaceAll(/\.(gz)$/, '') // remove .gz
         fileClean = fileClean.replaceAll(/\.(fasta|fa)$/, '') // remove .fasta or .fa
         fileClean = fileClean.replaceAll(/\.(fastq|fq)$/, '') // remove .fastq or .fq
@@ -60,6 +60,12 @@ class AlineUtils {
                 .replaceAll(/_R?[12](_\d+)?.*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
                 .replaceAll(/_R?[12](_\d+)?.*\.fq$/, '')         // Remove _R1_001.fq, etc.
                 .replaceAll(/_R?[12](_\d+)?.*\.bam$/, '')        // Remove _R1.bam, etc.
+                // Fallback: remove extensions if no paired-end pattern matched
+                .replaceAll(/\.fastq\.gz$/, '')  // Remove .fastq.gz
+                .replaceAll(/\.fq\.gz$/, '')     // Remove .fq.gz
+                .replaceAll(/\.fastq$/, '')      // Remove .fastq
+                .replaceAll(/\.fq$/, '')         // Remove .fq
+                .replaceAll(/\.bam$/, '')        // Remove .bam
         } else {
             // Pattern for single-end: (.fastq|.fq)(.gz)?$
             return name

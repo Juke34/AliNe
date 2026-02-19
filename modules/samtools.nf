@@ -53,7 +53,7 @@ process samtools_merge_bam_if_paired {
 
     script:
         // define the output file name
-        def output = AlineUtils.getCleanName(bam[0]) + "_concatR1R2.bam"
+        def output = bam[0].baseName + "_concatR1R2.bam"
 
         if (meta.paired) {
             """
@@ -87,7 +87,7 @@ process samtools_sort {
         
         // catch filename
         def extension = params.filter_unmapped ? "_filtered_sorted" : "_sorted"
-        filename = AlineUtils.getCleanName(bam) + extension
+        filename = bam.baseName + extension
 
         if (params.cram) {
             if (params.filter_unmapped) {
