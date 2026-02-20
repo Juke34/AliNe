@@ -54,12 +54,13 @@ class AlineUtils {
         def name = new File(filename.toString()).getName()
 
         // Pattern for paired-end: _R?[12](_\d+)?(.fastq|.fq)(.gz)?$
+        // Do not match if _AliNe is between _R[12] and suffix => (?!.*_AliNe) needed to work with RAIN pipeline
         return name
-            .replaceAll(/_R?[12](_\d+)?.*\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
-            .replaceAll(/_R?[12](_\d+)?.*\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
-            .replaceAll(/_R?[12](_\d+)?.*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
-            .replaceAll(/_R?[12](_\d+)?.*\.fq$/, '')         // Remove _R1_001.fq, etc.
-            .replaceAll(/_R?[12](_\d+)?.*\.bam$/, '')        // Remove _R1.bam, etc.
+            .replaceAll(/_R?[12](_\d+)?(?!.*_AliNe).*\.fastq\.gz$/, '')  // Remove _R1_001.fastq.gz, _1_001.fastq.gz, etc.
+            .replaceAll(/_R?[12](_\d+)?(?!.*_AliNe).*\.fq\.gz$/, '')     // Remove _R1_001.fq.gz, etc.
+            .replaceAll(/_R?[12](_\d+)?(?!.*_AliNe).*\.fastq$/, '')      // Remove _R1_001.fastq, etc.
+            .replaceAll(/_R?[12](_\d+)?(?!.*_AliNe).*\.fq$/, '')         // Remove _R1_001.fq, etc.
+            .replaceAll(/_R?[12](_\d+)?(?!.*_AliNe).*\.bam$/, '')        // Remove _R1.bam, etc.
             // Fallback: remove extensions if no paired-end pattern matched
             .replaceAll(/\.fastq\.gz$/, '')  // Remove .fastq.gz
             .replaceAll(/\.fq\.gz$/, '')     // Remove .fq.gz
