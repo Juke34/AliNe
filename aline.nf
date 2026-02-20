@@ -555,7 +555,7 @@ workflow {
                                         }
                                         // Create a tuple with metadata and reads
                                         def file_id1 = AlineUtils.cleanPrefix(fastq1)
-                                        def uid = AlineUtils.get_file_uid(fastq1)
+                                        def uid = pair ? AlineUtils.get_file_uid(fastq1) : AlineUtils.cleanPrefix(fastq1)
                                         def file_id = pair ? [file_id1, file_id2] : [file_id1]
                                         def meta = [ uid: uid, file_id: file_id, sample_id: sample_id, strandedness: libtype, read_type: read_type, data_type: data_type, paired: pair ]
                                         def reads = pair ? [fastq1, fastq2] : fastq1
