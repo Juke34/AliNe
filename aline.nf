@@ -37,12 +37,15 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'bwafastalignaln','bwafastalignmem','bwafastalignsw', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options      = ''
 params.bowtie_options     = ''
 params.bowtie2_options    = ''
 params.bwaaln_options     = ''
+params.bwafastalignaln_options = ''
+params.bwafastalignmem_options = ''
+params.bwafastalignsw_options = ''
 params.bwamem_options     = ''
 params.bwamem2_options    = ''
 params.bwasw_options      = ''
@@ -270,6 +273,7 @@ include {bbmap_index; bbmap} from "$baseDir/modules/bbmap.nf"
 include {bowtie_index; bowtie} from "$baseDir/modules/bowtie.nf"
 include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
+include {bwafastalign_index; bwafastalignaln; bwafastalignmem; bwafastalignsw} from "$baseDir/modules/bwafastalign.nf"
 include {bwamem2_index; bwamem2} from "$baseDir/modules/bwamem2.nf"
 include {dragmap_index; dragmap} from "$baseDir/modules/dragmap.nf"
 include {seqkit_convert; seqkit_clean_fasta_headers} from "$baseDir/modules/seqkit.nf"
@@ -277,7 +281,8 @@ include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp} from "$baseDir/modules/fastqc.nf"
 include {fastqc_ali as fastqc_ali_bbmap; fastqc_ali as fastqc_ali_bowtie ; fastqc_ali as fastqc_ali_bowtie2 ; 
-    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_dragmap; fastqc_ali as fastqc_ali_graphmap2 ; 
+    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_bwafastalignaln; 
+    fastqc_ali as fastqc_ali_bwafastalignmem;  fastqc_ali as fastqc_ali_bwafastalignsw; fastqc_ali as fastqc_ali_dragmap; fastqc_ali as fastqc_ali_graphmap2 ; 
     fastqc_ali as fastqc_ali_hisat2; fastqc_ali as fastqc_ali_kallisto; fastqc_ali as fastqc_ali_last; fastqc_ali as fastqc_ali_minimap2; fastqc_ali as fastqc_ali_ngmlr; 
     fastqc_ali as fastqc_ali_novoalign ; fastqc_ali as fastqc_ali_nucmer;  fastqc_ali as fastqc_ali_salmon; fastqc_ali as fastqc_ali_star; fastqc_ali as fastqc_ali_subread ; 
     fastqc_ali as fastqc_ali_sublong } from "$baseDir/modules/fastqc.nf"
@@ -294,25 +299,29 @@ include {r_rendering} from "$baseDir/modules/r.nf"
 include {salmon_index; salmon_guess_lib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
          samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
-         samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_dragmap; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
+         samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_bwafastalignaln;  samtools_sam2bam as samtools_sam2bam_bwafastalignmem; 
+         samtools_sam2bam as samtools_sam2bam_bwafastalignsw; samtools_sam2bam as samtools_sam2bam_dragmap; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
          samtools_sam2bam as samtools_sam2bam_last; samtools_sam2bam as samtools_sam2bam_minimap2; 
          samtools_sam2bam as samtools_sam2bam_ngmlr; samtools_sam2bam as samtools_sam2bam_novoalign; samtools_sam2bam as samtools_sam2bam_salmon } from "$baseDir/modules/samtools.nf"
 include {samtools_bam2cram as samtools_bam2cram_star; samtools_bam2cram as samtools_bam2cram_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_view_filter as samtools_view_filter_star; samtools_view_filter as samtools_view_filter_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
-         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_dragmap; samtools_sort as samtools_sort_graphmap2; 
+         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_bwafastalignaln; 
+         samtools_sort as samtools_sort_bwafastalignmem; samtools_sort as samtools_sort_bwafastalignsw; samtools_sort as samtools_sort_dragmap; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_kallisto; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
          samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie; samtools_stats as samtools_stats_ali_bowtie2 ;
          samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2;
-         samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_dragmap; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
+         samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_bwafastalignaln; samtools_stats as samtools_stats_ali_bwafastalignmem; 
+         samtools_stats as samtools_stats_ali_bwafastalignsw; samtools_stats as samtools_stats_ali_dragmap; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
          samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_last; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
          samtools_stats as samtools_stats_ali_novoalign ; samtools_stats as samtools_stats_ali_nucmer; samtools_stats as samtools_stats_ali_salmon; samtools_stats as samtools_stats_ali_star; 
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_merge_bam_if_paired} from "$baseDir/modules/samtools.nf"
 include {samtools_index as samtools_index_bbmap; samtools_index as samtools_index_bowtie; samtools_index as samtools_index_bowtie2; samtools_index as samtools_index_bwaaln;
-         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_dragmap; samtools_index as samtools_index_graphmap2;
+         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_bwafastalignaln; 
+         samtools_index as samtools_index_bwafastalignmem; samtools_index as samtools_index_bwafastalignsw; samtools_index as samtools_index_dragmap; samtools_index as samtools_index_graphmap2;
          samtools_index as samtools_index_hisat2; samtools_index as samtools_index_kallisto; samtools_index as samtools_index_last; samtools_index as samtools_index_minimap2;
          samtools_index as samtools_index_ngmlr; samtools_index as samtools_index_novoalign; samtools_index as samtools_index_nucmer; samtools_index as samtools_index_salmon;
          samtools_index as samtools_index_star; samtools_index as samtools_index_subread; samtools_index as samtools_index_sublong} from "$baseDir/modules/samtools.nf"
@@ -886,7 +895,7 @@ workflow {
             }
         }
 
-        // ------------------- BWA ALN/MEM/SW -----------------
+        // ------------------- BWA ALN/MEM/SW/FASTALIGN -----------------
         if ("bwaaln" in aligner_list || "bwamem" in aligner_list || "bwasw" in aligner_list){
             // index
             bwa_index(reference.collect(), "alignment/bwa/indicies")
@@ -957,6 +966,80 @@ workflow {
                 if(params.samtools_stats){
                     samtools_stats_ali_bwasw(bwasw_ali, reference.collect(), "samtools_stats/bwasw", "bwasw")
                     logs.concat(samtools_stats_ali_bwasw.out).set{logs} // save log
+                }
+            }
+        }
+        // ------------------- BWAFASTALIGN ALN/MEM/SW/FASTALIGN -----------------
+        if ("bwafastalignaln" in aligner_list || "bwafastalignmem" in aligner_list || "bwafastalignsw" in aligner_list){
+            // index
+            bwafastalign_index(reference.collect(), "alignment/bwafastalign/indicies")
+            if ("bwafastalignaln" in aligner_list){
+                // align
+                bwafastalignaln(reads, reference.collect(), bwafastalign_index.out.collect(), "alignment/bwafastalign/bwafastalignaln") 
+                logs.concat(bwafastalignaln.out.bwafastalignaln_summary).set{logs} // save log
+                // convert sam to bam
+                samtools_sam2bam_bwafastalignaln(bwafastalignaln.out.tuple_sample_sam)
+                // sort and convert to cram
+                samtools_sort_bwafastalignaln(samtools_sam2bam_bwafastalignaln.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwafastalignaln(samtools_sort_bwafastalignaln.out, "alignment/bwafastalign/bwafastalignaln")
+                samtools_index_bwafastalignaln.out.tuple_sample_ali.set{bwafastalignaln_ali} // set name
+                // save aligned reads
+                sorted_ali.concat(bwafastalignaln_ali).set{sorted_ali} 
+                // stat on aligned reads
+                if(params.fastqc && !params.cram){
+                    fastqc_ali_bwafastalignaln(bwafastalignaln_ali, "fastqc/bwafastalignaln", "bwafastalignaln")
+                    logs.concat(fastqc_ali_bwafastalignaln.out).set{logs} // save log
+                }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwafastalignaln(bwafastalignaln_ali, reference.collect(), "samtools_stats/bwafastalignaln", "bwafastalignaln")
+                    logs.concat(samtools_stats_ali_bwafastalignaln.out).set{logs} // save log
+                }
+            }
+            if ("bwafastalignmem" in aligner_list){
+                // align
+                bwafastalignmem(reads, reference.collect(), bwafastalign_index.out.collect(), "alignment/bwafastalign/bwafastalignmem")
+                logs.concat(bwafastalignmem.out.bwafastalignmem_summary).set{logs} // save log
+                // convert sam to bam
+                samtools_sam2bam_bwafastalignmem(bwafastalignmem.out.tuple_sample_sam)
+                // sort and convert to cram
+                samtools_sort_bwafastalignmem(samtools_sam2bam_bwafastalignmem.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwafastalignmem(samtools_sort_bwafastalignmem.out, "alignment/bwafastalign/bwafastalignmem")
+                samtools_index_bwafastalignmem.out.tuple_sample_ali.set{bwafastalignmem_ali} // set name
+                // save aligned reads
+                sorted_ali.concat(bwafastalignmem_ali).set{sorted_ali} 
+                // stat on aligned reads
+                if(params.fastqc && !params.cram){
+                    fastqc_ali_bwafastalignmem(bwafastalignmem_ali, "fastqc/bwafastalignmem", "bwafastalignmem")
+                    logs.concat(fastqc_ali_bwafastalignmem.out).set{logs} // save log
+                }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwafastalignmem(bwafastalignmem_ali, reference.collect(), "samtools_stats/bwafastalignmem", "bwafastalignmem")
+                    logs.concat(samtools_stats_ali_bwafastalignmem.out).set{logs} // save log
+                }
+            }
+            if ("bwafastalignsw" in aligner_list){
+                // align
+                bwafastalignsw(reads, reference.collect(), bwafastalign_index.out.collect(), "alignment/bwafastalign/bwafastalignsw") 
+                logs.concat(bwafastalignsw.out.bwafastalignsw_summary).set{logs} // save log
+                // convert sam to bam
+                samtools_sam2bam_bwafastalignsw(bwafastalignsw.out.tuple_sample_sam)
+                // sort and convert to cram
+                samtools_sort_bwafastalignsw(samtools_sam2bam_bwafastalignsw.out.tuple_sample_bam, reference.collect())
+                // index
+                samtools_index_bwafastalignsw(samtools_sort_bwafastalignsw.out, "alignment/bwafastalign/bwafastalignsw")
+                samtools_index_bwafastalignsw.out.tuple_sample_ali.set{bwafastalignsw_ali} // set name
+                // save aligned reads
+                sorted_ali.concat(bwafastalignsw_ali).set{sorted_ali} 
+                // stat on aligned reads
+                if(params.fastqc && !params.cram){
+                    fastqc_ali_bwafastalignsw(bwafastalignsw_ali, "fastqc/bwafastalignsw", "bwafastalignsw")
+                    logs.concat(fastqc_ali_bwafastalignsw.out).set{logs} // save log
+                }
+                if(params.samtools_stats){
+                    samtools_stats_ali_bwafastalignsw(bwafastalignsw_ali, reference.collect(), "samtools_stats/bwafastalignsw", "bwafastalignsw")
+                    logs.concat(samtools_stats_ali_bwafastalignsw.out).set{logs} // save log
                 }
             }
         }
@@ -1451,6 +1534,9 @@ def helpMSG() {
         --bowtie_options            additional options for bowtie
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
+        --bwafastalignaln_options   additional options for bwafastalignaln
+        --bwafastalignmem_options   additional options for bwafastalignmem
+        --bwafastalignsw_options    additional options for bwafastalignsw
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
@@ -1516,6 +1602,21 @@ def printAlignerOptions(aligner_list) {
         sentence += """
     bwasw parameters
         bwasw_options           : ${params.bwasw_options}
+    """} 
+    if ("bwafastalignmem" in aligner_list){
+        sentence += """
+    bwafastalignmem parameters
+        bwafastalignmem_options    : ${params.bwafastalignmem_options}
+    """}
+    if ("bwafastalignaln" in aligner_list){
+        sentence += """
+    bwafastalignaln parameters
+        bwafastalignaln_options    : ${params.bwafastalignaln_options}
+    """} 
+    if ("bwafastalign" in aligner_list){
+        sentence += """
+    bwafastalignsw parameters
+        bwafastalignsw_options    : ${params.bwafastalignsw_options}
     """} 
     if ("dragmap" in aligner_list){
         sentence += """
