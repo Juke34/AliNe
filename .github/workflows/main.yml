@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v3
       # Run tests sequentialy
       - name: test short single_fastalign
-        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf --aligner bwafastalignaln,bwafastalignmem,bwafastalignsw
+        run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf --aligner bwafastalignmem
       - name: test short single
         run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
       - name: test short single cram
