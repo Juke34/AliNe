@@ -373,7 +373,9 @@ On success you should get a message looking like this:
         --bowtie_options            additional options for bowtie
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
-        --bwafastalign_options      additional options for bwafastalign
+        --bwafastalignaln_options   additional options for bwafastalignaln
+        --bwafastalignmem_options   additional options for bwafastalignmem
+        --bwafastalignsw_options    additional options for bwafastalignsw
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
