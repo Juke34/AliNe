@@ -57,7 +57,7 @@ process hisat2 {
             mkdir -p \$TMPDIR
 
             hisat2 ${hisat2_options} --novel-splicesite-outfile ${fileName}_splicesite.txt \\
-                --new-summary --summary-file ${fileName}_sorted_summary.txt \\
+                --new-summary --summary-file ${fileName}_sorted_summary.txt --temp-directory \$TMPDIR \\
                 -p ${task.cpus} -x $index_basename -1 ${reads[0]} -2 ${reads[1]} > ${fileName}.sam
             """
             } else {
@@ -67,7 +67,7 @@ process hisat2 {
             mkdir -p \$TMPDIR
 
             hisat2 ${hisat2_options} --novel-splicesite-outfile ${fileName}_splicesite.txt \\
-                --new-summary --summary-file ${fileName}_sorted_summary.txt \\
+                --new-summary --summary-file ${fileName}_sorted_summary.txt --temp-directory \$TMPDIR \\
                 -p ${task.cpus} -x $index_basename -U $reads > ${fileName}.sam
             """
         }
