@@ -66,9 +66,20 @@ process check_aligner{
             }
         }
         
+        // --- bwa fastalign aln tool ---
+        if ( "bwafastalignaln" in aligner_list ){
+            if ( meta.read_type == "pacbio" || meta.read_type == "ont"){
+                log.info "${meta.uid} => Bwafastalignaln aligner is not recommended to align long reads!"
+            }
+        }
 
         // --- bwa mem tool ---
         if ( "bwamem" in aligner_list ){
+            // short and long reads ok
+        }
+
+        // --- bwa fastalign mem tool ---
+        if ( "bwafastalignmem" in aligner_list ){
             // short and long reads ok
         }
 
@@ -78,12 +89,18 @@ process check_aligner{
                 log.info "${meta.uid} => Bwamem2 aligner is not recommended to align long reads!"
             }
         }
-       
-
+    
         // --- bwa sw tool ---
         if ( "bwasw" in aligner_list ){
             if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                 log.info "${meta.uid} => Bwasw aligner is not recommended to align long reads!"
+            }
+        }
+
+        // --- bwa fastalign sw tool ---
+        if ( "bwafastalignsw" in aligner_list ){
+            if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                log.info "${meta.uid} => Bwafastalignsw aligner is not recommended to align long reads!"
             }
         }
 
@@ -337,6 +354,40 @@ process check_aligner_params{
         if ( "bwasw" in aligner_list ){
             def bwasw_options = params.bwasw_options ?: ""
             meta.bwasw_options = bwasw_options
+        }
+
+        // --- bwa fastalign aln tool ---
+        if ( "bwafastalignaln" in aligner_list ){
+            def bwafastalignaln_options = params.bwafastalignaln_options ?: ""
+            meta.bwafastalignaln_options = bwafastalignaln_options
+        }
+
+        // --- bwa fastalign mem tool ---
+        if ( "bwafastalignmem" in aligner_list ){
+            def bwafastalignmem_options = params.bwafastalignmem_options ?: ""
+            if( !params.relax ){
+                if (meta.read_type == "pacbio"){
+                    if ( ! bwafastalignmem_options.contains(" pacbio") ){
+                        bwafastalignmem_options += " -x pacbio"
+                        log.info "${meta.uid} => Pacbio reads being used, setting -x pacbio to bwafastalignmem!\n" +
+                                 "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
+                    }
+                }
+                if (meta.read_type == "ont"){
+                    if ( ! bwafastalignmem_options.contains(" ont2d") ){
+                        bwafastalignmem_options += " -x ont2d"
+                        log.info "${meta.uid} => Ont reads being used, setting -x ont2d to bwafastalignmem!\n" + 
+                                 "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
+                    }
+                }
+            }
+            meta.bwafastalignmem_options = bwafastalignmem_options
+        }
+
+        // --- bwa fastalign sw tool ---
+        if ( "bwafastalignsw" in aligner_list ){
+            def bwafastalignsw_options = params.bwafastalignsw_options ?: ""
+            meta.bwafastalignsw_options = bwafastalignsw_options
         }
 
         // --- dragmap tool ---
