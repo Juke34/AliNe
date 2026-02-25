@@ -37,7 +37,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'bwafastalignaln','bwafastalignmem','bwafastalignsw', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'bwafastalignmem', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options      = ''
 params.bowtie_options     = ''
@@ -1534,9 +1534,7 @@ def helpMSG() {
         --bowtie_options            additional options for bowtie
         --bowtie2_options           additional options for bowtie2
         --bwaaln_options            additional options for bwaaln
-        --bwafastalignaln_options   additional options for bwafastalignaln
         --bwafastalignmem_options   additional options for bwafastalignmem
-        --bwafastalignsw_options    additional options for bwafastalignsw
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
         --bwasw_options             additional options for bwasw
