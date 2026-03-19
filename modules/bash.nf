@@ -204,9 +204,6 @@ process check_aligner_params{
     tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
-    // Enable deep caching to track input changes properly
-    cache 'deep'
-
     input:
         tuple val(meta), path(fastq)
         val aligner_list
@@ -684,15 +681,10 @@ process check_aligner_params{
             valueAfter["\$key"]="\$value"
         done
 
-        # Display in sorted order for deterministic output (affects cache)
-        for key in \$(echo "\${!valueAfter[@]}" | tr ' ' '\n' | sort); do
-            echo "key <\$key>"
-            echo "value <\${valueAfter[\$key]}>"
-        done
-
         echo -e "# Below are the tool parameters received by AliNe, and the modifications/choices made by Aline according to available information (read type, annotation, etc.)." >> \$fileout
         echo -e "# Some tools have different executable depending on the type of read. Choices made by AliNe are displayed as aligner_tool." >> \$fileout
         echo -e "Parameter\\tBefore\\tAfter" >> \$fileout
+        # Display in sorted order for deterministic output (affects cache)
         for tool in \$(echo "\${!valueBefore[@]}" | tr ' ' '\n' | sort); do 
             newKey="\${tool}_options"
             newKey2="\${tool}_tool"
