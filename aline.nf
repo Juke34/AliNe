@@ -79,7 +79,7 @@ params.filter_unmapped = false
 
 // other
 params.help = null
-params.seqtk_sample_size = 10000 // number of reads to sample for seqtk - used to determnine the library type
+params.seqtk_sample_size = 250000 // number of reads to sample for seqtk - used to determnine the library type
 params.debug = false
 
 //*************************************************
@@ -122,8 +122,8 @@ if( !params.aligner ){
 
 // check read library type parameter
 println """check strandedness parameter: ..."""
-def strandednessp = params.strandedness == "null" ? null : params.strandedness // if read_type is "null" it will be set to null, otherwise it will be the value of params.strandedness
-// params.strandedness can be a string "null" when coming from daisy chaining. To be really null it must be set to null here. It is why we transfer the params.strandedness into strandednessp (p for prameter)
+def strandednessp = (params.strandedness == "null" || params.strandedness == "") ? null : params.strandedness // if read_type is "null" or empty string it will be set to null, otherwise it will be the value of params.strandedness
+// params.strandedness can be a string "null" when coming from daisy chaining, or empty string by default. To be really null it must be set to null here. It is why we transfer the params.strandedness into strandednessp (p for parameter)
 if (! strandednessp ) {
     println """    No value provided by --strandedness"""
     if( via_csv ) {
@@ -749,6 +749,10 @@ workflow {
         params.debug && log.info('library type guessing')
 
         // If strandednessp is empty, we do not guess strandedness
+        //log.info("strandednessp value: '${strandednessp}'")
+        //log.info("strandednessp type: ${strandednessp?.getClass()}")
+        //log.info("strandednessp is null: ${strandednessp == null}")
+        //log.info("strandednessp is empty: ${!strandednessp}")
         if ( ! strandednessp ) {
             params.debug && log.info('No value provided for strandedness parameter => strandedness set to null')
             // add set strandedness to null only if not already set (e.g. specific case of salmon short_single reads)
