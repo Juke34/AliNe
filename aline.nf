@@ -698,7 +698,7 @@ workflow {
         } // STAR case (touch all type of sample) - need to set sjdbOverhang when we do have an annotation
         else if ( "star" in aligner_list && params.annotation && !params.star_index_options.contains("--sjdbOverhang") ) {
             params.debug && log.info('read_length star case')
-            subsampled = seqtk_sample(raw_reads_trim)
+            subsampled = seqtk_sample(raw_reads_trim, params.seqtk_sample_size)
             read_length(subsampled, "mean_read_length")
                 
             // add read length in meta
@@ -720,7 +720,7 @@ workflow {
                 raw_reads_trim_others = raw_reads_trim.filter { meta, reads -> meta.paired }
 
                 params.debug && log.info('subsample short_single reads for read length guessing')
-                subsampled = seqtk_sample(raw_reads_trim_short_single)
+                subsampled = seqtk_sample(raw_reads_trim_short_single, params.seqtk_sample_size)
                 read_length(subsampled, "mean_read_length")
 
                 // add read length in meta
@@ -784,13 +784,13 @@ workflow {
                                                                                         }
         // subsample whath has to be subsampled
         sample_to_guess_to_subsampled = sample_to_guess.filter { meta, reads ->  !meta.subsampled }
-        subsampled_sample_to_guess_to_subsampled = seqtk_sample2(sample_to_guess_to_subsampled)
+        subsampled_sample_to_guess_to_subsampled = seqtk_sample2(sample_to_guess_to_subsampled, params.seqtk_sample_size)
 
         // Merge all subsampled reads for strandedness guessing
         all_subsampled_read_guessing = subsample_sample_to_guess_already_subsampled.concat(subsampled_sample_to_guess_to_subsampled)
 
         // ------------------- guess strandedness -------------------
-        salmon_index_ch = salmon_index(reference.collect(), "alignment/salmon/indicies" )
+        salmon_index_ch = salmon_index(reference.collect(), "alignment/salmon/indicies", params.salmon_index_options)
         salmon_index_done = true // set to true to avoid multiple calls to salmon_index
         salmon_guess_lib(all_subsampled_read_guessing, salmon_index_ch, "salmon_strandedness")
 
@@ -856,7 +856,7 @@ workflow {
             bbmap(reads, reference.collect(), bbmap_index.out.collect(), "alignment/bbmap")
             logs.concat(bbmap.out.bbmap_summary).set{logs} // save log
             // sort and convert to cram
-            samtools_sort_bbmap(bbmap.out.tuple_sample_bam, reference.collect())
+            samtools_sort_bbmap(bbmap.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_bbmap(samtools_sort_bbmap.out, "alignment/bbmap")
             samtools_index_bbmap.out.tuple_sample_ali.set{bbmap_ali} // set name
@@ -881,7 +881,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_bowtie(bowtie.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_bowtie(samtools_sam2bam_bowtie.out.tuple_sample_bam, reference.collect())
+            samtools_sort_bowtie(samtools_sam2bam_bowtie.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_bowtie(samtools_sort_bowtie.out, "alignment/bowtie")
             samtools_index_bowtie.out.tuple_sample_ali.set{bowtie_ali} // set name
@@ -908,7 +908,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_bowtie2(bowtie2.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, reference.collect())
+            samtools_sort_bowtie2(samtools_sam2bam_bowtie2.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_bowtie2(samtools_sort_bowtie2.out, "alignment/bowtie2")
             samtools_index_bowtie2.out.tuple_sample_ali.set{bowtie2_ali} // set name
@@ -936,7 +936,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwaaln(bwaaln.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwaaln(samtools_sam2bam_bwaaln.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwaaln(samtools_sort_bwaaln.out, "alignment/bwa/bwaaln")
                 samtools_index_bwaaln.out.tuple_sample_ali.set{bwaaln_ali} // set name
@@ -959,7 +959,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwamem(bwamem.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwamem(samtools_sam2bam_bwamem.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwamem(samtools_sort_bwamem.out, "alignment/bwa/bwamem")
                 samtools_index_bwamem.out.tuple_sample_ali.set{bwamem_ali} // set name
@@ -982,7 +982,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwasw(bwasw.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwasw(samtools_sam2bam_bwasw.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwasw(samtools_sort_bwasw.out, "alignment/bwa/bwasw")
                 samtools_index_bwasw.out.tuple_sample_ali.set{bwasw_ali} // set name
@@ -1010,7 +1010,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwafastalignaln(bwafastalignaln.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwafastalignaln(samtools_sam2bam_bwafastalignaln.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwafastalignaln(samtools_sam2bam_bwafastalignaln.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwafastalignaln(samtools_sort_bwafastalignaln.out, "alignment/bwafastalign/bwafastalignaln")
                 samtools_index_bwafastalignaln.out.tuple_sample_ali.set{bwafastalignaln_ali} // set name
@@ -1033,7 +1033,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwafastalignmem(bwafastalignmem.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwafastalignmem(samtools_sam2bam_bwafastalignmem.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwafastalignmem(samtools_sam2bam_bwafastalignmem.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwafastalignmem(samtools_sort_bwafastalignmem.out, "alignment/bwafastalign/bwafastalignmem")
                 samtools_index_bwafastalignmem.out.tuple_sample_ali.set{bwafastalignmem_ali} // set name
@@ -1056,7 +1056,7 @@ workflow {
                 // convert sam to bam
                 samtools_sam2bam_bwafastalignsw(bwafastalignsw.out.tuple_sample_sam)
                 // sort and convert to cram
-                samtools_sort_bwafastalignsw(samtools_sam2bam_bwafastalignsw.out.tuple_sample_bam, reference.collect())
+                samtools_sort_bwafastalignsw(samtools_sam2bam_bwafastalignsw.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
                 // index
                 samtools_index_bwafastalignsw(samtools_sort_bwafastalignsw.out, "alignment/bwafastalign/bwafastalignsw")
                 samtools_index_bwafastalignsw.out.tuple_sample_ali.set{bwafastalignsw_ali} // set name
@@ -1084,7 +1084,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_bwamem2(bwamem2.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_bwamem2(samtools_sam2bam_bwamem2.out.tuple_sample_bam, reference.collect())
+            samtools_sort_bwamem2(samtools_sam2bam_bwamem2.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_bwamem2(samtools_sort_bwamem2.out, "alignment/bwamem2/")
             samtools_index_bwamem2.out.tuple_sample_ali.set{bwamem2_ali} // set name
@@ -1111,7 +1111,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_dragmap(dragmap.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_dragmap(samtools_sam2bam_dragmap.out.tuple_sample_bam, reference.collect())
+            samtools_sort_dragmap(samtools_sam2bam_dragmap.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_dragmap(samtools_sort_dragmap.out, "alignment/dragmap")
             samtools_index_dragmap.out.tuple_sample_ali.set{dragmap_ali} // set name
@@ -1138,7 +1138,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_graphmap2(graphmap2.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, reference.collect())
+            samtools_sort_graphmap2(samtools_sam2bam_graphmap2.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_graphmap2(samtools_sort_graphmap2.out, "alignment/graphmap2")
             samtools_index_graphmap2.out.tuple_sample_ali.set{graphmap2_ali} // set name
@@ -1165,7 +1165,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_hisat2(hisat2.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, reference.collect())
+            samtools_sort_hisat2(samtools_sam2bam_hisat2.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_hisat2(samtools_sort_hisat2.out, "alignment/hisat2")
             samtools_index_hisat2.out.tuple_sample_ali.set{hisat2_ali} // set name
@@ -1185,12 +1185,12 @@ workflow {
         // ------------------- KALLISTO ----------------- output is bam but not sorted and bai missing
         if ("kallisto" in aligner_list){
             // index
-            kallisto_index(reference.collect(),  "alignment/kallisto/indicies")
+            kallisto_index(reference.collect(),  "alignment/kallisto/indicies", params.kallisto_index_options)
             // align
             kallisto(reads, kallisto_index.out.collect(), "alignment/kallisto")
             logs.concat(kallisto.out.kallisto_summary).set{logs} // save log
             // sort and convert to cram
-            samtools_sort_kallisto(kallisto.out.tuple_sample_bam, reference.collect())
+            samtools_sort_kallisto(kallisto.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index bam/cram files
             samtools_index_kallisto(samtools_sort_kallisto.out, "alignment/kallisto")
             samtools_index_kallisto.out.tuple_sample_ali.set{kallisto_ali} // set name
@@ -1217,7 +1217,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_last(last.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_last(samtools_sam2bam_last.out.tuple_sample_bam, reference.collect())
+            samtools_sort_last(samtools_sam2bam_last.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_last(samtools_sort_last.out, "alignment/last")
             samtools_index_last.out.tuple_sample_ali.set{last_ali} // set name
@@ -1244,7 +1244,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_minimap2(minimap2.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, reference.collect())
+            samtools_sort_minimap2(samtools_sam2bam_minimap2.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_minimap2(samtools_sort_minimap2.out, "alignment/minimap2")
             samtools_index_minimap2.out.tuple_sample_ali.set{minimap2_ali} // set name
@@ -1269,7 +1269,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_ngmlr(ngmlr.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_ngmlr(samtools_sam2bam_ngmlr.out.tuple_sample_bam, reference.collect())
+            samtools_sort_ngmlr(samtools_sam2bam_ngmlr.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_ngmlr(samtools_sort_ngmlr.out, "alignment/ngmlr")
             samtools_index_ngmlr.out.tuple_sample_ali.set{ngmlr_ali} // set name
@@ -1295,7 +1295,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_novoalign(novoalign.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_novoalign(samtools_sam2bam_novoalign.out.tuple_sample_bam, reference.collect())
+            samtools_sort_novoalign(samtools_sam2bam_novoalign.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_novoalign(samtools_sort_novoalign.out, "alignment/novoalign")
             samtools_index_novoalign.out.tuple_sample_ali.set{novoalign_ali} // set name
@@ -1320,7 +1320,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_nucmer(nucmer.out.tuple_sample_sam, reference.collect())
             // sort and convert to cram
-            samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, reference.collect())
+            samtools_sort_nucmer(samtools_sam2bam_nucmer.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_nucmer(samtools_sort_nucmer.out, "alignment/nucmer")
             samtools_index_nucmer.out.tuple_sample_ali.set{nucmer_ali} // set name
@@ -1341,7 +1341,7 @@ workflow {
         if ("salmon" in aligner_list ){
             // index
             if (! salmon_index_done){ // run salmon index only if not already done when libray type is guessed
-                salmon_index(reference.collect(), "alignment/salmon/indicies")
+                salmon_index(reference.collect(), "alignment/salmon/indicies", params.salmon_index_options, params.aligner)
             }
             // align
             salmon(reads, salmon_index.out.collect(), "alignment/salmon")
@@ -1349,7 +1349,7 @@ workflow {
             // convert sam to bam
             samtools_sam2bam_salmon(salmon.out.tuple_sample_sam)
             // sort and convert to cram
-            samtools_sort_salmon(samtools_sam2bam_salmon.out.tuple_sample_bam, reference.collect())
+            samtools_sort_salmon(samtools_sam2bam_salmon.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
             // index
             samtools_index_salmon(samtools_sort_salmon.out, "alignment/salmon")
             samtools_index_salmon.out.tuple_sample_ali.set{salmon_ali} // set name
@@ -1371,7 +1371,7 @@ workflow {
             // Take read length information from only one sample for --sjdbOverhang option
             // only needed if --sjdbFileChrStartEnd or --sjdbGTFfile option is activated)
             first_file = reads.first()
-            prepare_star_index_options(first_file, annotation.collect())
+            prepare_star_index_options(first_file, annotation.collect(), params.star_index_options)
             star_index(reference.collect(), prepare_star_index_options.out, annotation.collect(), "alignment/star/indicies") // index
             star(reads, star_index.out.collect(), annotation.collect(), "alignment/star") // align out is bam and sorted
             logs.concat(star.out.star_summary).set{logs} // save log
@@ -1453,7 +1453,7 @@ workflow {
             samtools_merge_bam_if_paired(sublong.out.tuple_sample_bam)
             samtools_merge_bam_if_paired.out.tuple_sample_bam.set{sublong_ali_tmp} // set name
             // sort and convert to cram
-            samtools_sort_sublong(sublong_ali_tmp, reference.collect())
+            samtools_sort_sublong(sublong_ali_tmp, reference.collect(), params.filter_unmapped, params.cram)
             // index bam/cram files
             samtools_index_sublong(samtools_sort_sublong.out, "alignment/sublong")
             samtools_index_sublong.out.tuple_sample_ali.set{sublong_ali} // set name

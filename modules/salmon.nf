@@ -11,13 +11,14 @@ process salmon_index {
     input:
         path genome_fasta
         val outpath
+        val salmon_index_options
 
     output:
         path "salmon_index", emit: index
 
     script:
         """
-        salmon index ${params.salmon_index_options} -t ${genome_fasta} -i salmon_index --threads ${task.cpus}
+        salmon index ${salmon_index_options} -t ${genome_fasta} -i salmon_index --threads ${task.cpus}
         """
 }
 

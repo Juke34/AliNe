@@ -5,12 +5,13 @@ process prepare_star_index_options {
     input:
         tuple val(meta), path(reads)
         path annotation
+        val star_index_options_param
 
     output:
         stdout()
 
     script:
-        star_index_options = "${params.star_index_options}"
+        star_index_options = "${star_index_options_param}"
 
         if ( meta.annotation ){
             // Deal with --sjdbGTFfile option

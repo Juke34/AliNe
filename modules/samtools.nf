@@ -79,6 +79,8 @@ process samtools_sort {
     input:
         tuple val(meta), path(bam)
         path(genome_fasta)
+        val filter_unmapped
+        val use_cram
 
     output:
         tuple val(meta), path ("*_sorted.{bam,cram}"), emit: tuple_sample_ali
@@ -86,11 +88,11 @@ process samtools_sort {
     script:
         
         // catch filename
-        def extension = params.filter_unmapped ? "_filtered_sorted" : "_sorted"
+        def extension = filter_unmapped ? "_filtered_sorted" : "_sorted"
         filename = bam.baseName + extension
 
-        if (params.cram) {
-            if (params.filter_unmapped) {
+        if (use_cram) {
+            if (filter_unmapped) {
                 """
                     samtools view -b -F 4 -@ ${task.cpus} ${bam} | samtools sort -@ ${task.cpus} --reference ${genome_fasta} -o ${filename}.cram -
                 """
@@ -100,7 +102,7 @@ process samtools_sort {
                 """
             }
         } else {
-            if (params.filter_unmapped) {
+            if (filter_unmapped) {
                 """
                     samtools view -b -F 4 -@ ${task.cpus} ${bam} | samtools sort -@ ${task.cpus} -o ${filename}.bam -
                 """

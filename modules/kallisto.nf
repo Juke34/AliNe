@@ -11,6 +11,7 @@ process kallisto_index {
     input:
         path(genome_fasta)
         val outpath
+        val kallisto_index_options
 
     output:
         path('*.kallisto_index')
@@ -18,7 +19,7 @@ process kallisto_index {
     script:
 
         """
-        kallisto index ${params.kallisto_index_options} -i ${genome_fasta.baseName}.kallisto_index $genome_fasta
+        kallisto index ${kallisto_index_options} -i ${genome_fasta.baseName}.kallisto_index $genome_fasta
         """
 }
 
