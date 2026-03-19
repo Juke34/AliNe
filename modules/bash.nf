@@ -217,7 +217,7 @@ process check_aligner_params{
 
     script:
         // Create a copy of meta to avoid mutating the input (breaks caching)
-        def meta_copy = meta.clone()
+        meta_copy = meta.clone()
 
         // --- bbmap tool ---
         if ( "bbmap" in aligner_list ){
