@@ -811,7 +811,7 @@ workflow {
         //                                          ADAPT ALIGNER PARAMETERS 
         // ------------------------------------------------------------------------------------------------
         log.info """Adapt aligner parameters ..."""
-        check_aligner_params( raw_reads_trim_length_lib, aligner_list, annotation.collect(), aline_processed_params )
+        check_aligner_params( raw_reads_trim_length_lib, aligner_list, annotation.collect(), aline_processed_params, params.relax )
         reads = check_aligner_params.out[0]
         params.debug && reads.view()
 

@@ -204,14 +204,12 @@ process check_aligner_params{
     tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
-    // improve cache
-    cache 'lenient'  // or 'deep' depending needs
-
     input:
         tuple val(meta), path(fastq)
         val aligner_list
         path annotation
         val outpath
+        val relax
 
     output:
         tuple val(meta), path(fastq)
@@ -223,7 +221,7 @@ process check_aligner_params{
         if ( "bbmap" in aligner_list ){
             def bbmap_tool = "bbmap.sh"
             def bbmap_options = params.bbmap_options ?: ""
-            if ( !params.relax ){
+            if ( !relax ){
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     bbmap_tool = "mapPacBio.sh"
                     log.info "${meta.uid} => Long reads being used, using mapPacBio.sh to align with bbmap!\n" +
@@ -309,7 +307,7 @@ process check_aligner_params{
         // --- bwa mem tool ---
         if ( "bwamem" in aligner_list ){
             def bwamem_options = params.bwamem_options ?: ""
-            if( !params.relax ){
+            if( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem_options.contains(" pacbio") ){
                         bwamem_options += " -x pacbio"
@@ -331,7 +329,7 @@ process check_aligner_params{
         // --- bwa mem2 tool ---
         if ("bwamem2" in aligner_list ){
             def bwamem2_options = params.bwamem2_options ?: ""
-            if ( !params.relax ){
+            if ( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem2_options.contains(" pacbio") ){
                         bwamem2_options += " -x pacbio"
@@ -365,7 +363,7 @@ process check_aligner_params{
         // --- bwa fastalign mem tool ---
         if ( "bwafastalignmem" in aligner_list ){
             def bwafastalignmem_options = params.bwafastalignmem_options ?: ""
-            if( !params.relax ){
+            if( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwafastalignmem_options.contains(" pacbio") ){
                         bwafastalignmem_options += " -x pacbio"
@@ -482,7 +480,7 @@ process check_aligner_params{
         // Force -a option to be sure to get sam output
         if ("minimap2" in aligner_list ){
             def minimap2_options = params.minimap2_options ?: ""
-            if ( !params.relax ){
+            if ( !relax ){
                 if (meta.read_type == "short_single" || meta.read_type == "short_paired"){
                     if ( ! minimap2_options.contains("--sr ") ){
                         minimap2_options += " --sr"
@@ -519,7 +517,7 @@ process check_aligner_params{
         // ngmlr tool - check options
         if ("ngmlr" in aligner_list ){
             def ngmlr_options = params.ngmlr_options ?: ""
-            if (!params.relax) {
+            if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
                 if (meta.read_type == "ont"){
                     if (! ngmlr_options.contains("-x ont")){
@@ -537,7 +535,7 @@ process check_aligner_params{
         if ("novoalign" in aligner_list ){
             def novoalign_lic = ""
             def novoalign_options = params.novoalign_options ?: ""
-            if (!params.relax) {
+            if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     if (! novoalign_options.contains("-g ")){
@@ -593,7 +591,7 @@ process check_aligner_params{
             if (meta.annotation && ! star_options.contains("--sjdbGTFfile ") ){
                 star_options += " --sjdbGTFfile ${annotation}"
             }
-            if (!params.relax){
+            if (!relax){
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     star_tool = "STARlong"
                 }
