@@ -811,7 +811,33 @@ workflow {
         //                                          ADAPT ALIGNER PARAMETERS 
         // ------------------------------------------------------------------------------------------------
         log.info """Adapt aligner parameters ..."""
-        check_aligner_params( raw_reads_trim_length_lib, aligner_list, annotation.collect(), aline_processed_params, params.relax )
+        // Create a map of all aligner options to pass explicitly (avoids params object in cache hash)
+        def aligner_options_map = [
+            bbmap_options: params.bbmap_options ?: "",
+            bowtie_options: params.bowtie_options ?: "",
+            bowtie2_options: params.bowtie2_options ?: "",
+            bwaaln_options: params.bwaaln_options ?: "",
+            bwamem_options: params.bwamem_options ?: "",
+            bwamem2_options: params.bwamem2_options ?: "",
+            bwasw_options: params.bwasw_options ?: "",
+            bwafastalignaln_options: params.bwafastalignaln_options ?: "",
+            bwafastalignmem_options: params.bwafastalignmem_options ?: "",
+            bwafastalignsw_options: params.bwafastalignsw_options ?: "",
+            dragmap_options: params.dragmap_options ?: "",
+            graphmap2_options: params.graphmap2_options ?: "",
+            hisat2_options: params.hisat2_options ?: "",
+            kallisto_options: params.kallisto_options ?: "",
+            last_options: params.last_options ?: "",
+            minimap2_options: params.minimap2_options ?: "",
+            ngmlr_options: params.ngmlr_options ?: "",
+            novoalign_options: params.novoalign_options ?: "",
+            nucmer_options: params.nucmer_options ?: "",
+            salmon_options: params.salmon_options ?: "",
+            star_options: params.star_options ?: "",
+            subread_options: params.subread_options ?: "",
+            sublong_options: params.sublong_options ?: ""
+        ]
+        check_aligner_params( raw_reads_trim_length_lib, aligner_list, annotation.collect(), aline_processed_params, params.relax, aligner_options_map )
         reads = check_aligner_params.out[0]
         params.debug && reads.view()
 

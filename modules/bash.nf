@@ -204,14 +204,13 @@ process check_aligner_params{
     tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
-    cache 'deep'
-
     input:
         tuple val(meta), path(fastq)
         val aligner_list
         path annotation
         val outpath
         val relax
+        val aligner_options_map
 
     output:
         tuple val(meta), path(fastq)
@@ -223,7 +222,7 @@ process check_aligner_params{
         // --- bbmap tool ---
         if ( "bbmap" in aligner_list ){
             def bbmap_tool = "bbmap.sh"
-            def bbmap_options = params.bbmap_options ?: ""
+            def bbmap_options = aligner_options_map.bbmap_options ?: ""
             if ( !relax ){
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
                     bbmap_tool = "mapPacBio.sh"
@@ -265,7 +264,7 @@ process check_aligner_params{
 
         // --- bowtie tool ---
         if ( "bowtie" in aligner_list ){
-            def bowtie_options = params.bowtie_options ?: ""
+            def bowtie_options = aligner_options_map.bowtie_options ?: ""
             if (! bowtie_options.contains("--fr ") && 
                 ! bowtie_options.contains("--rf ") && 
                 ! bowtie_options.contains("--ff ") &&
@@ -283,7 +282,7 @@ process check_aligner_params{
 
         // --- bowtie2 tool ---
         if ( "bowtie2" in aligner_list ){
-            def bowtie2_options = params.bowtie2_options ?: ""
+            def bowtie2_options = aligner_options_map.bowtie2_options ?: ""
             if (! bowtie2_options.contains("--fr ") && 
                 ! bowtie2_options.contains("--rf ") && 
                 ! bowtie2_options.contains("--ff ") &&
@@ -302,14 +301,14 @@ process check_aligner_params{
 
         // --- bwa aln tool ---
         if ( "bwaaln" in aligner_list ){
-            def bwaaln_options = params.bwaaln_options ?: ""
+            def bwaaln_options = aligner_options_map.bwaaln_options ?: ""
             meta.bwaaln_options = bwaaln_options
         }
         
 
         // --- bwa mem tool ---
         if ( "bwamem" in aligner_list ){
-            def bwamem_options = params.bwamem_options ?: ""
+            def bwamem_options = aligner_options_map.bwamem_options ?: ""
             if( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem_options.contains(" pacbio") ){
@@ -331,7 +330,7 @@ process check_aligner_params{
 
         // --- bwa mem2 tool ---
         if ("bwamem2" in aligner_list ){
-            def bwamem2_options = params.bwamem2_options ?: ""
+            def bwamem2_options = aligner_options_map.bwamem2_options ?: ""
             if ( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwamem2_options.contains(" pacbio") ){
@@ -353,19 +352,19 @@ process check_aligner_params{
 
         // --- bwa sw tool ---
         if ( "bwasw" in aligner_list ){
-            def bwasw_options = params.bwasw_options ?: ""
+            def bwasw_options = aligner_options_map.bwasw_options ?: ""
             meta.bwasw_options = bwasw_options
         }
 
         // --- bwa fastalign aln tool ---
         if ( "bwafastalignaln" in aligner_list ){
-            def bwafastalignaln_options = params.bwafastalignaln_options ?: ""
+            def bwafastalignaln_options = aligner_options_map.bwafastalignaln_options ?: ""
             meta.bwafastalignaln_options = bwafastalignaln_options
         }
 
         // --- bwa fastalign mem tool ---
         if ( "bwafastalignmem" in aligner_list ){
-            def bwafastalignmem_options = params.bwafastalignmem_options ?: ""
+            def bwafastalignmem_options = aligner_options_map.bwafastalignmem_options ?: ""
             if( !relax ){
                 if (meta.read_type == "pacbio"){
                     if ( ! bwafastalignmem_options.contains(" pacbio") ){
@@ -387,19 +386,19 @@ process check_aligner_params{
 
         // --- bwa fastalign sw tool ---
         if ( "bwafastalignsw" in aligner_list ){
-            def bwafastalignsw_options = params.bwafastalignsw_options ?: ""
+            def bwafastalignsw_options = aligner_options_map.bwafastalignsw_options ?: ""
             meta.bwafastalignsw_options = bwafastalignsw_options
         }
 
         // --- dragmap tool ---
         if ( "dragmap" in aligner_list ){
-            def dragmap_options = params.dragmap_options ?: ""
+            def dragmap_options = aligner_options_map.dragmap_options ?: ""
             meta.dragmap_options = dragmap_options
         }
 
         // --- graphmap2 tool ---
         if ( "graphmap2" in aligner_list ){
-            def graphmap2_options = params.graphmap2_options ?: ""
+            def graphmap2_options = aligner_options_map.graphmap2_options ?: ""
             if (meta.annotation && !graphmap2_options.contains("--gtf ") ){
                 graphmap2_options += " --gtf ${annotation}"
             }
@@ -408,7 +407,7 @@ process check_aligner_params{
         
         // hisat2
         if ("hisat2" in aligner_list ){
-            def hisat2_options = params.hisat2_options ?: ""
+            def hisat2_options = aligner_options_map.hisat2_options ?: ""
             // deal with library type - default is unstranded.
             if (! hisat2_options.contains("--rna-strandness ") &&
                 meta.strandedness && ! meta.strandedness.contains("U")
@@ -447,7 +446,7 @@ process check_aligner_params{
 
         // --- kallisto tool ---
         if ( "kallisto" in aligner_list ){
-            def kallisto_options = params.kallisto_options ?: ""
+            def kallisto_options = aligner_options_map.kallisto_options ?: ""
             // deal with read_orientation
             if (! kallisto_options.contains("--fr-stranded ") && 
                 ! kallisto_options.contains("--rf-stranded ") && 
@@ -475,14 +474,14 @@ process check_aligner_params{
 
         // --- last tool ---
         if ( "last" in aligner_list ){
-            def last_options = params.last_options ?: ""
+            def last_options = aligner_options_map.last_options ?: ""
             meta.last_options = last_options
         }
 
         // ---- minimap2 tool ---
         // Force -a option to be sure to get sam output
         if ("minimap2" in aligner_list ){
-            def minimap2_options = params.minimap2_options ?: ""
+            def minimap2_options = aligner_options_map.minimap2_options ?: ""
             if ( !relax ){
                 if (meta.read_type == "short_single" || meta.read_type == "short_paired"){
                     if ( ! minimap2_options.contains("--sr ") ){
@@ -519,7 +518,7 @@ process check_aligner_params{
 
         // ngmlr tool - check options
         if ("ngmlr" in aligner_list ){
-            def ngmlr_options = params.ngmlr_options ?: ""
+            def ngmlr_options = aligner_options_map.ngmlr_options ?: ""
             if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
                 if (meta.read_type == "ont"){
@@ -537,7 +536,7 @@ process check_aligner_params{
         // novoalign tool - load license into the container
         if ("novoalign" in aligner_list ){
             def novoalign_lic = ""
-            def novoalign_options = params.novoalign_options ?: ""
+            def novoalign_options = aligner_options_map.novoalign_options ?: ""
             if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
                 if (meta.read_type == "pacbio" || meta.read_type == "ont"){
@@ -558,13 +557,13 @@ process check_aligner_params{
 
         // mummer / nucmer
         if ("nucmer" in aligner_list ){
-            def nucmer_options = params.nucmer_options ?: ""
+            def nucmer_options = aligner_options_map.nucmer_options ?: ""
             meta.nucmer_options = nucmer_options
         }
 
         // --- salmon tool ---
         if ( "salmon" in aligner_list ){
-            def salmon_options = params.salmon_options ?: ""
+            def salmon_options = aligner_options_map.salmon_options ?: ""
             // deal with library type 
             if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") ){
                 if (meta.strandedness){ 
@@ -589,7 +588,7 @@ process check_aligner_params{
 
         // --- star tool ---
         def star_tool = "STAR"
-        def star_options = params.star_options ?: ""
+        def star_options = aligner_options_map.star_options ?: ""
         if ( "star" in aligner_list ){
             if (meta.annotation && ! star_options.contains("--sjdbGTFfile ") ){
                 star_options += " --sjdbGTFfile ${annotation}"
@@ -605,7 +604,7 @@ process check_aligner_params{
         
         // --- subread tool ---
         if ( "subread" in aligner_list ){
-            def subread_options = params.subread_options ?: ""
+            def subread_options = aligner_options_map.subread_options ?: ""
             // deal with annotation
             if (meta.annotation && !subread_options.contains("-a ") ){
                 subread_options += " -a ${annotation}"
@@ -633,16 +632,16 @@ process check_aligner_params{
 
         // --- sublong tool --- dealed apart subread due to different output (sorted or not)
         if ( "sublong" in aligner_list ){
-            def sublong_options = params.sublong_options ?: ""
+            def sublong_options = aligner_options_map.sublong_options ?: ""
             meta.sublong_options = sublong_options
         }
         
         // ---------------- Display ----------------
-        // Create a map of aligner options
+        // Create a map of aligner options from the passed map
         def optionsMap = [:]
         for (tool in aligner_list) {
             def key = "${tool}_options"
-            optionsMap[tool] = params.getAt(key) ?: ""
+            optionsMap[tool] = aligner_options_map.getAt(key) ?: ""
         }
 
         // Serialize this map as key=value pairs separated by commas (or any delimiter)
