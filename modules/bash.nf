@@ -212,19 +212,21 @@ process check_aligner_params{
         val relax
 
     output:
-        tuple val(meta), path(fastq)
+        tuple val(meta_copy), path(fastq)
         path "*.txt"
 
     script:
+        // Create a copy of meta to avoid mutating the input (breaks caching)
+        def meta_copy = meta.clone()
 
         // --- bbmap tool ---
         if ( "bbmap" in aligner_list ){
             def bbmap_tool = "bbmap.sh"
             def bbmap_options = params.bbmap_options ?: ""
             if ( !relax ){
-                if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                if (meta_copy.read_type == "pacbio" || meta_copy.read_type == "ont"){
                     bbmap_tool = "mapPacBio.sh"
-                    log.info "${meta.uid} => Long reads being used, using mapPacBio.sh to align with bbmap!\n" +
+                    log.info "${meta_copy.uid} => Long reads being used, using mapPacBio.sh to align with bbmap!\n" +
                              "    However, if you know what you are doing you can activate the AliNe --relax parameter to use bbmap.sh anyway."
                     // Function to check and set maxlen in params.bbmap_options when long_reads is set
                     // params is supposed to be a immutable. Using params.replace method might not be supported in the future 
@@ -235,29 +237,29 @@ process check_aligner_params{
             }
             // set library type
             if (! bbmap_options.contains(" xs=") && 
-                meta.paired && 
-                meta.strandedness){ 
-                if (meta.strandedness.contains("U") ){ // this test must be before the others
+                meta_copy.paired && 
+                meta_copy.strandedness){ 
+                if (meta_copy.strandedness.contains("U") ){ // this test must be before the others
                     bbmap_options += " -xs=us"
                 }  
-                else if (meta.strandedness.contains("I") ){
+                else if (meta_copy.strandedness.contains("I") ){
                     bbmap_options += " xs=fr"
-                } else if (meta.strandedness.contains("O") ){
+                } else if (meta_copy.strandedness.contains("O") ){
                     bbmap_options += " xs=ss"
                 } 
             }
             // set read orientation
             if (! bbmap_options.contains(" rcs=") &&
                 ! bbmap_options.contains(" requirecorrectstrand=") && 
-                meta.paired &&
-                meta.strandedness &&
-                ! meta.strandedness.contains("I") 
+                meta_copy.paired &&
+                meta_copy.strandedness &&
+                ! meta_copy.strandedness.contains("I") 
             ){ 
                 bbmap_options += " rcs=f"
             }
 
-            meta.bbmap_tool = bbmap_tool
-            meta.bbmap_options = bbmap_options
+            meta_copy.bbmap_tool = bbmap_tool
+            meta_copy.bbmap_options = bbmap_options
         }
 
         // --- bowtie tool ---
@@ -266,16 +268,16 @@ process check_aligner_params{
             if (! bowtie_options.contains("--fr ") && 
                 ! bowtie_options.contains("--rf ") && 
                 ! bowtie_options.contains("--ff ") &&
-                meta.paired && meta.strandedness) { 
-                if (meta.strandedness.contains("I") ){
+                meta_copy.paired && meta_copy.strandedness) { 
+                if (meta_copy.strandedness.contains("I") ){
                     bowtie_options += " --fr"
-                } else if (meta.strandedness.contains("O") ){
+                } else if (meta_copy.strandedness.contains("O") ){
                     bowtie_options += " --rf"
-                } else if (meta.strandedness.contains("M") ){
+                } else if (meta_copy.strandedness.contains("M") ){
                     bowtie_options +=  " --ff"
                 }  
             }
-            meta.bowtie_options = bowtie_options
+            meta_copy.bowtie_options = bowtie_options
         }
 
         // --- bowtie2 tool ---
@@ -284,23 +286,23 @@ process check_aligner_params{
             if (! bowtie2_options.contains("--fr ") && 
                 ! bowtie2_options.contains("--rf ") && 
                 ! bowtie2_options.contains("--ff ") &&
-                meta.paired && 
-                meta.strandedness){ 
-                if (meta.strandedness.contains("I") ){
+                meta_copy.paired && 
+                meta_copy.strandedness){ 
+                if (meta_copy.strandedness.contains("I") ){
                     bowtie2_options += " --fr"
-                } else if (meta.strandedness.contains("O") ){
+                } else if (meta_copy.strandedness.contains("O") ){
                     bowtie2_options += " --rf"
-                } else if (meta.strandedness.contains("M") ){
+                } else if (meta_copy.strandedness.contains("M") ){
                     bowtie2_options += " --ff"
                 }  
             }
-            meta.bowtie2_options = bowtie2_options
+            meta_copy.bowtie2_options = bowtie2_options
         }
 
         // --- bwa aln tool ---
         if ( "bwaaln" in aligner_list ){
             def bwaaln_options = params.bwaaln_options ?: ""
-            meta.bwaaln_options = bwaaln_options
+            meta_copy.bwaaln_options = bwaaln_options
         }
         
 
@@ -308,99 +310,99 @@ process check_aligner_params{
         if ( "bwamem" in aligner_list ){
             def bwamem_options = params.bwamem_options ?: ""
             if( !relax ){
-                if (meta.read_type == "pacbio"){
+                if (meta_copy.read_type == "pacbio"){
                     if ( ! bwamem_options.contains(" pacbio") ){
                         bwamem_options += " -x pacbio"
-                        log.info "${meta.uid} => Pacbio reads being used, setting -x pacbio to bwamem!\n" +
+                        log.info "${meta_copy.uid} => Pacbio reads being used, setting -x pacbio to bwamem!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
-                if (meta.read_type == "ont"){
+                if (meta_copy.read_type == "ont"){
                     if ( ! bwamem_options.contains(" ont2d") ){
                         bwamem_options += " -x ont2d"
-                        log.info "${meta.uid} => Ont reads being used, setting -x ont2d to bwamem!\n" + 
+                        log.info "${meta_copy.uid} => Ont reads being used, setting -x ont2d to bwamem!\n" + 
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
             }
-            meta.bwamem_options = bwamem_options
+            meta_copy.bwamem_options = bwamem_options
         }
 
         // --- bwa mem2 tool ---
         if ("bwamem2" in aligner_list ){
             def bwamem2_options = params.bwamem2_options ?: ""
             if ( !relax ){
-                if (meta.read_type == "pacbio"){
+                if (meta_copy.read_type == "pacbio"){
                     if ( ! bwamem2_options.contains(" pacbio") ){
                         bwamem2_options += " -x pacbio"
-                        log.info "${meta.uid} => Pacbio reads being used, setting -x pacbio to bwamem2!\n" +
+                        log.info "${meta_copy.uid} => Pacbio reads being used, setting -x pacbio to bwamem2!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
-                if (meta.read_type == "ont"){
+                if (meta_copy.read_type == "ont"){
                     if ( ! bwamem2_options.contains(" ont2d") ){
                         bwamem2_options += " -x ont2d"
-                        log.info "${meta.uid} => Ont reads being used, setting -x ont2d to bwamem2!\n" +
+                        log.info "${meta_copy.uid} => Ont reads being used, setting -x ont2d to bwamem2!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
             }
-            meta.bwamem2_options = bwamem2_options
+            meta_copy.bwamem2_options = bwamem2_options
         }
 
         // --- bwa sw tool ---
         if ( "bwasw" in aligner_list ){
             def bwasw_options = params.bwasw_options ?: ""
-            meta.bwasw_options = bwasw_options
+            meta_copy.bwasw_options = bwasw_options
         }
 
         // --- bwa fastalign aln tool ---
         if ( "bwafastalignaln" in aligner_list ){
             def bwafastalignaln_options = params.bwafastalignaln_options ?: ""
-            meta.bwafastalignaln_options = bwafastalignaln_options
+            meta_copy.bwafastalignaln_options = bwafastalignaln_options
         }
 
         // --- bwa fastalign mem tool ---
         if ( "bwafastalignmem" in aligner_list ){
             def bwafastalignmem_options = params.bwafastalignmem_options ?: ""
             if( !relax ){
-                if (meta.read_type == "pacbio"){
+                if (meta_copy.read_type == "pacbio"){
                     if ( ! bwafastalignmem_options.contains(" pacbio") ){
                         bwafastalignmem_options += " -x pacbio"
-                        log.info "${meta.uid} => Pacbio reads being used, setting -x pacbio to bwafastalignmem!\n" +
+                        log.info "${meta_copy.uid} => Pacbio reads being used, setting -x pacbio to bwafastalignmem!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
-                if (meta.read_type == "ont"){
+                if (meta_copy.read_type == "ont"){
                     if ( ! bwafastalignmem_options.contains(" ont2d") ){
                         bwafastalignmem_options += " -x ont2d"
-                        log.info "${meta.uid} => Ont reads being used, setting -x ont2d to bwafastalignmem!\n" + 
+                        log.info "${meta_copy.uid} => Ont reads being used, setting -x ont2d to bwafastalignmem!\n" + 
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
             }
-            meta.bwafastalignmem_options = bwafastalignmem_options
+            meta_copy.bwafastalignmem_options = bwafastalignmem_options
         }
 
         // --- bwa fastalign sw tool ---
         if ( "bwafastalignsw" in aligner_list ){
             def bwafastalignsw_options = params.bwafastalignsw_options ?: ""
-            meta.bwafastalignsw_options = bwafastalignsw_options
+            meta_copy.bwafastalignsw_options = bwafastalignsw_options
         }
 
         // --- dragmap tool ---
         if ( "dragmap" in aligner_list ){
             def dragmap_options = params.dragmap_options ?: ""
-            meta.dragmap_options = dragmap_options
+            meta_copy.dragmap_options = dragmap_options
         }
 
         // --- graphmap2 tool ---
         if ( "graphmap2" in aligner_list ){
             def graphmap2_options = params.graphmap2_options ?: ""
-            if (meta.annotation && !graphmap2_options.contains("--gtf ") ){
+            if (meta_copy.annotation && !graphmap2_options.contains("--gtf ") ){
                 graphmap2_options += " --gtf ${annotation}"
             }
-            meta.graphmap2_options = graphmap2_options
+            meta_copy.graphmap2_options = graphmap2_options
         }
         
         // hisat2
@@ -408,19 +410,19 @@ process check_aligner_params{
             def hisat2_options = params.hisat2_options ?: ""
             // deal with library type - default is unstranded.
             if (! hisat2_options.contains("--rna-strandness ") &&
-                meta.strandedness && ! meta.strandedness.contains("U")
+                meta_copy.strandedness && ! meta_copy.strandedness.contains("U")
                 ){ // only if -S is not set and if we are not skipping library usage
-                if ( meta.paired ) {
-                    if (meta.strandedness.contains("SR") ) {
+                if ( meta_copy.paired ) {
+                    if (meta_copy.strandedness.contains("SR") ) {
                         hisat2_options += " --rna-strandness RF"
-                    } else if (meta.strandedness.contains("SF") ) {
+                    } else if (meta_copy.strandedness.contains("SF") ) {
                         hisat2_options += " --rna-strandness FR"
                     }
                 } // unpair
                 else { // Lib is not unstranded 
-                    if ( meta.strandedness.contains("SF") ) {
+                    if ( meta_copy.strandedness.contains("SF") ) {
                         hisat2_options += " --rna-strandness F"
-                    } else if ( meta.strandedness.contains("SR") ) {
+                    } else if ( meta_copy.strandedness.contains("SR") ) {
                         hisat2_options += " --rna-strandness R"
                     } 
                 }
@@ -429,17 +431,17 @@ process check_aligner_params{
             if (! hisat2_options.contains("--fr ") && 
                 ! hisat2_options.contains("--rf ") && 
                 ! hisat2_options.contains("--ff ") && 
-                meta.paired && meta.strandedness ){ 
-                if ( meta.strandedness.contains("I") ){
+                meta_copy.paired && meta_copy.strandedness ){ 
+                if ( meta_copy.strandedness.contains("I") ){
                     hisat2_options += " --fr"
-                } else if ( meta.strandedness.contains("O") ){
+                } else if ( meta_copy.strandedness.contains("O") ){
                     hisat2_options += " --rf"
                 }
-                else if ( meta.strandedness.contains("M") ){
+                else if ( meta_copy.strandedness.contains("M") ){
                     hisat2_options += " --ff"
                 }  
             }
-            meta.hisat2_options = hisat2_options
+            meta_copy.hisat2_options = hisat2_options
         }
 
         // --- kallisto tool ---
@@ -448,32 +450,32 @@ process check_aligner_params{
             // deal with read_orientation
             if (! kallisto_options.contains("--fr-stranded ") && 
                 ! kallisto_options.contains("--rf-stranded ") && 
-                meta.strandedness) { 
+                meta_copy.strandedness) { 
                 
-                if (meta.strandedness.contains("I") ){
+                if (meta_copy.strandedness.contains("I") ){
                     kallisto_options += " --fr-stranded"
-                } else if (meta.strandedness.contains("O") ){
+                } else if (meta_copy.strandedness.contains("O") ){
                     kallisto_options += " --rf-stranded"
                 } 
             }
             // Use read length (-l) and sd (-s) from params? for single-end reads
-            if(! meta.paired){
+            if(! meta_copy.paired){
                 if ( !kallisto_options.contains("-l ") ){
-                    kallisto_options += " -l ${meta.read_length}"
+                    kallisto_options += " -l ${meta_copy.read_length}"
                 }
                 if ( !kallisto_options.contains("-s ") ){
                     // 10% of read length will be used as Estimated standard deviation of fragment length
-                    def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
+                    def tenPercent = (meta_copy.read_length.toInteger() * 10 / 100) as int 
                     kallisto_options += " -s ${tenPercent}"
                 }
             }
-            meta.kallisto_options = kallisto_options
+            meta_copy.kallisto_options = kallisto_options
         }
 
         // --- last tool ---
         if ( "last" in aligner_list ){
             def last_options = params.last_options ?: ""
-            meta.last_options = last_options
+            meta_copy.last_options = last_options
         }
 
         // ---- minimap2 tool ---
@@ -481,25 +483,25 @@ process check_aligner_params{
         if ("minimap2" in aligner_list ){
             def minimap2_options = params.minimap2_options ?: ""
             if ( !relax ){
-                if (meta.read_type == "short_single" || meta.read_type == "short_paired"){
+                if (meta_copy.read_type == "short_single" || meta_copy.read_type == "short_paired"){
                     if ( ! minimap2_options.contains("--sr ") ){
                         minimap2_options += " --sr"
                     }
                 }
-                if (meta.read_type == "pacbio"){
+                if (meta_copy.read_type == "pacbio"){
                     if ( ! minimap2_options.contains(" ava-pb") and ! minimap2_options.contains(" splice:hq") and 
                          ! minimap2_options.contains(" map-hifi") and ! minimap2_options.contains(" map-pb") ){
-                         log.info("${meta.uid} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for pacbio data.\n" +
+                         log.info("${meta_copy.uid} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for pacbio data.\n" +
                                  "    We set the default <map-pb> parameter. If you do not agree, please provide options among this list:\n" +
                                  "    ava-pb, splice:hq, map-hifi, map-pb (see https://github.com/lh3/minimap2).\n" +
                                  "    If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.")
                         minimap2_options += " -x map-pb"
                     }
                 }
-                if (meta.read_type == "ont"){
+                if (meta_copy.read_type == "ont"){
                     if ( ! minimap2_options.contains(" ava-ont") and ! minimap2_options.contains(" splice") and 
                         ! minimap2_options.contains(" lr:hq") and ! minimap2_options.contains(" map-ont") ){
-                        log.info("${meta.uid} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for ont data.\n" +
+                        log.info("${meta_copy.uid} => Warn: <${minimap2_options}> minimap2 options missing or not accepted for ont data.\n" +
                                  "    We set the default <map-ont> option. If you do not agree, please provide options among this list:\n" +
                                  "    ava-ont, splice, lr:hq, map-ont (see https://github.com/lh3/minimap2).\n" +
                                  "    If you wish to use parameter not intended for pacbio data use the --relax parameter to skip this warning message.")
@@ -511,7 +513,7 @@ process check_aligner_params{
             if ( ! minimap2_options.contains("-a ") ){
                 minimap2_options += " -a"
             }
-            meta.minimap2_options = minimap2_options
+            meta_copy.minimap2_options = minimap2_options
         }
 
         // ngmlr tool - check options
@@ -519,15 +521,15 @@ process check_aligner_params{
             def ngmlr_options = params.ngmlr_options ?: ""
             if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
-                if (meta.read_type == "ont"){
+                if (meta_copy.read_type == "ont"){
                     if (! ngmlr_options.contains("-x ont")){
                         ngmlr_options += " -x ont"
-                        log.info "${meta.uid} => Ont reads being used, setting -x ont to ngmlr!\n" +
+                        log.info "${meta_copy.uid} => Ont reads being used, setting -x ont to ngmlr!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
             }
-            meta.ngmlr_options = ngmlr_options
+            meta_copy.ngmlr_options = ngmlr_options
         }
        
 
@@ -537,26 +539,26 @@ process check_aligner_params{
             def novoalign_options = params.novoalign_options ?: ""
             if (!relax) {
                 // for pacbio reads, set -g 20 and -x 0
-                if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                if (meta_copy.read_type == "pacbio" || meta_copy.read_type == "ont"){
                     if (! novoalign_options.contains("-g ")){
                         novoalign_options += " -g 20"
-                        log.info "${meta.uid} => Long reads being used, setting -g 20 to Novoalign!\n" +
+                        log.info "${meta_copy.uid} => Long reads being used, setting -g 20 to Novoalign!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                     if (! novoalign_options.contains("-x ")){
                         novoalign_options += " -x 0"
-                        log.info "${meta.uid} => Long reads being used, setting -x 0 to Novoalign!\n" +
+                        log.info "${meta_copy.uid} => Long reads being used, setting -x 0 to Novoalign!\n" +
                                  "    However, if you know what you are doing you can activate the AliNe --relax parameter and avoid this behavior."
                     }
                 }
             }
-            meta.novoalign_options = novoalign_options
+            meta_copy.novoalign_options = novoalign_options
         }
 
         // mummer / nucmer
         if ("nucmer" in aligner_list ){
             def nucmer_options = params.nucmer_options ?: ""
-            meta.nucmer_options = nucmer_options
+            meta_copy.nucmer_options = nucmer_options
         }
 
         // --- salmon tool ---
@@ -564,74 +566,74 @@ process check_aligner_params{
             def salmon_options = params.salmon_options ?: ""
             // deal with library type 
             if (! salmon_options.contains("-l ") && ! salmon_options.contains("--libType ") ){
-                if (meta.strandedness){ 
-                    salmon_options += " -l ${meta.strandedness}"
+                if (meta_copy.strandedness){ 
+                    salmon_options += " -l ${meta_copy.strandedness}"
                 } else {
                     salmon_options += " -l A" // A for automatic
                 }
             }
-            if ( !meta.paired){
+            if ( !meta_copy.paired){
                 // Use read length (--fldMean) and sd (--fldSD) from params? only for single-end reads
                 if ( !salmon_options.contains("--fldMean ") ){
-                    salmon_options += " --fldMean ${meta.read_length}"
+                    salmon_options += " --fldMean ${meta_copy.read_length}"
                 }
                 if ( !salmon_options.contains("--fldSD ") ){
                     // 10% of read length will be used as Estimated standard deviation of fragment length
-                    def tenPercent = (meta.read_length.toInteger() * 10 / 100) as int 
+                    def tenPercent = (meta_copy.read_length.toInteger() * 10 / 100) as int 
                     salmon_options += " --fldSD ${tenPercent}"
                 }
             }
-            meta.salmon_options = salmon_options
+            meta_copy.salmon_options = salmon_options
         }
 
         // --- star tool ---
         def star_tool = "STAR"
         def star_options = params.star_options ?: ""
         if ( "star" in aligner_list ){
-            if (meta.annotation && ! star_options.contains("--sjdbGTFfile ") ){
+            if (meta_copy.annotation && ! star_options.contains("--sjdbGTFfile ") ){
                 star_options += " --sjdbGTFfile ${annotation}"
             }
             if (!relax){
-                if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                if (meta_copy.read_type == "pacbio" || meta_copy.read_type == "ont"){
                     star_tool = "STARlong"
                 }
             }
-            meta.star_tool = star_tool
-            meta.star_options = star_options
+            meta_copy.star_tool = star_tool
+            meta_copy.star_options = star_options
         }
         
         // --- subread tool ---
         if ( "subread" in aligner_list ){
             def subread_options = params.subread_options ?: ""
             // deal with annotation
-            if (meta.annotation && !subread_options.contains("-a ") ){
+            if (meta_copy.annotation && !subread_options.contains("-a ") ){
                 subread_options += " -a ${annotation}"
             }
             // -t specifes the type of input sequencing data. Possible values include 0, denoting RNA-seq data, or 1, denoting genomic DNA-seq data. For genomic DNA-seq data, the aligner takes into account both the number of matched bases and the number of mis-matched bases to determine the the best mapping location after applying the ‘seed-and-vote’ approach for read mapping. For RNA-seq data, only the number of mis-matched bases is considered for determining the best mapping location.
-            if (meta.data_type.toString().toLowerCase() == "dna" && !subread_options.contains("-t 1") ){
+            if (meta_copy.data_type.toString().toLowerCase() == "dna" && !subread_options.contains("-t 1") ){
                 subread_options += "-t 1"
             }
-            if (meta.data_type.toLowerCase() == "rna" && !subread_options.contains("-t 0") ){
+            if (meta_copy.data_type.toLowerCase() == "rna" && !subread_options.contains("-t 0") ){
                 subread_options += " -t 0"
             }
             // deal with library type orientation
             if (! subread_options.contains("-S ") &&
-                meta.paired && meta.strandedness) { // only if -S is not set and if we are not skipping library usage
-                if (meta.strandedness.contains("M") ){
+                meta_copy.paired && meta_copy.strandedness) { // only if -S is not set and if we are not skipping library usage
+                if (meta_copy.strandedness.contains("M") ){
                     subread_options += " -S ff"
-                } else if (meta.strandedness.contains("O") ) {
+                } else if (meta_copy.strandedness.contains("O") ) {
                     subread_options += " -S rf"
-                } else if (meta.strandedness.contains("I") ) {
+                } else if (meta_copy.strandedness.contains("I") ) {
                     subread_options += " -S fr"
                 } 
             }
-            meta.subread_options = subread_options
+            meta_copy.subread_options = subread_options
         }
 
         // --- sublong tool --- dealed apart subread due to different output (sorted or not)
         if ( "sublong" in aligner_list ){
             def sublong_options = params.sublong_options ?: ""
-            meta.sublong_options = sublong_options
+            meta_copy.sublong_options = sublong_options
         }
         
         // ---------------- Display ----------------
@@ -647,8 +649,8 @@ process check_aligner_params{
 
 
         """
-        fileout="${meta.uid}.txt"
-        meta="${meta}"
+        fileout="${meta_copy.uid}.txt"
+        meta="${meta_copy}"
         # Remove square brackets
         meta=\$(echo "\$meta" | tr -d '[]')
         # Remove leading and trailing space
