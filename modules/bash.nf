@@ -204,6 +204,8 @@ process check_aligner_params{
     tag "${meta.uid}"
     publishDir "${params.outdir}/${outpath}", pattern: "*.txt", mode: 'copy'
 
+    cache 'deep'
+
     input:
         tuple val(meta), path(fastq)
         val aligner_list
