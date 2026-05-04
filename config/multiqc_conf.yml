@@ -1,5 +1,9 @@
 title: "AliNe - Nextflow Alignment pipeline (https://github.com/Juke34/AliNe)"
 
+# Raised from MultiQC default 50 MB: long-read (ONT/PacBio) samtools stats files
+# routinely exceed 50 MB due to per-cycle tables spanning the full read length. Set to 200 MB.
+log_filesize_limit: 200000000
+
 run_modules:
     - fastqc
     - fastp
