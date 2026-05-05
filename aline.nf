@@ -1762,10 +1762,6 @@ workflow.onComplete {
 }
 
 /*
-Other aligner?
- - to map ont?
- - dragmap 
-
 How to add an aliger ?
 -----------------------
 Add a module,
