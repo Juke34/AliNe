@@ -1758,7 +1758,14 @@ workflow.onComplete {
         }
         if (tips) log.info tips.join('\n')
     }
-    log.info ('\n')
+    log.info """
+    ${c_dim}--------------------------------------------------
+    Enjoying AliNe? You can help by:
+    • Starring the repo  : https://github.com/Juke34/AliNe
+    • Reporting issues   : https://github.com/Juke34/AliNe/issues
+    • Joining discussions: https://github.com/Juke34/AliNe/discussions
+    --------------------------------------------------${c_reset}
+    """
 }
 
 /*
