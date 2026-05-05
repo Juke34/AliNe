@@ -1522,7 +1522,7 @@ def helpMSG() {
         fastqc output and supported aligner output.
 
         Usage example:
-        nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --reference /path/to/reference.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc true
+        nextflow run aline.nf --reads /path/to/reads_{1,2}.fastq.gz --reference /path/to/reference.fa --outdir alignment_results --aligner bbmap,bowtie2 --fastqc --samtools_stats
 
         --help                      prints the help section
 
@@ -1717,33 +1717,58 @@ workflow.onComplete {
 
     // Log colors ANSI codes
     c_reset = params.monochrome_logs ? '' : "\033[0m";
+    c_dim = params.monochrome_logs ? '' : "\033[2m";
+    c_black = params.monochrome_logs ? '' : "\033[0;30m";
     c_green = params.monochrome_logs ? '' : "\033[0;32m";
+    c_yellow = params.monochrome_logs ? '' : "\033[0;33m";
+    c_blue = params.monochrome_logs ? '' : "\033[0;34m";
+    c_purple = params.monochrome_logs ? '' : "\033[0;35m";
+    c_cyan = params.monochrome_logs ? '' : "\033[0;36m";
+    c_white = params.monochrome_logs ? '' : "\033[0;37m";
     c_red = params.monochrome_logs ? '' : "\033[0;31m";
 
-    if (workflow.success) {
-        log.info "\n${c_green}    AliNe pipeline complete!${c_reset}"
-    } else {
-        log.error "${c_red}Oops .. something went wrong${c_reset}"
-    }
+    def status_icon = workflow.success ? "${c_green}[OK]${c_reset}" : "${c_red}[FAILED]${c_reset}"
+    def error_line  = workflow.errorReport ? "\n    ${c_red}   Error      : ${workflow.errorReport}${c_reset}" : ''
 
-    log.info "    The results are available in the ‘${params.outdir}’ directory."
     log.info """
-    AliNe Pipeline execution summary
-    --------------------------------------
-    Completed at : ${workflow.complete}
-    UUID         : ${workflow.sessionId}
+    ${c_cyan}+----------------------------------------------------+
+    |       AliNe Pipeline v${workflow.manifest.version} -- Run Summary         |
+    +----------------------------------------------------+${c_reset}
+    Status       : ${status_icon}
+    Completed at : ${workflow.complete.format('dd-MMM-yyyy HH:mm:ss')}
     Duration     : ${workflow.duration}
-    Success      : ${workflow.success}
-    Exit Status  : ${workflow.exitStatus}
+    CPU hours    : ${workflow.stats.computeTimeFmt}
+    Succeeded    : ${workflow.stats.succeedCount}
+    Cached       : ${workflow.stats.cachedCount}
+    Session ID   : ${c_dim}${workflow.sessionId}${c_reset}
+    Exit status  : ${workflow.exitStatus}${error_line}
     Error report : ${workflow.errorReport ?: '-'}
+
+    The results are available in the ${c_blue}alignment_results_illumina_paired${c_reset} directory.
+    """
+
+    if (workflow.success) {
+        def tips = []
+        if (!params.fastqc && !params.samtools_stats) {
+            tips << "${c_yellow}    Tip: use --fastqc and/or --samtools_stats to get statistics.${c_reset}"
+        } else if (!params.fastqc) {
+            tips << "${c_yellow}    Tip: use --fastqc to get additional QC statistics on raw and aligned reads.${c_reset}"
+        } else if (!params.samtools_stats) {
+            tips << "${c_yellow}    Tip: use --samtools_stats to get additional alignment statistics.${c_reset}"
+        }
+        if (tips) log.info tips.join('\n')
+    }
+    log.info """
+    ${c_dim}--------------------------------------------------
+    Enjoying AliNe? You can help by:
+    • Starring the repo  : https://github.com/Juke34/AliNe
+    • Reporting issues   : https://github.com/Juke34/AliNe/issues
+    • Joining discussions: https://github.com/Juke34/AliNe/discussions
+    --------------------------------------------------${c_reset}
     """
 }
 
 /*
-Other aligner?
- - to map ont?
- - dragmap 
-
 How to add an aliger ?
 -----------------------
 Add a module,
