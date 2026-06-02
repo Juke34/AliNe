@@ -56,18 +56,50 @@ jobs:
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+
+      - name: Free disk space
+        run: |
+          docker system prune -af || true
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android || true
+          sudo apt-get clean
+          df -h
+          
       # Run tests sequentialy
       - name: test short single
         run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test short single cram
         run: nextflow run -ansi-log -profile docker,test_illumina_single aline.nf --cram --filter_unmapped
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test short paired
         run: nextflow run -ansi-log -profile docker,test_illumina_paired aline.nf
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test ont
         run: nextflow run -ansi-log -profile docker,test_ont aline.nf
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test pacbio
         run: nextflow run -ansi-log -profile docker,test_pacbio aline.nf
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test csv
         run: nextflow run -ansi-log -profile docker,test_csv aline.nf
+
+      - name: Cleanup Docker
+        run: docker system prune -af || true
+        
       - name: test remote
         run: nextflow run -ansi-log -profile docker,test_remote aline.nf
