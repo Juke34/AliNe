@@ -72,7 +72,7 @@ You can choose to run one or several aligner in parallel.
 
 *Legend*  
 ✅ Recommended  
-⚠️ Not recommended - It works but results might be sub-optimal (computing ressources might also be)  
+⚠️ Not recommended - It works but results might be sub-optimal (computing resources might also be)  
 🚫 Not applicable  
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
