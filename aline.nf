@@ -25,7 +25,7 @@ params.data_type = ""
 params.relax = false // Avoid to automatically set option specific to ready type (e.g minimap, bwa-mem for long reads.).
 
 // Read feature params
-strandedness_allowed = [ 'U', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR', 'auto' ]
+strandedness_allowed = [ 'U', 'SF', 'SR', 'IU', 'MU', 'OU', 'ISF', 'ISR', 'MSF', 'MSR', 'OSF', 'OSR', 'auto' ]
 params.strandedness = ""
 params.read_length = "" // Used by star to set the sjdbOverhang parameter but also by some other aligners
 // annotation is used by different aligner (star, etc.). To avoid to duplicate processes according to the presence of the annotation file, a specific process is dedicated to create a fake file is none provided. 
