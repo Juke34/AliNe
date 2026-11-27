@@ -32,7 +32,7 @@ jobs:
       # Install/cache OpenJDK
       - name: Cache OpenJDK
         id: cache-openjdk
-        uses: actions/cache@v3
+        uses: actions/cache@v6.1.0
         with:
           path: /usr/lib/jvm/java-11-openjdk-amd64
           key: ${{ runner.os }}-openjdk-11
@@ -44,7 +44,7 @@ jobs:
       # Install/cache nextflow
       - name: Cache nextflow
         id: cache-nextflow
-        uses: actions/cache@v3
+        uses: actions/cache@v6.1.0
         with:
           path: /usr/local/bin/nextflow
           key: ${{ runner.os }}-nextflow
@@ -55,7 +55,7 @@ jobs:
         run: export NXF_VER=24.10.6 && curl -s https://get.nextflow.io | bash && mv nextflow /usr/local/bin && chmod +x /usr/local/bin/nextflow
         
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.1.0
 
       - name: Free disk space
         run: |
