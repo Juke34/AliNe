@@ -89,6 +89,12 @@ process check_aligner{
                 log.info "${meta.uid} => Bwamem2 aligner is not recommended to align long reads!"
             }
         }
+
+        if ("bwamem3" in aligner_list ){
+            if (meta.read_type == "pacbio" || meta.read_type == "ont"){
+                log.info "${meta.uid} => Bwamem3 aligner is not recommended to align long reads!"
+            }
+        }
     
         // --- bwa sw tool ---
         if ( "bwasw" in aligner_list ){
@@ -348,6 +354,10 @@ process check_aligner_params{
                 }
             }
             meta.bwamem2_options = bwamem2_options
+        }
+
+        if ("bwamem3" in aligner_list ){
+            meta.bwamem3_options = aligner_options_map.bwamem3_options ?: ""
         }
 
         // --- bwa sw tool ---

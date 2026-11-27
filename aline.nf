@@ -37,7 +37,7 @@ params.annotation = ""
 params.trimming_fastp = false
 
 // Aligner params
-align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwasw', 'bwafastalignmem', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
+align_tools = [ 'bbmap', 'bowtie', 'bowtie2', 'bwaaln', 'bwamem', 'bwamem2', 'bwamem3', 'bwasw', 'bwafastalignmem', 'dragmap', 'graphmap2', 'hisat2', 'kallisto', 'last', 'minimap2', 'novoalign', 'nucmer', 'ngmlr', 'salmon', 'star', 'subread', 'sublong' ]
 params.aligner = ''
 params.bbmap_options      = ''
 params.bowtie_options     = ''
@@ -48,6 +48,7 @@ params.bwafastalignmem_options = ''
 params.bwafastalignsw_options = ''
 params.bwamem_options     = ''
 params.bwamem2_options    = ''
+params.bwamem3_options    = ''
 params.bwasw_options      = ''
 params.dragmap_options    = ''
 params.graphmap2_options  = '' // owler option is possible
@@ -275,13 +276,14 @@ include {bowtie2_index; bowtie2} from "$baseDir/modules/bowtie2.nf"
 include {bwa_index; bwaaln; bwamem; bwasw} from "$baseDir/modules/bwa.nf"
 include {bwafastalign_index; bwafastalignaln; bwafastalignmem; bwafastalignsw} from "$baseDir/modules/bwafastalign.nf"
 include {bwamem2_index; bwamem2} from "$baseDir/modules/bwamem2.nf"
+include {bwamem3_index; bwamem3} from "$baseDir/modules/bwamem3.nf"
 include {dragmap_index; dragmap} from "$baseDir/modules/dragmap.nf"
 include {seqkit_convert; seqkit_clean_fasta_headers} from "$baseDir/modules/seqkit.nf"
 include {graphmap2_index; graphmap2} from "$baseDir/modules/graphmap2.nf"
 include {fastp} from "$baseDir/modules/fastp.nf"
 include {fastqc as fastqc_raw; fastqc as fastqc_fastp} from "$baseDir/modules/fastqc.nf"
 include {fastqc_ali as fastqc_ali_bbmap; fastqc_ali as fastqc_ali_bowtie ; fastqc_ali as fastqc_ali_bowtie2 ; 
-    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_bwafastalignaln; 
+    fastqc_ali as fastqc_ali_bwaaln; fastqc_ali as fastqc_ali_bwamem; fastqc_ali as fastqc_ali_bwamem2; fastqc_ali as fastqc_ali_bwamem3; fastqc_ali as fastqc_ali_bwasw; fastqc_ali as fastqc_ali_bwafastalignaln;
     fastqc_ali as fastqc_ali_bwafastalignmem;  fastqc_ali as fastqc_ali_bwafastalignsw; fastqc_ali as fastqc_ali_dragmap; fastqc_ali as fastqc_ali_graphmap2 ; 
     fastqc_ali as fastqc_ali_hisat2; fastqc_ali as fastqc_ali_kallisto; fastqc_ali as fastqc_ali_last; fastqc_ali as fastqc_ali_minimap2; fastqc_ali as fastqc_ali_ngmlr; 
     fastqc_ali as fastqc_ali_novoalign ; fastqc_ali as fastqc_ali_nucmer;  fastqc_ali as fastqc_ali_salmon; fastqc_ali as fastqc_ali_star; fastqc_ali as fastqc_ali_subread ; 
@@ -298,7 +300,7 @@ include {fasta_uncompress} from "$baseDir/modules/pigz.nf"
 include {r_rendering} from "$baseDir/modules/r.nf"
 include {salmon_index; salmon_guess_lib; salmon} from "$baseDir/modules/salmon.nf" 
 include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; samtools_sam2bam as samtools_sam2bam_bowtie2; 
-         samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; 
+         samtools_sam2bam as samtools_sam2bam_bwaaln; samtools_sam2bam as samtools_sam2bam_bwamem; samtools_sam2bam as samtools_sam2bam_bwamem2; samtools_sam2bam as samtools_sam2bam_bwamem3;
          samtools_sam2bam as samtools_sam2bam_bwasw; samtools_sam2bam as samtools_sam2bam_bwafastalignaln;  samtools_sam2bam as samtools_sam2bam_bwafastalignmem; 
          samtools_sam2bam as samtools_sam2bam_bwafastalignsw; samtools_sam2bam as samtools_sam2bam_dragmap; samtools_sam2bam as samtools_sam2bam_graphmap2; samtools_sam2bam as samtools_sam2bam_hisat2;
          samtools_sam2bam as samtools_sam2bam_last; samtools_sam2bam as samtools_sam2bam_minimap2; 
@@ -306,13 +308,13 @@ include {samtools_sam2bam_nucmer; samtools_sam2bam as samtools_sam2bam_bowtie; s
 include {samtools_bam2cram as samtools_bam2cram_star; samtools_bam2cram as samtools_bam2cram_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_view_filter as samtools_view_filter_star; samtools_view_filter as samtools_view_filter_subread} from "$baseDir/modules/samtools.nf"
 include {samtools_sort as samtools_sort_bbmap; samtools_sort as samtools_sort_bowtie; samtools_sort as samtools_sort_bowtie2; samtools_sort as samtools_sort_bwaaln; 
-         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_bwafastalignaln; 
+         samtools_sort as samtools_sort_bwamem; samtools_sort as samtools_sort_bwamem2; samtools_sort as samtools_sort_bwamem3; samtools_sort as samtools_sort_bwasw; samtools_sort as samtools_sort_bwafastalignaln;
          samtools_sort as samtools_sort_bwafastalignmem; samtools_sort as samtools_sort_bwafastalignsw; samtools_sort as samtools_sort_dragmap; samtools_sort as samtools_sort_graphmap2; 
          samtools_sort as samtools_sort_hisat2; samtools_sort as samtools_sort_kallisto; samtools_sort as samtools_sort_last; samtools_sort as samtools_sort_minimap2; samtools_sort as samtools_sort_ngmlr; 
          samtools_sort as samtools_sort_novoalign;  samtools_sort as samtools_sort_nucmer; samtools_sort as samtools_sort_salmon;
          samtools_sort as samtools_sort_sublong; } from "$baseDir/modules/samtools.nf"
 include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_stats_ali_bowtie; samtools_stats as samtools_stats_ali_bowtie2 ;
-         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2;
+         samtools_stats as samtools_stats_ali_bwaaln; samtools_stats as samtools_stats_ali_bwamem; samtools_stats as samtools_stats_ali_bwamem2; samtools_stats as samtools_stats_ali_bwamem3;
          samtools_stats as samtools_stats_ali_bwasw; samtools_stats as samtools_stats_ali_bwafastalignaln; samtools_stats as samtools_stats_ali_bwafastalignmem; 
          samtools_stats as samtools_stats_ali_bwafastalignsw; samtools_stats as samtools_stats_ali_dragmap; samtools_stats as samtools_stats_ali_graphmap2; samtools_stats as samtools_stats_ali_hisat2; 
          samtools_stats as samtools_stats_ali_kallisto; samtools_stats as samtools_stats_ali_last; samtools_stats as samtools_stats_ali_minimap2; samtools_stats as samtools_stats_ali_ngmlr; 
@@ -320,7 +322,7 @@ include {samtools_stats as samtools_stats_ali_bbmap; samtools_stats as samtools_
          samtools_stats as samtools_stats_ali_subread; samtools_stats as samtools_stats_ali_sublong } from "$baseDir/modules/samtools.nf"
 include {samtools_merge_bam_if_paired} from "$baseDir/modules/samtools.nf"
 include {samtools_index as samtools_index_bbmap; samtools_index as samtools_index_bowtie; samtools_index as samtools_index_bowtie2; samtools_index as samtools_index_bwaaln;
-         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_bwafastalignaln; 
+         samtools_index as samtools_index_bwamem; samtools_index as samtools_index_bwamem2; samtools_index as samtools_index_bwamem3; samtools_index as samtools_index_bwasw; samtools_index as samtools_index_bwafastalignaln;
          samtools_index as samtools_index_bwafastalignmem; samtools_index as samtools_index_bwafastalignsw; samtools_index as samtools_index_dragmap; samtools_index as samtools_index_graphmap2;
          samtools_index as samtools_index_hisat2; samtools_index as samtools_index_kallisto; samtools_index as samtools_index_last; samtools_index as samtools_index_minimap2;
          samtools_index as samtools_index_ngmlr; samtools_index as samtools_index_novoalign; samtools_index as samtools_index_nucmer; samtools_index as samtools_index_salmon;
@@ -819,6 +821,7 @@ workflow {
             bwaaln_options: params.bwaaln_options ?: "",
             bwamem_options: params.bwamem_options ?: "",
             bwamem2_options: params.bwamem2_options ?: "",
+            bwamem3_options: params.bwamem3_options ?: "",
             bwasw_options: params.bwasw_options ?: "",
             bwafastalignaln_options: params.bwafastalignaln_options ?: "",
             bwafastalignmem_options: params.bwafastalignmem_options ?: "",
@@ -1098,6 +1101,26 @@ workflow {
             if(params.samtools_stats){
                 samtools_stats_ali_bwamem2(bwamem2_ali, reference.collect(), "samtools_stats/bwamem2", "bwamem2")
                 logs.concat(samtools_stats_ali_bwamem2.out).set{logs} // save log
+            }
+        }
+
+        // ------------------- BWA MEM3 -----------------
+        if ("bwamem3" in aligner_list){
+            bwamem3_index(reference.collect(), "alignment/bwamem3/indicies")
+            bwamem3(reads, reference.collect(), bwamem3_index.out.collect(), "alignment/bwamem3/")
+            logs.concat(bwamem3.out.bwamem3_summary).set{logs}
+            samtools_sam2bam_bwamem3(bwamem3.out.tuple_sample_sam)
+            samtools_sort_bwamem3(samtools_sam2bam_bwamem3.out.tuple_sample_bam, reference.collect(), params.filter_unmapped, params.cram)
+            samtools_index_bwamem3(samtools_sort_bwamem3.out, "alignment/bwamem3/")
+            samtools_index_bwamem3.out.tuple_sample_ali.set{bwamem3_ali}
+            sorted_ali.concat(bwamem3_ali).set{sorted_ali}
+            if(params.fastqc && !params.cram){
+                fastqc_ali_bwamem3(bwamem3_ali, "fastqc/bwamem3", "bwamem3")
+                logs.concat(fastqc_ali_bwamem3.out).set{logs}
+            }
+            if(params.samtools_stats){
+                samtools_stats_ali_bwamem3(bwamem3_ali, reference.collect(), "samtools_stats/bwamem3", "bwamem3")
+                logs.concat(samtools_stats_ali_bwamem3.out).set{logs}
             }
         }
 
@@ -1567,6 +1590,7 @@ def helpMSG() {
         --bwafastalignmem_options   additional options for bwafastalignmem
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
+        --bwamem3_options           additional options for bwamem3
         --bwasw_options             additional options for bwasw
         --dragmap_options           additional options for dragmap
         --graphmap2_options         additional options for graphmap2
@@ -1626,6 +1650,11 @@ def printAlignerOptions(aligner_list) {
     bwamem2 parameters
         bwamem2_options         : ${params.bwamem2_options}
     """} 
+    if ("bwamem3" in aligner_list){
+        sentence += """
+    bwamem3 parameters
+        bwamem3_options         : ${params.bwamem3_options}
+    """}
     if ("bwasw" in aligner_list){
         sentence += """
     bwasw parameters

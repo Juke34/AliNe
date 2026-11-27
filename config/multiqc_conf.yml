@@ -69,6 +69,14 @@ module_order:
         path_filters:
           - "*bwamem2_*.txt"
     - fastqc:
+        name: "FastQC (bwamem3)"
+        path_filters:
+          - "*bwamem3_logs/*"
+    - samtools:
+        name: "Samtools stats (bwamem3)"
+        path_filters:
+          - "*bwamem3_*.txt"
+    - fastqc:
         name: "FastQC (bwasw)"
         path_filters:
           - "*bwasw_logs/*"

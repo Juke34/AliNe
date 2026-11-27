@@ -55,6 +55,7 @@ You can choose to run one or several aligner in parallel.
 | bwafastalignmem | ✅ | ✅ | ✅ | ✅ |
 | bwamem | ✅ | ✅ | ✅ | ✅ |
 | bwamem2 | ✅ | ✅ | ✅ | ✅ |
+| bwamem3 | ✅ | ✅ | ⚠️ | ⚠️ |
 | bwasw | ✅ | ✅ | ⚠️ | ⚠️ |
 | graphmap2 | ⚠️ | ⚠️ R1 and R2 independently aligned then merged with cat | ✅ | ✅ |
 | hisat2 | ✅ | ✅ | ⚠️ | ⚠️ |
@@ -77,6 +78,8 @@ You can choose to run one or several aligner in parallel.
 
 It is possible to bypass the default authorized read type using the AliNe --relax parameter.
 
+BWA-MEM3 is intended for short reads; long-read inputs produce a warning and no automatic long-read preset is applied. Use `--aligner bwamem3` and pass alignment options with `--bwamem3_options` (for example, `--bwamem3_options "-k 25"`).
+
 ### Aligner and library types accepted
 
 The pipeline deals automatically with the library types. It extract 10 000 reads by default and run salmon to guess the library type. 
@@ -92,6 +95,7 @@ It is then translated to the correct option in the following aligners:
 | bwafastalignmem | 🚫 | 🚫 | 🚫 |
 | bwamem | 🚫 | 🚫 | 🚫 |
 | bwamem2 | 🚫 | 🚫 | 🚫 |
+| bwamem3 | 🚫 | 🚫 | 🚫 |
 | bwasw | 🚫 | 🚫 | 🚫 |
 | dragmap | 🚫 | 🚫 | 🚫 |
 | graphmap2 | 🚫 | 🚫 | 🚫 |
@@ -131,6 +135,7 @@ If you provide an annotation file the pipeline will pass automatically the file 
 | bwafastalignmem | 🚫 |
 | bwamem | 🚫 |
 | bwamem2 | 🚫 |
+| bwamem3 | 🚫 |
 | bwasw | 🚫 |
 | dragmap | 🚫 |
 | graphmap2 | GTF (--gtf)  |
@@ -340,7 +345,7 @@ On success you should get a message looking like this:
                                         control1,path/to/data1.fastq.gz,,auto,short_single,rna
                                         control2,path/to/data2_R1.fastq.gz,path/to/data2_R2.fastq.gz,auto,short_paired,rna
         --reference                 path to the reference file (fa, fa.gz, fasta or fasta.gz)
-        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwafastalignmem, bwamem, bwamem2, bwasw, dragmap, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, salmon, star, subread, sublong]
+        --aligner                   aligner(s) to use among this list (comma or space separated) [bbmap, bowtie, bowtie2, bwaaln, bwafastalignmem, bwamem, bwamem2, bwamem3, bwasw, dragmap, graphmap2, hisat2, kallisto, minimap2, novoalign, nucmer, ngmlr, salmon, star, subread, sublong]
         --outdir                    path to the output directory (default: alignment_results)
         --annotation                [Optional][used by graphmap2, STAR, subread] Absolute path to the annotation file (gtf or gff3)
 
@@ -370,6 +375,7 @@ On success you should get a message looking like this:
         --bwafastalignmem_options   additional options for bwafastalignmem
         --bwamem_options            additional options for bwamem
         --bwamem2_options           additional options for bwamem2
+        --bwamem3_options           additional options for bwamem3
         --bwasw_options             additional options for bwasw
         --dragmap_options           additional options for dragmap
         --graphmap2_options         additional options for graphmap2
